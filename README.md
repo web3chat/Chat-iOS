@@ -110,11 +110,11 @@ self.rx
 protoc msg.proto --swift_out="./"
 
 ## 服务器地址配置
-BackupURL 主域名
-TeamH5Url 组织架构（可为空）
-OKRH5Url OKR（可为空）
-APP_URL 分享地址，用于加好友等操作，需与安卓端保持一致
-USER_SERVER_AGREEMENT_URL 用户协议地址 
-WalletURL 钱包域名
-GoNodeUrl go包节点
-BlockchainPriKey 代扣地址 需要配置，很重要
+- BackupURL 主域名
+- TeamH5Url 组织架构（可为空）
+- OKRH5Url OKR（可为空）
+- APP_URL 分享地址，用于加好友等操作，需与安卓端保持一致
+- USER_SERVER_AGREEMENT_URL 用户协议地址 
+- WalletURL 钱包域名
+- GoNodeUrl go包节点
+- BlockchainPriKey 代扣地址 需要配置，很重要
