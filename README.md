@@ -117,4 +117,4 @@ protoc msg.proto --swift_out="./"
 - USER_SERVER_AGREEMENT_URL 用户协议地址 
 - WalletURL 钱包域名
 - GoNodeUrl go包节点
-- BlockchainPriKey 代扣地址 需要配置，很重要
+- BlockchainPriKey 代扣地址私钥 需要配置，很重要
