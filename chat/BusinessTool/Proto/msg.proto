@@ -1,0 +1,397 @@
+syntax = "proto3";
+
+package pbMsg;
+
+enum Device {
+    Android = 0;
+    IOS     = 1;
+    Windows = 2;
+    Linux   = 3;
+    MacOS   = 4;
+    Web     = 5;
+}
+
+message Login {
+    enum ConnType {
+        Connect   = 0;
+        Reconnect = 1;
+    }
+    Device device   = 1;
+    string username = 2;
+    string deviceToken = 3;
+    ConnType connType = 4;
+    string uuid = 5;
+    string deviceName = 6;
+}
+
+message event {
+    EventType eventType = 1;//事件类型
+    bytes body          = 2;//消息体
+}
+
+enum EventType {
+    message    = 0;//普通消息
+    messageAck = 1;//消息回复
+    notice     = 2;//通知信令
+}
+
+enum MsgType {
+    System          = 0;//系统消息
+    Text            = 1;//文本消息
+    Audio           = 2;//音频消息
+    Image           = 3;//图片消息
+    Video           = 4;//视频消息
+    File            = 5;//文件消息
+    Card            = 6;//卡片消息(客户端忽略该类型消息，服务端在其他地方使用该类型)
+    Notification    = 7;//通知消息
+    Forward         = 8;//合并转发
+    RTCCall         = 9;
+    Transfer        = 10;
+    Collect         = 11;
+    RedPacket       = 12;
+    ContactCard     = 13;
+}
+
+message msg {
+    int32 channelType   = 1;//消息通道 0 私聊 1 群聊
+    int64 logId         = 2;//消息id
+    string msgId        = 3;//客户端序列
+    string from         = 4;//发送者
+    string target       = 5;//接收者
+    MsgType msgType     = 6;//消息类型
+    bytes msg           = 7;//消息体
+    uint64 datetime     = 8;//事件戳，ms
+    Source source       = 9;//来源，详见如下
+    Reference reference =10;//引用
+}
+
+message Reference {
+    int64 topic   =1;
+    int64 ref     =2;
+}
+
+message Source {
+    int32 channelType   =1;
+    SourceUser from     =2;
+    SourceUser target   =3;
+}
+
+message SourceUser {
+    string id   =1;
+    string name =2;
+}
+
+// Proto 中 Op 为 SendMsgReply 时， body 必须可以反序列化为 SendMsgAck
+message SendMsgAck {
+    int64 logId     = 2;
+    uint64 datetime = 8;
+}
+
+message EncryptMsg {
+    string content = 1;
+}
+
+message TextMsg {
+    string content = 1;
+    repeated string mention = 2;//@谁
+}
+
+message AudioMsg {
+    string mediaUrl = 1;
+    int32 time      = 2;
+}
+
+message ImageMsg {
+    string mediaUrl  = 1;
+    int32 height     = 2;
+    int32 width      = 3;
+}
+
+message VideoMsg {
+    string mediaUrl  = 1;
+    int32 time       = 2;
+    int32 height     = 3;
+    int32 width      = 4;
+}
+
+message FileMsg {
+    string mediaUrl = 1;
+    string name     = 2;
+    string md5      = 3;
+    int64 size      = 4;
+}
+
+// NotificationMsg 通知消息（群聊内灰色文字通知消息） 注意：body必须可以反序列化为NotificationType相对应的结构体
+message NotificationMsg {
+    NotificationType type = 1;
+    bytes body            = 2;
+}
+
+message ForwardMsg {
+    repeated ForwardItem items = 1;
+}
+
+message ForwardItem {
+    string avatar   = 1;
+    string name     = 2;
+    int32 msgType   = 3;
+    bytes msg       = 4;
+    uint64 datetime = 5;
+}
+
+message TransferMsg {
+    string txHash = 1;
+    string coinName = 2;
+}
+
+enum RPType {
+    RandomAmount  = 0;
+    IdenticalAmount = 1;
+}
+
+message RedPacketMsg {
+    string txHash = 1;
+    string coinName = 2;
+    string exec = 3;    //执行器名称 user.p.
+    RPType packetType = 4;
+    string privateKey  = 5;  //客户端创建的私钥（选填）
+    string remark = 6;
+    uint64 expire = 7;  //到期时间 单位：ms时间戳
+}
+
+enum CardType {
+    Undefined = 0;
+    Personal = 1;
+}
+
+message ContactCardMsg {
+    CardType type = 1;
+    string id = 2;
+    string name = 3;
+    string avatar = 4;
+}
+
+enum NotificationType {
+    NotiUpdateGroupName             = 0;//修改群名
+    NotiSignInGroup                 = 1;//加群
+    NotiSignOutGroup                = 2;//退群
+    NotikickOutGroup                = 3;//踢群
+    NotiDeleteGroup                 = 4;//删群
+    NotiUpdateGroupMuted            = 5;//群禁言模式更改
+    NotiUpdateGroupMemberMutedTime  = 6;//更改禁言名单
+    NotiUpdateGroupOwner            = 7;//更换群主
+    MsgRevoked                      = 8;//撤回消息通知，客户端占用
+}
+
+message AlertUpdateGroupName {
+    int64 group     = 1;
+    string operator = 2;
+    string name     = 3;
+}
+
+message AlertSignInGroup {
+    int64 group             = 1;
+    string inviter          = 2;
+    repeated string members = 3;
+}
+
+message AlertSignOutGroup {
+    int64 group     = 1;
+    string operator = 2;
+}
+
+message AlertkickOutGroup {
+    int64 group             = 1;
+    string operator         = 2;
+    repeated string members = 3;
+}
+
+message AlertDeleteGroup {
+    int64 group     = 1;
+    string operator = 2;
+}
+
+message AlertUpdateGroupMuted {
+    int64 group      = 1;
+    string operator  = 2;
+    MuteType type    = 3;
+}
+
+message AlertUpdateGroupMemberMutedTime {
+    int64 group             = 1;
+    string operator         = 2;
+    repeated string members = 3;
+}
+
+message AlertUpdateGroupOwner {
+    int64 group      = 1;
+    string newOwner  = 2;
+}
+
+// 通知信令 alert msg define 页面UI更新消息 注意：body必须可反序列化为ActionType对应的结构体。
+message NotifyMsg {
+    ActionType action = 1;//信令类型
+    bytes body        = 2;//消息体
+    int64      sid    = 3;
+    bool       reliable = 4;
+}
+
+enum ActionType {
+    Received                    = 0;//送达
+    Revoke                      = 1;//撤回
+    SignInGroup                 = 10;//加群
+    SignOutGroup                = 11;//退群
+    DeleteGroup                 = 12;//删群
+    FocusMessage                = 13;//关注消息
+    EndpointLogin               = 14;//多端登录
+    //
+    UpdateGroupJoinType         = 20;//更新加群权限
+    UpdateGroupFriendType       = 21;//更新群加好友权限
+    UpdateGroupMuteType         = 22;//更新群禁言类型
+    UpdateGroupMemberType       = 23;//更新群成员
+    UpdateGroupMemberMuteTime   = 24;//更新禁言列表
+    UpdateGroupName             = 25;//更新群名
+    UpdateGroupAvatar           = 26;//更新群头像
+    //
+    StartCall   = 31;
+    AcceptCall  = 32;
+    StopCall    = 33;
+}
+
+message ActionReceived {
+    repeated int64 logs = 1;
+}
+
+message ActionSignInGroup {
+    repeated string uid = 1;
+    int64 group         = 2;
+    uint64 time         = 3;
+}
+
+message ActionSignOutGroup {
+    repeated string uid = 1;
+    int64 group         = 2;
+    uint64 time         = 3;
+}
+
+message ActionDeleteGroup {
+    int64 group = 1;
+    uint64 time = 2;
+}
+
+//关注消息
+message ActionFocusMessage {
+    int64   mid   = 1;
+    string  uid   = 2;
+    int32   currentNum = 3;
+    uint64  time    = 4;
+}
+
+//多端登录
+message ActionEndpointLogin {
+    string  uuid  = 1;
+    Device  device = 2;
+    string  deviceName = 3;
+    uint64  datetime = 4;
+}
+
+enum JoinType {
+    JoinAllow   = 0;
+    JoinDeny    = 1;
+    JoinApply   = 2;
+}
+
+message ActionUpdateGroupJoinType {
+    int64 group      = 1;
+    JoinType type    = 2;
+    uint64 time      = 3;
+}
+
+enum FriendType {
+    FriendAllow = 0;
+    FriendDeny  = 1;
+}
+
+message ActionUpdateGroupFriendType {
+    int64 group     = 1;
+    FriendType type = 2;
+    uint64 time     = 3;
+}
+
+enum MuteType {
+    MuteAllow = 0;
+    MuteDeny  = 1;
+}
+
+message ActionUpdateGroupMuteType {
+    int64 group     = 1;
+    MuteType type   = 2;
+    uint64 time     = 3;
+}
+
+enum MemberType {
+    Normal = 0;
+    Admin  = 1;
+    Owner  = 2;
+}
+
+message ActionUpdateGroupMemberType {
+    int64 group     = 1;
+    string uid      = 2;
+    MemberType type = 3;
+    uint64 time     = 4;
+}
+
+message ActionUpdateGroupMemberMuteTime {
+    int64 group         = 1;
+    repeated string uid = 2;
+    int64 muteTime      = 3;
+    uint64 time         = 4;
+}
+
+message ActionUpdateGroupName {
+    int64 group = 1;
+    string name = 2;
+    uint64 time = 3;
+}
+
+message ActionUpdateGroupAvatar {
+    int64 group     = 1;
+    string avatar   = 2;
+    uint64 time     = 3;
+}
+
+message ActionStartCall {
+    int64 trace_id = 1;
+}
+
+message ActionAcceptCall {
+    int64  trace_id        = 1;
+    int32  room_id         = 2;
+    string uid             = 3;
+    string user_sig        = 4;
+    string private_map_key = 5;
+    int32  skd_app_id      = 6;
+}
+
+enum StopCallType {
+    Busy    = 0;
+    Timeout = 1;
+    Reject  = 2;
+    Hangup  = 3;
+    Cancel  = 4;
+}
+
+message ActionStopCall {
+    int64        trace_id = 1;
+    StopCallType reason   = 2;
+}
+
+message ActionRevoke {
+    int64  logId = 1;
+    string operator = 2;
+    bool self = 3;
+}
+
+
+
