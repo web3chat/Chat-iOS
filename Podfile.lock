@@ -1,0 +1,306 @@
+PODS:
+  - AFNetworking (4.0.1):
+    - AFNetworking/NSURLSession (= 4.0.1)
+    - AFNetworking/Reachability (= 4.0.1)
+    - AFNetworking/Security (= 4.0.1)
+    - AFNetworking/Serialization (= 4.0.1)
+    - AFNetworking/UIKit (= 4.0.1)
+  - AFNetworking/NSURLSession (4.0.1):
+    - AFNetworking/Reachability
+    - AFNetworking/Security
+    - AFNetworking/Serialization
+  - AFNetworking/Reachability (4.0.1)
+  - AFNetworking/Security (4.0.1)
+  - AFNetworking/Serialization (4.0.1)
+  - AFNetworking/UIKit (4.0.1):
+    - AFNetworking/NSURLSession
+  - Alamofire (5.8.1)
+  - AliyunOSSiOS (2.10.18)
+  - AspectsV1.4.2 (1.4.2)
+  - BL_IPTool (0.0.1)
+  - Bugly (2.5.93)
+  - CryptoSwift (1.5.1)
+  - DACircularProgress (2.3.1)
+  - dsBridge (3.0.6)
+  - FMDB (2.7.11):
+    - FMDB/standard (= 2.7.11)
+  - FMDB/standard (2.7.11)
+  - GDPerformanceView-Swift (2.1.1)
+  - GKNavigationBarSwift (1.3.1)
+  - IDMPhotoBrowser (1.11.3):
+    - DACircularProgress
+    - pop
+    - SDWebImage (= 4.0.0)
+  - IQKeyboardManagerSwift (6.5.16)
+  - JKBigInteger (0.0.1)
+  - KeychainAccess (4.2.2)
+  - Kingfisher (7.10.1)
+  - Lantern (1.1.5)
+  - Masonry (1.1.0)
+  - MBProgressHUD (1.2.0)
+  - MJRefresh (3.7.6)
+  - Moya (15.0.0):
+    - Moya/Core (= 15.0.0)
+  - Moya/Core (15.0.0):
+    - Alamofire (~> 5.0)
+  - Moya/RxSwift (15.0.0):
+    - Moya/Core
+    - RxSwift (~> 6.0)
+  - NextGrowingTextView (1.6.1)
+  - Parchment (3.2.0)
+  - pop (1.0.12)
+  - QRCodeReader.swift (10.1.0)
+  - ReachabilitySwift (5.0.0)
+  - RTRootNavigationController (0.8.1):
+    - RTRootNavigationController/Core (= 0.8.1)
+  - RTRootNavigationController/Core (0.8.1)
+  - RxCocoa (6.6.0):
+    - RxRelay (= 6.6.0)
+    - RxSwift (= 6.6.0)
+  - RxRelay (6.6.0):
+    - RxSwift (= 6.6.0)
+  - RxSwift (6.6.0)
+  - SAMKeychain (1.5.3)
+  - SDWebImage (4.0.0):
+    - SDWebImage/Core (= 4.0.0)
+  - SDWebImage/Core (4.0.0)
+  - SectionIndexView (3.0.0)
+  - SnapKit (5.6.0)
+  - SQLiteRepairKit (1.2.2):
+    - WCDBOptimizedSQLCipher (~> 1.2.0)
+  - Starscream (4.0.6)
+  - SwifterSwift (6.0.0):
+    - SwifterSwift/AppKit (= 6.0.0)
+    - SwifterSwift/Combine (= 6.0.0)
+    - SwifterSwift/CoreAnimation (= 6.0.0)
+    - SwifterSwift/CoreGraphics (= 6.0.0)
+    - SwifterSwift/CoreLocation (= 6.0.0)
+    - SwifterSwift/CryptoKit (= 6.0.0)
+    - SwifterSwift/Dispatch (= 6.0.0)
+    - SwifterSwift/Foundation (= 6.0.0)
+    - SwifterSwift/HealthKit (= 6.0.0)
+    - SwifterSwift/MapKit (= 6.0.0)
+    - SwifterSwift/SceneKit (= 6.0.0)
+    - SwifterSwift/SpriteKit (= 6.0.0)
+    - SwifterSwift/StoreKit (= 6.0.0)
+    - SwifterSwift/SwiftStdlib (= 6.0.0)
+    - SwifterSwift/UIKit (= 6.0.0)
+    - SwifterSwift/WebKit (= 6.0.0)
+  - SwifterSwift/AppKit (6.0.0)
+  - SwifterSwift/Combine (6.0.0)
+  - SwifterSwift/CoreAnimation (6.0.0)
+  - SwifterSwift/CoreGraphics (6.0.0)
+  - SwifterSwift/CoreLocation (6.0.0)
+  - SwifterSwift/CryptoKit (6.0.0)
+  - SwifterSwift/Dispatch (6.0.0)
+  - SwifterSwift/Foundation (6.0.0)
+  - SwifterSwift/HealthKit (6.0.0)
+  - SwifterSwift/MapKit (6.0.0)
+  - SwifterSwift/SceneKit (6.0.0)
+  - SwifterSwift/SpriteKit (6.0.0)
+  - SwifterSwift/StoreKit (6.0.0)
+  - SwifterSwift/SwiftStdlib (6.0.0)
+  - SwifterSwift/UIKit (6.0.0)
+  - SwifterSwift/WebKit (6.0.0)
+  - SwiftProtobuf (1.25.2)
+  - SwiftyJSON (5.0.1)
+  - Toast-Swift (5.0.1)
+  - TSVoiceConverter (0.1.6)
+  - TZImagePickerController (3.6.9)
+  - UMCCommonLog (2.0.2)
+  - UMCommon (7.3.9):
+    - UMDevice
+  - UMDevice (1.2.0)
+  - UMPush (3.3.1):
+    - UMCommon
+  - WCDB.swift (1.0.8.2):
+    - SQLiteRepairKit (~> 1.2.0)
+    - WCDBOptimizedSQLCipher (~> 1.2.0)
+  - WCDBOptimizedSQLCipher (1.2.1)
+  - YYCache (1.0.4)
+  - YYImage (1.0.4):
+    - YYImage/Core (= 1.0.4)
+  - YYImage/Core (1.0.4)
+  - YYModel (1.0.4)
+  - YYText (1.0.7)
+  - YYWebImage (1.0.5):
+    - YYCache
+    - YYImage
+
+DEPENDENCIES:
+  - AFNetworking
+  - AliyunOSSiOS (from `https://github.com/aliyun/aliyun-oss-ios-sdk.git/`)
+  - AspectsV1.4.2
+  - BL_IPTool (from `https://github.com/bolee/BL_IPTool.git`)
+  - Bugly
+  - CryptoSwift (~> 1.5.1)
+  - dsBridge (~> 3.0.6)
+  - FMDB (~> 2.7.5)
+  - GDPerformanceView-Swift
+  - GKNavigationBarSwift (~> 1.3.1)
+  - IDMPhotoBrowser (~> 1.11.3)
+  - IQKeyboardManagerSwift
+  - JKBigInteger (~> 0.0.1)
+  - KeychainAccess (~> 4.2.2)
+  - Kingfisher
+  - Lantern (~> 1.1.2)
+  - Masonry
+  - MBProgressHUD (~> 1.2.0)
+  - MJRefresh
+  - Moya
+  - Moya/RxSwift
+  - NextGrowingTextView (~> 1.6.1)
+  - Parchment
+  - QRCodeReader.swift
+  - ReachabilitySwift (~> 5.0.0)
+  - RTRootNavigationController (~> 0.8.0)
+  - RxCocoa
+  - RxSwift
+  - SAMKeychain
+  - SDWebImage
+  - SectionIndexView
+  - SnapKit
+  - Starscream
+  - SwifterSwift
+  - SwiftProtobuf
+  - SwiftyJSON
+  - Toast-Swift
+  - TSVoiceConverter
+  - TZImagePickerController (~> 3.6.8)
+  - UMCCommonLog
+  - UMCommon (~> 7.3.0)
+  - UMDevice (~> 1.2.0)
+  - UMPush (~> 3.3.1)
+  - WCDB.swift
+  - YYModel
+  - YYText
+  - YYWebImage
+
+SPEC REPOS:
+  trunk:
+    - AFNetworking
+    - Alamofire
+    - AspectsV1.4.2
+    - Bugly
+    - CryptoSwift
+    - DACircularProgress
+    - dsBridge
+    - FMDB
+    - GDPerformanceView-Swift
+    - GKNavigationBarSwift
+    - IDMPhotoBrowser
+    - IQKeyboardManagerSwift
+    - JKBigInteger
+    - KeychainAccess
+    - Kingfisher
+    - Lantern
+    - Masonry
+    - MBProgressHUD
+    - MJRefresh
+    - Moya
+    - NextGrowingTextView
+    - Parchment
+    - pop
+    - QRCodeReader.swift
+    - ReachabilitySwift
+    - RTRootNavigationController
+    - RxCocoa
+    - RxRelay
+    - RxSwift
+    - SAMKeychain
+    - SDWebImage
+    - SectionIndexView
+    - SnapKit
+    - SQLiteRepairKit
+    - Starscream
+    - SwifterSwift
+    - SwiftProtobuf
+    - SwiftyJSON
+    - Toast-Swift
+    - TSVoiceConverter
+    - TZImagePickerController
+    - UMCCommonLog
+    - UMCommon
+    - UMDevice
+    - UMPush
+    - WCDB.swift
+    - WCDBOptimizedSQLCipher
+    - YYCache
+    - YYImage
+    - YYModel
+    - YYText
+    - YYWebImage
+
+EXTERNAL SOURCES:
+  AliyunOSSiOS:
+    :git: https://github.com/aliyun/aliyun-oss-ios-sdk.git/
+  BL_IPTool:
+    :git: https://github.com/bolee/BL_IPTool.git
+
+CHECKOUT OPTIONS:
+  AliyunOSSiOS:
+    :commit: d6b0339f81c682feff3be4f87a4eb0e99b665492
+    :git: https://github.com/aliyun/aliyun-oss-ios-sdk.git/
+  BL_IPTool:
+    :commit: aaf1f9a2844603387aabcceff23def028f77dd71
+    :git: https://github.com/bolee/BL_IPTool.git
+
+SPEC CHECKSUMS:
+  AFNetworking: 3bd23d814e976cd148d7d44c3ab78017b744cd58
+  Alamofire: 3ca42e259043ee0dc5c0cdd76c4bc568b8e42af7
+  AliyunOSSiOS: e683c1b1faa0657b5cd02de733628cf996f4cd93
+  AspectsV1.4.2: a8b168606776215f5ba4790b95ff315df336aca9
+  BL_IPTool: f69d0f8455686b3239468f900eddb53f608c5061
+  Bugly: b8715e6ec4004b7f7fbffab0643ba80545aee3da
+  CryptoSwift: c4f2debceb38bf44c80659afe009f71e23e4a082
+  DACircularProgress: 4dd437c0fc3da5161cb289e07ac449493d41db71
+  dsBridge: 48b62ee8a411ad601a88d6f6c8cf6cb634b206b7
+  FMDB: 57486c1117fd8e0e6b947b2f54c3f42bf8e57a4e
+  GDPerformanceView-Swift: 22d964fe40b19e3d914dba2586237d064de8fd77
+  GKNavigationBarSwift: f3d1a977b4397f43bb7e5769c92609795090edb2
+  IDMPhotoBrowser: b96159fe4adb991a844068eb17dab9c0b7d7e51a
+  IQKeyboardManagerSwift: 12d89768845bb77b55cc092ecc2b1f9370f06b76
+  JKBigInteger: 7f3894ca331bf271a8e2ee0d5329707ca6eda6e0
+  KeychainAccess: c0c4f7f38f6fc7bbe58f5702e25f7bd2f65abf51
+  Kingfisher: bc5abe80a8e0144537ef1dd5a0b2621b04f7f439
+  Lantern: b192e7146c6d04e15e627f37281254a6a8593703
+  Masonry: 678fab65091a9290e40e2832a55e7ab731aad201
+  MBProgressHUD: 3ee5efcc380f6a79a7cc9b363dd669c5e1ae7406
+  MJRefresh: 2fe7fb43a5167ceda20bb7e63f130c04fd1814a5
+  Moya: 138f0573e53411fb3dc17016add0b748dfbd78ee
+  NextGrowingTextView: 3b34f8f10b49b10bd58b61c476ca9b1c58cad380
+  Parchment: a43c440b22c8a60f7e0196b74339446d4d1d18ea
+  pop: d582054913807fd11fd50bfe6a539d91c7e1a55a
+  QRCodeReader.swift: 373a389fe9a22d513c879a32a6f647c58f4ef572
+  ReachabilitySwift: 985039c6f7b23a1da463388634119492ff86c825
+  RTRootNavigationController: ca443783baf6ff65a70c4d21ce0eedbbc1fec1fe
+  RxCocoa: 44a80de90e25b739b5aeaae3c8c371a32e3343cc
+  RxRelay: 45eaa5db8ee4fb50e5ebd57deec0159e97fa51e6
+  RxSwift: a4b44f7d24599f674deebd1818eab82e58410632
+  SAMKeychain: 483e1c9f32984d50ca961e26818a534283b4cd5c
+  SDWebImage: 76a6348bdc74eb5a55dd08a091ef298e56b55e41
+  SectionIndexView: b5369b14500696aec99531cb9a390773d162929e
+  SnapKit: e01d52ebb8ddbc333eefe2132acf85c8227d9c25
+  SQLiteRepairKit: 35aaae5a8838adb85f5b1eb4d796055be6060a4b
+  Starscream: fb2c4510bebf908c62bd383bcf05e673720e91fd
+  SwifterSwift: 66843dc594f8fb890f5543c22545921d44acc004
+  SwiftProtobuf: 407a385e97fd206c4fbe880cc84123989167e0d1
+  SwiftyJSON: 2f33a42c6fbc52764d96f13368585094bfd8aa5e
+  Toast-Swift: 9b6a70f28b3bf0b96c40d46c0c4b9d6639846711
+  TSVoiceConverter: 4143689b2b5df5fecedf9420bf7ce6fd4c98746c
+  TZImagePickerController: 2cad3db94ba70eb947d26c10ff5c66c9a93798c8
+  UMCCommonLog: bea707e50c85cef4b0eb47cc5c7226bb843245ca
+  UMCommon: afcbd381039c051d6a9bea864159a09252080a33
+  UMDevice: da050ba77e5075b1ec08303065722d25f599e483
+  UMPush: 7ef2ff2fcca16e4d5c7897183a78a0d26f920bfe
+  WCDB.swift: 05d509d7a0e60fb6e11c34eb7e4027c0fab5849f
+  WCDBOptimizedSQLCipher: baf44493b0c7a3d49e97bc5b64a3856f6428ddd1
+  YYCache: 8105b6638f5e849296c71f331ff83891a4942952
+  YYImage: 1e1b62a9997399593e4b9c4ecfbbabbf1d3f3b54
+  YYModel: 2a7fdd96aaa4b86a824e26d0c517de8928c04b30
+  YYText: 5c461d709e24d55a182d1441c41dc639a18a4849
+  YYWebImage: 5f7f36aee2ae293f016d418c7d6ba05c4863e928
+
+PODFILE CHECKSUM: 52b65583e49c5c870a175c3cd413bd294c182692
+
+COCOAPODS: 1.15.2
