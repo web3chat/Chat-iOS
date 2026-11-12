@@ -132,9 +132,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         if !isFirstApplicationDidBecomeActive {
             DispatchQueue.main.async {
                 MultipleSocketManager.shared().updateConnectedSockets()
-                // socket 一直连着（没重连 / 没重新鉴权）时 syncMsg 不会自己再跑，
-                // 上一次同步链提前收尾的话，离线消息就再也补不回来 ⇒ 回前台主动补一轮
-                MultipleSocketManager.shared().restartAllOfflineSync()
+                // 回前台补一次：socket 离线队列（私聊 + 群聊）+ 最近私聊的服务端历史 + 被删除会话的恢复
+                ChatManager.shared().syncHistoryOnForeground()
             }
         }
         isFirstApplicationDidBecomeActive = false

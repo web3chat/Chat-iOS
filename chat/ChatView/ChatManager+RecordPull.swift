@@ -108,15 +108,17 @@ extension ChatManager {
     // MARK: - 内部
 
     /// 重建单个会话的本地缓存：**拉全量**服务端记录 → 整体替换本地缓存。
+    /// - Parameter maxPages: 最多翻几页（0 = 默认全量 30 页）；切账号补被删除的会话时只拉最近 1 页。
     /// ⚠️ 拉不到（请求失败）就整条跳过、本地缓存保持不动 —— 断网 / 接口报错时绝不能把缓存清空。
     @discardableResult
-    func rebuildRecords(for targetId: String) -> RecordRebuildResult {
+    func rebuildRecords(for targetId: String, maxPages: Int = 0) -> RecordRebuildResult {
+        let pageLimit = maxPages > 0 ? maxPages : ChatManager.recordRebuildMaxPages
         let startedAt = Date.timestamp      // 毫秒；这之后新到的消息不能在重建时丢掉
         var allMsgs = [Message]()
         var cursor: String?
         var page = 0
 
-        while page < ChatManager.recordRebuildMaxPages {
+        while page < pageLimit {
             page += 1
             guard let result = self.fetchRecordPage(targetId: targetId,
                                                     count: ChatManager.recordRebuildPageSize,
@@ -453,6 +455,9 @@ extension ChatManager {
     /// 恢复任务是否在跑（只在主线程读写，防止手动入口连点 / 与自动恢复并发）
     private static var isRecoveringPrivateRecords = false
 
+    /// 「补被删除会话」任务是否在跑（切账号 / 回前台共用，防止重复执行）
+    private static var isRecoveringMissingSessions = false
+
     /// 自动恢复等待好友列表的重试次数（好友列表是从合约异步拉的）
     private static var autoRecoverRetryCount = 0
     private static let autoRecoverRetryLimit = 12
@@ -596,6 +601,97 @@ extension ChatManager {
             let session = SessionManager.shared().getOrCreateSession(id: id)
             SessionManager.shared().refreshLastMsgInfo(session: session)
             FZMLog("恢复私聊记录：补建会话 targetId=\(targetId)")
+        }
+    }
+
+    /// 切换账号成功后的补拉（用户 2026-11-12）。
+    ///
+    /// 场景：A 删掉 B 的会话 → 切到 B 给 A 发消息 → 再切回 A：
+    /// A 本地没有 B 的会话行，`prefetchPrivateRecords()` 只遍历**已有会话** ⇒ 永远拉不到 B 的记录；
+    /// 群聊又没有服务端历史接口，只能靠 socket 的离线队列。
+    /// 这里做两件事：
+    /// 1. 稍等新账号 socket 鉴权（1s；没赶上也没关系，鉴权成功后会自己跑 syncMsg），重启私聊/群聊的离线队列同步；
+    /// 2. 对「好友列表里有、本地没有私聊会话」的人补会话：
+    ///    本地还有消息（只删了会话行）→ 直接用库里最新一条补会话；
+    ///    本地没有消息 → 拉**最近一页**服务端记录，再补会话。
+    ///
+    /// ⚠️ 群聊没有服务端历史接口，只能重跑离线队列；已经 ack 掉的群消息补不回来。
+    func syncAfterAccountSwitch() {
+        guard LoginUser.shared().isLogin else { return }
+        let account = LoginUser.shared().address
+        guard !account.isEmpty else { return }
+
+        // 1) socket 离线队列：新账号的连接鉴权需要一点时间
+        //    1s 还没鉴权也没关系：socket 鉴权成功后会自己跑一轮 syncMsg，这里只是提前补一次
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1) {
+            guard LoginUser.shared().address == account else { return }
+            MultipleSocketManager.shared().restartAllOfflineSync()
+            FZMLog("切账号补拉：重启离线同步 account=\(account)")
+        }
+
+        // 2) 被删除的私聊会话：好友里有、本地没有会话行
+        recoverMissingPrivateSessions()
+    }
+
+    /// App 从后台回到前台时补一次：
+    /// - socket 离线队列（私聊 + 群聊，群聊没有历史接口，只能靠这个）；
+    /// - 最近会话的私聊历史（`prefetchPrivateRecords`，自带同账号 10s 节流）；
+    /// - 被删除会话的恢复（好友里有、本地没有会话行，通常为空，开销很小）。
+    func syncHistoryOnForeground() {
+        guard LoginUser.shared().isLogin else { return }
+        MultipleSocketManager.shared().restartAllOfflineSync()
+        prefetchPrivateRecords()
+        recoverMissingPrivateSessions()
+    }
+
+    /// 补「好友里有、本地没有会话行」的私聊会话（被删除的会话）。切账号 / 回前台共用。
+    private func recoverMissingPrivateSessions() {
+        guard LoginUser.shared().isLogin else { return }
+        let account = LoginUser.shared().address
+        guard !account.isEmpty else { return }
+        guard !ChatManager.isRecoveringMissingSessions else {
+            FZMLog("补缺失会话：已有任务在跑，忽略本次")
+            return
+        }
+        let sessionIds = Set(SessionManager.shared().allSessions
+            .filter { $0.isPrivateChat }
+            .map { $0.id.idValue })
+        let friendRows: [UserDB] = DBManager.shared().getObjects(fromTable: .user) { (constraint) in
+            constraint.condition = UserDB.Properties.isFriend == true && UserDB.Properties.isShield == false
+        }
+        let targets = friendRows
+            .map { $0.address }
+            .filter { !$0.isEmpty && $0 != account && !sessionIds.contains($0) }
+        guard !targets.isEmpty else {
+            FZMLog("补缺失会话：没有需要恢复的私聊会话")
+            return
+        }
+
+        ChatManager.isRecoveringMissingSessions = true
+        FZMLog("补缺失会话：开始恢复 \(targets.count) 个 account=\(account)")
+        ChatManager.recordPrefetchQueue.async {
+            for targetId in targets {
+                if LoginUser.shared().address != account {
+                    FZMLog("补缺失会话：账号已切换，中止")
+                    break
+                }
+                if self.getLatestLogId(sessionId: targetId) > 0 {
+                    // 消息还在、只是会话行被删了：不拉服务端，直接补会话
+                    self.ensurePrivateSession(targetId: targetId)
+                } else {
+                    switch self.rebuildRecords(for: targetId, maxPages: 1) {
+                    case .restored:
+                        self.ensurePrivateSession(targetId: targetId)
+                    case .empty, .requestFailed:
+                        break
+                    }
+                }
+                Thread.sleep(forTimeInterval: ChatManager.recordPrefetchInterval)
+            }
+            DispatchQueue.main.async {
+                ChatManager.isRecoveringMissingSessions = false
+                FZMLog("补缺失会话：结束 account=\(account)")
+            }
         }
     }
 }
