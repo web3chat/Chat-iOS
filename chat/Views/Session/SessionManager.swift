@@ -352,7 +352,7 @@ class SessionManager {
         // 不能拿时间戳把自己的消息挡掉
         let isMyOwnMessage = msg.fromId == LoginUser.shared().address
         if !force, hasPreview, !isMyOwnMessage, msg.datetime < session.timestamp {
-            if let count = count, self.currentChatSession?.id != msg.sessionId {
+            if let count = count, self.currentChatSession?.id != msg.sessionId, session.msgId != msg.msgId {
                 session.unreadCount = session.unreadCount + count
             }
             if let isSendFailed = isSendFailed {
@@ -410,7 +410,7 @@ class SessionManager {
             
             session.latestInfo = latestInfo
             session.hasAtMe = false
-            if let count = count, self.currentChatSession?.id != msg.sessionId {
+            if let count = count, self.currentChatSession?.id != msg.sessionId, session.msgId != msg.msgId {
                 session.unreadCount = session.unreadCount + count
             }
             if let isSendFailed = isSendFailed {
@@ -420,7 +420,7 @@ class SessionManager {
             self.update(session: session)
         } else {
             session.latestInfo = latestInfo
-            if let count = count, self.currentChatSession?.id != msg.sessionId {
+            if let count = count, self.currentChatSession?.id != msg.sessionId, session.msgId != msg.msgId {
                 session.unreadCount = session.unreadCount + count
             }
             if let isSendFailed = isSendFailed {
@@ -428,6 +428,41 @@ class SessionManager {
             }
             session.msgId = msg.msgId
             self.update(session: session)
+        }
+    }
+
+    /// 落库后的会话兜底：消息已经进 DB，但对应会话不存在时补建一条。
+    ///
+    /// 背景（用户 2026-11-12）：B 本地没有 A 的会话时，A 发来的第一条私聊「消息能落库 / 历史能拉到」，
+    /// 但会话列表里不出现；已经有会话时正常。
+    /// 原因：收消息（`ChatManager.save`）和建会话（`handleReceive`）是两条独立订阅，
+    /// 任何一路没走到（时序、过滤、数据源刷新被覆盖）都会出现「有消息、没会话」。
+    /// 这里在落库后按会话检查一次：**已存在就完全不动**，只补缺失的。
+    ///
+    /// ⚠️ 由 `ChatManager.save` 在消息落库后调用；已有会话完全不动。
+    ///    同一批消息如果 `handleReceive` 也处理了，`updateLstestInfo` 里的 `msgId` 判重
+    ///    会挡住重复的未读数。
+    func ensureSessionIfNeeded(for msgs: [Message]) {
+        guard LoginUser.shared().isLogin, !msgs.isEmpty else { return }
+        let grouped = Dictionary(grouping: msgs, by: { $0.sessionId.idValue })
+        for (_, group) in grouped {
+            guard let lastMsg = group.max(by: { $0.datetime < $1.datetime }) else { continue }
+            let sessionId = lastMsg.sessionId
+            // 已有会话：正常路径已经处理过，什么都不做（避免未读数重复累加）
+            guard self.getSingleLocalSession(by: sessionId) == nil else { continue }
+            // 黑名单用户不建会话（与 handleReceive / save 的过滤保持一致）
+            if lastMsg.fromId != LoginUser.shared().address,
+               let user = UserManager.shared().user(by: lastMsg.fromId),
+               user.isShield == true {
+                continue
+            }
+            let session = Session.init(id: sessionId)
+            self.insert(session: session)
+            self.save(session: session)
+            FZMLog("【会话兜底】建会话 session=\(sessionId.idValue) isPrivate=\(sessionId.isPersonChat) 本批=\(group.count) 条 lastMsgId=\(lastMsg.msgId)")
+            // 只把「对方发来的」计入未读：自己发出的消息（转发/多端）不能未读 +1
+            let incomingCount = group.filter { $0.fromId != LoginUser.shared().address }.count
+            self.updateLstestInfo(msg: lastMsg, plusUnreadCount: incomingCount > 0 ? incomingCount : nil)
         }
     }
 }

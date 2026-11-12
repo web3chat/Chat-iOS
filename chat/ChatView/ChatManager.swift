@@ -643,6 +643,16 @@ extension ChatManager {
         let msgDBArr = merged.compactMap { MessageDB.init(with: $0) }
         DBManager.shared().insertOrReplaceMessages(msgDBArr)
 
+        // 会话兜底（用户 2026-11-12：本地没有对方会话时，第一条私聊消息不进会话列表）：
+        // 消息已经落库，但建会话是 `SessionManager.handleReceive` 那条独立订阅，
+        // 任何时序/过滤问题都可能出现「有消息、没会话」。
+        // 这里同步补一次：已存在的会话完全不动；同一批消息如果 `handleReceive` 也处理了，
+        // `updateLstestInfo` 里的 `msgId` 判重会挡住重复的未读数。
+        let fallbackMsgs = msgs.filter { $0.sessionId.isPersonChat }
+        if !fallbackMsgs.isEmpty {
+            SessionManager.shared().ensureSessionIfNeeded(for: fallbackMsgs)
+        }
+
         // 排查「对方发了两张图只收到一张」：这里能看出到底是「没进来」还是「进来了没写库」
         let imageCount = msgDBArr.filter { $0.msgType == 3 }.count
         if msgDBArr.count != msgs.count || imageCount > 0 {
