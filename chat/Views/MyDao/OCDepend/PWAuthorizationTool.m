@@ -2,8 +2,8 @@
 //  PWAuthorizationTool.m
 //  PWallet
 //
-//  Created by 陈健 on 2018/10/15.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Created by fzm on 2018/10/15.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "PWAuthorizationTool.h"
@@ -12,6 +12,18 @@
 #import <UIKit/UIKit.h>
 
 @implementation PWAuthorizationTool
+
+/// 「部分照片」（iOS 14+ 的 limited）也算可用：只能读到已授权的那几张，但不是拒绝
++ (BOOL)fzm_photoAccessGranted:(PHAuthorizationStatus)status {
+    if (status == PHAuthorizationStatusAuthorized) {
+        return YES;
+    }
+    if (@available(iOS 14, *)) {
+        return status == PHAuthorizationStatusLimited;
+    }
+    return NO;
+}
+
 + (void)detectionCameraAuthorized:(AuthorizedBlock)authorizedBlock Denied:(DeniedBlock)deniedBlock {
     
     if([UIImagePickerController isSourceTypeAvailable:UIImagePickerControllerSourceTypeCamera])
@@ -62,7 +74,7 @@
             // 弹框请求用户授权
             [PHPhotoLibrary requestAuthorization:^(PHAuthorizationStatus status) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    if (status == PHAuthorizationStatusAuthorized) { // 用户第一次同意了访问相册权限
+                    if ([self fzm_photoAccessGranted:status]) { // 用户第一次同意了访问相册权限
                         if (authorizedBlock) {
                             authorizedBlock();
                         }
@@ -73,15 +85,11 @@
                     }
                 });
             }];
-        } else if (status == PHAuthorizationStatusAuthorized) { // 用户允许当前应用访问相册
+        } else if ([self fzm_photoAccessGranted:status]) { // 用户允许当前应用访问相册（含「部分照片」）
             if (authorizedBlock) {
                 authorizedBlock();
             }
-        } else if (status == PHAuthorizationStatusDenied) { // 用户拒绝当前应用访问相册
-            if (deniedBlock) {
-                deniedBlock();
-            }
-        } else if (status == PHAuthorizationStatusRestricted) {//由于系统原因, 无法访问相册
+        } else { // 拒绝 / 系统限制
             if (deniedBlock) {
                 deniedBlock();
             }

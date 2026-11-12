@@ -2,8 +2,8 @@
 //  Data+Extension.swift
 //  xls
 //
-//  Created by 陈健 on 2020/8/26.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/8/26.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import Foundation
@@ -242,7 +242,7 @@ extension Array where Element == UInt8 {
                 return
             }
             let v: UInt8
-            let c: UInt8 = UInt8(char.value)
+            let c: UInt8 =  try! UInt8.init(char.value)// UInt8(char.value)
             switch c {
             case let c where c <= 57:
                 v = c - 48

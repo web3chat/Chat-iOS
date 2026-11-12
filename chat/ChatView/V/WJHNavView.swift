@@ -16,7 +16,7 @@ class WJHNavView: UIView {
     private let isPrivateChat: Bool
     
     lazy var activityIndicatorView: FZMActivityIndicatorView = {
-        let v = FZMActivityIndicatorView.init(frame: CGRect.zero, title: "收取中...")
+        let v = FZMActivityIndicatorView.init(frame: CGRect.zero, title: L("收取中..."))
         v.isHidden = true
         v.backgroundColor = Color_F6F7F8
         v.tintColor = .white

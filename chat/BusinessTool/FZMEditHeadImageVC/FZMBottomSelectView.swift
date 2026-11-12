@@ -2,7 +2,7 @@
 //  FZMBottomSelectView.swift
 //  IM_SocketIO_Demo
 //
-//  Created by 吴文拼 on 2018/9/12.
+//  Created by fzm on 2018/9/12.
 //  Copyright © 2018年 Wang. All rights reserved.
 //
 
@@ -16,7 +16,7 @@ class FZMBottomSelectView: UIView {
     
     private let cancelBtn : UIButton = {
         let btn = UIButton(type: .custom)
-        btn.setAttributedTitle(NSAttributedString(string: "取消", attributes: [.foregroundColor:Color_24374E,.font:UIFont.regularFont(16)]), for: .normal)
+        btn.setAttributedTitle(NSAttributedString(string: L("取消"), attributes: [.foregroundColor:Color_24374E,.font:UIFont.regularFont(16)]), for: .normal)
         return btn
     }()
     
@@ -34,7 +34,7 @@ class FZMBottomSelectView: UIView {
     }()
     
     private lazy var titleLab: UILabel = {
-        let lab = UILabel.getLab(font: .regularFont(16), textColor: Color_8A97A5, textAlignment: .center, text: "标题")
+        let lab = UILabel.getLab(font: .regularFont(16), textColor: Color_8A97A5, textAlignment: .center, text: L("标题"))
         return lab
     }()
     

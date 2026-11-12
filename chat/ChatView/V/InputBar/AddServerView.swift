@@ -15,7 +15,7 @@ class AddServerView: UIView {
     var addBlock: (()->())?
     
     private lazy var titleLab: UILabel = {
-        let lab = UILabel.getLab(font: .regularFont(16), textColor: Color_8A97A5, textAlignment: .center, text: "未连接当前群聊服务器，无法收发消息")
+        let lab = UILabel.getLab(font: .regularFont(16), textColor: Color_8A97A5, textAlignment: .center, text: L("未连接当前群聊服务器，无法收发消息"))
         lab.numberOfLines = 1
         lab.minimumScaleFactor = 0.5
         return lab
@@ -23,7 +23,7 @@ class AddServerView: UIView {
     
     private lazy var addServerBtn: UIButton = {
         let btn = UIButton(type: .custom)
-        btn.setTitle("添加服务器", for: .normal)
+        btn.setTitle(L("添加服务器"), for: .normal)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.addTarget(self, action: #selector(addServerClick), for: .touchUpInside)
         btn.enlargeClickEdge(.init(top: 10, left: 10, bottom: 10, right: 10))

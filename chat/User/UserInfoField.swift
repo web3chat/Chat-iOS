@@ -2,7 +2,7 @@
 //  UserInfoField.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/22.
+//  Created by fzm on 2021/1/22.
 //
 
 import Foundation
@@ -57,6 +57,7 @@ extension UserInfoField {
         case ETH
         case BNB
         case BTY
+        case POL
         case unknown(String)
         
         var rawValue: String {
@@ -77,6 +78,8 @@ extension UserInfoField {
                 return "chain.BNB"
             case .BTY:
                 return "chain.BTY"
+            case .POL:
+                return "chain.POL"
             case .unknown(let value):
                 return value
             }
@@ -100,6 +103,8 @@ extension UserInfoField {
                 self = .BNB
             case "chain.BTY":
                 self = .BTY
+            case "chain.POL":
+                self = .POL
             default:
                 self = .unknown(rawValue)
             }

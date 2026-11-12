@@ -2,7 +2,7 @@
 //  ChooseServerVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/27.
+//  Created by fzm on 2021/1/27.
 //
 
 import UIKit
@@ -22,6 +22,10 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
             self.chatServerBlcok?(chatServerData)
         }
     }
+
+    /// 「兜底列出来」的服务器地址（账号在链上还没有服务器记录时，把默认/官方服务器只读展示）。
+    /// 这些不是账号自己的服务器：点「⋯」不能去编辑，否则 `updateServerGroup` 会打到不属于自己的记录。
+    private var fallbackReadonlyServerValues = Set<String>()
     
     private lazy var chainServerData: [(title: String, value: [Server])] = [] {
         didSet {
@@ -32,12 +36,12 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
     
     private lazy var chatServerListVC: ServerListVC = {
         let vc = ServerListVC.init()
-        vc.title = "聊天服务器"
+        vc.title = L("聊天服务器")
         vc.listType = .chatServer
         
         if !LoginUser.shared().isLogin {
             vc.headerView.frame = CGRect.init(x: 0, y: 0, width: k_ScreenWidth, height: 100)
-            vc.headerLab.text = "1.新用户需选择或添加一台服务器为默认服务器，用于接收好友聊天消息； \n2.若为已注册账户，原默认服务器不变，可前往[我的]-[服务器]页面切换。"
+            vc.headerLab.text = L("1.新用户需选择或添加一台服务器为默认服务器，用于接收好友聊天消息； \n2.若为已注册账户，原默认服务器不变，可前往[我的]-[服务器]页面切换。")
         } else {
             vc.isHiddenSelectedImgView = true
         }
@@ -74,6 +78,8 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
                 return
             }
             let server = strongSelf.chatServerData[indexPath.section].value[indexPath.row]
+            // 兜底列出来的默认/官方服务器不是账号自己的服务器，不给编辑
+            guard !strongSelf.fallbackReadonlyServerValues.contains(server.value) else { return }
             strongSelf.setChatServer(type: .edit(server))
         }
         return vc
@@ -81,11 +87,11 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
     
     private lazy var chainServerListVC: ServerListVC = {
         let vc = ServerListVC.init()
-        vc.title = "区块链节点"
+        vc.title = L("区块链节点")
         vc.listType = .chainServer
         if !LoginUser.shared().isLogin {
             vc.headerView.frame = CGRect.init(x: 0, y: 0, width: k_ScreenWidth, height: 82)
-            vc.headerLab.text = "1.需选择或添加一台服务器为默认区块链节点，用于上传和获取账户信息。\n2.可前往[我的]-[服务器]页面切换。"
+            vc.headerLab.text = L("1.需选择或添加一台服务器为默认区块链节点，用于上传和获取账户信息。\n2.可前往[我的]-[服务器]页面切换。")
         }
         vc.selectedBlock = {[weak self] (indexPath) in
             guard let self = self else { return }
@@ -104,7 +110,7 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
             
             // 判断是否是团队区块链节点，团队的节点不可编辑
             if let teaminfo = LoginUser.shared().myCompanyInfo, teaminfo.id == server.id {
-                self.showToast("团队区块链节点不可编辑！")
+                self.showToast(L("团队区块链节点不可编辑！"))
                 return
             }
             
@@ -120,7 +126,7 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.title = "选择服务器"
+        self.title = L("选择服务器")
         
         self.setBgColor()
         self.setupViews()
@@ -131,10 +137,10 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
         // 添加群聊聊天服务器
         if let server = groupServer {
             let alert = TwoBtnInfoAlertView.init()
-            alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
-            alert.leftBtnTitle = "取消"
-            alert.rightBtnTitle = "确定"
-            let str = "是否去添加 \(server.value) 聊天服务器?"
+            alert.attributedTitle = NSAttributedString.init(string: L("提示"), attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
+            alert.leftBtnTitle = L("取消")
+            alert.rightBtnTitle = L("确定")
+            let str = L("是否去添加") + "\(server.value)" + L("聊天服务器?")
             let attStr = NSMutableAttributedString.init(string: str, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)])
             attStr.addAttributes([NSAttributedString.Key.foregroundColor: Color_Theme], range:(str as NSString).range(of: server.value as String))
             alert.attributedInfo = attStr
@@ -169,15 +175,25 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
     private func loadData() {
         
         if LoginUser.shared().isLogin {// 登录数据源
-            let loginChatServer = LoginUser.shared().chatServerGroups.compactMap {
+            var loginChatServer = LoginUser.shared().chatServerGroups.compactMap {
                 Server.init(name: $0.name, value: $0.value, id: $0.id)
             }
-            let loginChatData = [("接收聊天消息的服务器", loginChatServer)]
+            // 账号在链上还没有服务器记录（新账号 / 自动登记还没成功）：至少把当前默认服务器列出来，
+            // 否则这一页是空的 —— 连默认的都不显示
+            var fallbackValues = Set<String>()
+            if loginChatServer.isEmpty {
+                loginChatServer = IMChatServerInUse.map { [$0] } ?? (OfficialChatServers ?? [])
+                fallbackValues = Set(loginChatServer.map { $0.value })
+                FZMLog("账号没有聊天服务器记录，兜底显示默认服务器 \(loginChatServer.map { $0.value })")
+            }
+            self.fallbackReadonlyServerValues = fallbackValues
+            let loginChatData = [(L("接收聊天消息的服务器"), loginChatServer)]
             self.chatServerData = loginChatData
         } else {// 未登录数据源
-            var chatData = [("官方提供接收聊天消息的服务器", OfficialChatServers ?? [Server]())]
+            self.fallbackReadonlyServerValues = []
+            var chatData = [(L("官方提供接收聊天消息的服务器"), OfficialChatServers ?? [Server]())]
             if let myChatServer = UserDefaultsDB.chatServerList, !myChatServer.isEmpty {
-                chatData.append(("自己添加的服务器", myChatServer))
+                chatData.append((L("自己添加的服务器"), myChatServer))
             }
             self.chatServerData = chatData
         }
@@ -205,12 +221,12 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
     }
     
     private func setChainServerData() {
-        var chainData = [("官方提供上传/获取账户信息的区块链节点", OfficialBlockchainServers ?? [Server]())]
+        var chainData = [(L("官方提供上传/获取账户信息的区块链节点"), OfficialBlockchainServers ?? [Server]())]
         if let myChainServer = UserDefaultsDB.chainServerList, !myChainServer.isEmpty {
-            chainData.append(("自己添加的区块链节点", myChainServer))
+            chainData.append((L("自己添加的区块链节点"), myChainServer))
         }
         if let teamBlockhainServer = TeamBlockchainServer, let teamName = LoginUser.shared().myCompanyInfo?.name {
-            chainData.append(("\(teamName)的区块链节点", [teamBlockhainServer]))
+            chainData.append(("\(teamName)" + L("的区块链节点"), [teamBlockhainServer]))
         }
         self.chainServerData = chainData
     }
@@ -249,9 +265,9 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
     }
     
     @objc private func addServerBtnClick() {
-        let view = FZMMenuView(with: [FZMMenuItem(title: "添加聊天服务器", block: {
+        let view = FZMMenuView(with: [FZMMenuItem(title: L("添加聊天服务器"), block: {
             self.setChatServer(type: .addNewIMServer)
-        }),FZMMenuItem(title: "添加区块链节点",  block: {
+        }),FZMMenuItem(title: L("添加区块链节点"),  block: {
             self.setChainServer(type: .addNewBlockchain)
         })])
         view.show(in: CGPoint(x: k_ScreenWidth-15, y: k_StatusNavigationBarHeight))
@@ -275,9 +291,9 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
                     LoginUser.shared().updateServerGroup(server: server) { [weak self] (_) in
                         guard let strongSelf = self else { return }
                         strongSelf.view.hideActivity()
-                        strongSelf.showToast("修改服务器分组中，请耐心等待，稍后查看结果...")
+                        strongSelf.showToast(L("修改服务器分组中，请耐心等待，稍后查看结果..."))
                         let newServers = alreadyAddChatServer + [server]
-                        strongSelf.chatServerData = [("接收聊天消息的服务器", newServers)]
+                        strongSelf.chatServerData = [(L("接收聊天消息的服务器"), newServers)]
                     } failureBlock: { [weak self] (error) in
                         guard let strongSelf = self else { return }
                         strongSelf.view.hideActivity()
@@ -288,9 +304,9 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
                     LoginUser.shared().addServerGroup(server: UserChatServerGroup.init(id: "0", name: server.name, value: server.value)) { [weak self] (_) in
                         guard let strongSelf = self else { return }
                         strongSelf.view.hideActivity()
-                        strongSelf.showToast("添加服务器分组成功，请耐心等待，稍后查看结果...")
+                        strongSelf.showToast(L("添加服务器分组成功，请耐心等待，稍后查看结果..."))
                         let newServers = alreadyAddChatServer + [server]
-                        strongSelf.chatServerData = [("接收聊天消息的服务器", newServers)]
+                        strongSelf.chatServerData = [(L("接收聊天消息的服务器"), newServers)]
                     } failureBlock: { [weak self] (error) in
                         guard let strongSelf = self else { return }
                         strongSelf.view.hideActivity()
@@ -314,7 +330,7 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
                 if chatServerData.count > 1 {
                     chatServerData.removeLast()
                 }
-                chatServerData.append(contentsOf: [("自己添加的服务器", newServers)])
+                chatServerData.append(contentsOf: [(L("自己添加的服务器"), newServers)])
                 strongSelf.chatServerData = chatServerData
             }
         }
@@ -326,16 +342,16 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
                     return
                 }
                 guard chatServerList.count > 1 else {
-                    self.showToast("必须保留一个聊天服务器")
+                    self.showToast(L("必须保留一个聊天服务器"))
                     return
                 }
                 guard let index = chatServerList.enumerated().filter({ $0.element.id == server.id }).first?.offset else { return }
                 self.view.showActivity()
                 LoginUser.shared().deleteServerGroup(server: server) { (json) in
                     self.view.hideActivity()
-                    self.showToast("删除服务器分组成功，请耐心等待，稍后查看结果...")
+                    self.showToast(L("删除服务器分组成功，请耐心等待，稍后查看结果..."))
                     chatServerList.remove(at: index)
-                    self.chatServerData = [("接收聊天消息的服务器", chatServerList)]
+                    self.chatServerData = [(L("接收聊天消息的服务器"), chatServerList)]
                 } failureBlock: { (error) in
                     self.view.hideActivity()
                     self.view.show(error)
@@ -349,7 +365,7 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
                 guard chatServerData.count > 1 else { return }
                 chatServerData.removeLast()
                 if !chatServerList.isEmpty {
-                    chatServerData.append(("自己添加的服务器", chatServerList))
+                    chatServerData.append((L("自己添加的服务器"), chatServerList))
                 }
                 self.chatServerData = chatServerData
             }
@@ -399,7 +415,7 @@ class ChooseServerVC: UIViewController, ViewControllerProtocol {
             guard chainServerData.count > 1 else { return }
             chainServerData.removeLast()
             if !chainServerList.isEmpty {
-                chainServerData.append(("自己添加的区块链节点", chainServerList))
+                chainServerData.append((L("自己添加的区块链节点"), chainServerList))
             }
             self.chainServerData = chainServerData
         }

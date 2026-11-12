@@ -2,8 +2,8 @@
 //  FZMNoDataView.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/11/6.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/11/6.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit

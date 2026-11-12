@@ -2,7 +2,7 @@
 //  ChatInputBarView.swift
 //  chat
 //
-//  Created by 陈健 on 2021/2/4.
+//  Created by fzm on 2021/2/4.
 //
 
 import UIKit

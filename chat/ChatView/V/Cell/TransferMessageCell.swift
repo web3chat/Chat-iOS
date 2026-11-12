@@ -82,7 +82,8 @@ class TransferMessageCell: MessageContentCell{
         super.configure(with: message, at: indexPath, and: messageCollectionView)
         
         guard let displayDelegate = messageCollectionView.messagesDisplayDelegate else {
-            fatalError("nilMessageDisplayDelegate")
+            FZMLog("TransferMessageCell：messagesDisplayDelegate 为空，跳过配置")
+            return
         }
         
         switch message.kind{
@@ -92,8 +93,8 @@ class TransferMessageCell: MessageContentCell{
                 // 发送
                 self.coinNameLab.textAlignment = .left
                 self.detailLab.textAlignment = .left
-                self.coinNameLab.text = coinName! + "转账"
-                self.detailLab.text = "发起一笔转账，点击查看"
+                self.coinNameLab.text = coinName! + L("转账")
+                self.detailLab.text = L("发起一笔转账，点击查看")
 //                self.transferIconImageView.snp.remakeConstraints { make in
 //                    make.right.equalTo(self.contentImageView).offset(-10)
 //                    make.centerY.equalToSuperview()
@@ -114,8 +115,8 @@ class TransferMessageCell: MessageContentCell{
                 // 接收
                 self.coinNameLab.textAlignment = .right
                 self.detailLab.textAlignment = .right
-                self.coinNameLab.text = coinName! + "收款"
-                self.detailLab.text = "你有一笔收款，点击查看"
+                self.coinNameLab.text = coinName! + L("收款")
+                self.detailLab.text = L("你有一笔收款，点击查看")
 //                self.transferIconImageView.snp.remakeConstraints { make in
 //                    make.left.equalTo(self.contentImageView).offset(10)
 //                    make.centerY.equalToSuperview()
@@ -140,7 +141,5 @@ class TransferMessageCell: MessageContentCell{
         
         
     }
-    
-    
     
 }

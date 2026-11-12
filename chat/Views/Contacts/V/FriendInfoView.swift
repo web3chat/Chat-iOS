@@ -25,23 +25,23 @@ class FriendInfoBottomView: UIView {
         var textColor = Color_Theme
         if type == 0 {
             img = #imageLiteral(resourceName: "friend_red")
-            title = "专属红包"
+            title = L("红包")
             textColor = Color_DD5F5F
         } else if type == 1 {
             img = #imageLiteral(resourceName: "friend_transfer")
-            title = "转账"
+            title = L("转账")
         } else if type == 2 {
             img = #imageLiteral(resourceName: "friend_facetime")
-            title = "视频通话"
+            title = L("视频通话")
         } else if type == 3 {
             img = #imageLiteral(resourceName: "friend_sendMsg")
-            title = "发消息"
+            title = L("发消息")
         } else if type == 4 {
             img = #imageLiteral(resourceName: "friend_addfriend")
-            title = "添加好友"
+            title = L("添加好友")
         } else if type == 5 {
             img = #imageLiteral(resourceName: "friend_delete")
-            title = "删除好友"
+            title = L("删除好友")
         }
         
         let imgV = UIImageView.init(image: img)
@@ -169,8 +169,11 @@ class FriendInfoBottomView: UIView {
         itemRedView.isHidden = true
         let width: CGFloat = (k_ScreenWidth - 30)/5
         let height: CGFloat = 90
-        let size = CGSize.init(width: width, height: height)
         
+        var size = CGSize.init(width: width, height: height)
+        if LanguageManager.shared.isEnglish{
+            size = CGSize.init(width: width + 15, height: height)
+        }
         itemTransferView.snp.remakeConstraints { (m) in
             m.size.equalTo(size)
             m.top.equalToSuperview()
@@ -200,7 +203,10 @@ class FriendInfoBottomView: UIView {
     func hideother(){
         let width: CGFloat = (k_ScreenWidth - 30)/5
         let height: CGFloat = 90
-        let size = CGSize.init(width: width, height: height)
+        var size = CGSize.init(width: width, height: height)
+        if LanguageManager.shared.isEnglish{
+            size = CGSize.init(width: width + 15, height: height)
+        }
         itemRedView.isHidden = false
         itemTransferView.isHidden = false
         itemSendMsgView.isHidden = true
@@ -228,8 +234,10 @@ class FriendInfoBottomView: UIView {
         
         let width: CGFloat = (k_ScreenWidth - 30)/4
         let height: CGFloat = 90
-        let size = CGSize.init(width: width, height: height)
-        
+        var size = CGSize.init(width: width, height: height)
+        if LanguageManager.shared.isEnglish{
+            size = CGSize.init(width: width + 15, height: height)
+        }
         v.addSubview(itemRedView)
 //        itemTransferView.isHidden = true
         itemRedView.snp.makeConstraints { (m) in

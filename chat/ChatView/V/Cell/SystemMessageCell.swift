@@ -52,12 +52,13 @@ class SystemMessageCell: MessageContentCell {
         super.configure(with: message, at: indexPath, and: messageCollectionView)
 
         guard let displayDelegate = messageCollectionView.messagesDisplayDelegate else {
-            fatalError("nilMessageDisplayDelegate")
+            FZMLog("SystemMessageCell：messagesDisplayDelegate 为空，跳过配置")
+            return
         }
         switch message.kind {
         case .system:
             let text = message.msgType.systemTextValue
-            detailLab.text = "【公告】" + text
+            detailLab.text = L("【公告】") + text
             
         default:
             break

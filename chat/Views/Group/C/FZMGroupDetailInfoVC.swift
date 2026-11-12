@@ -2,8 +2,8 @@
 //  FZMGroupDetailInfoVC.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/29.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/29.
+//  Copyright © 2018年 fzm. All rights reserved.
 //  群详情页面
 //
 
@@ -100,19 +100,21 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         ctrlBlockView.snp.makeConstraints({ (m) in
             m.top.equalTo(infoBlockView.snp.bottom).offset(15)
             m.left.right.equalTo(memberBlockView)
-            m.height.equalTo(200)
+            m.height.equalTo(FZM_EnableChatDeleteFeature ? 250 : 200)
         })
         
+        // 「企业服务器」归属信息：企业号功能关闭时整块隐藏（高度收成 0，不留空档）
         view.addSubview(serverInfoView)
+        serverInfoView.isHidden = !FZM_EnableEnterpriseFeature
         serverInfoView.snp.makeConstraints { (m) in
-            m.top.equalTo(ctrlBlockView.snp.bottom).offset(15)
+            m.top.equalTo(ctrlBlockView.snp.bottom).offset(FZM_EnableEnterpriseFeature ? 15 : 0)
             m.left.right.equalTo(memberBlockView)
-            m.height.equalTo(120)
+            m.height.equalTo(FZM_EnableEnterpriseFeature ? 120 : 0)
         }
         
         view.addSubview(configureView)
         configureView.snp.makeConstraints({ (m) in
-            m.top.equalTo(serverInfoView.snp.bottom).offset(15)
+            m.top.equalTo(serverInfoView.snp.bottom).offset(FZM_EnableEnterpriseFeature ? 15 : 0)
             m.left.right.equalTo(memberBlockView)
             m.height.equalTo(200)
         })
@@ -168,7 +170,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
     private lazy var memberBlockView : UIView = {
         let view = UIView()
         view.makeOriginalShdowShow()
-        let titleView = self.getOnlineView(title: "群成员", rightView: memberNumberLab, true, false)
+        let titleView = self.getOnlineView(title: L("群成员"), rightView: memberNumberLab, true, false)
         view.addSubview(titleView)
         titleView.snp.makeConstraints({ (m) in
             m.top.left.right.equalToSuperview()
@@ -205,7 +207,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
     private lazy var infoBlockView : UIView = {
         let view = UIView()
         view.makeOriginalShdowShow()
-        let nameView = self.getOnlineView(title: "我在本群的昵称", rightView: nickNameLab, true, false)
+        let nameView = self.getOnlineView(title: L("我在本群的昵称"), rightView: nickNameLab, true, false)
         view.addSubview(nameView)
         nameView.snp.makeConstraints({ (m) in
             m.top.left.right.equalToSuperview()
@@ -239,20 +241,28 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
             m.top.equalTo(chatRecordView.snp.bottom)
             m.height.equalTo(50)
         })
-        let disView = self.getOnlineView(title: "消息免打扰", rightView: muteNotiSwitch, false, true)
+        let disView = self.getOnlineView(title: L("消息免打扰"), rightView: muteNotiSwitch, false, true)
         view.addSubview(disView)
         disView.snp.makeConstraints({ (m) in
             m.left.right.equalToSuperview()
             m.top.equalTo(fileView.snp.bottom)
             m.height.equalTo(50)
         })
-        let stickView = self.getOnlineView(title: "置顶聊天", rightView: onTopSwitch, false, false)
+        let stickView = self.getOnlineView(title: L("置顶聊天"), rightView: onTopSwitch, false, false)
         view.addSubview(stickView)
         stickView.snp.makeConstraints({ (m) in
             m.left.right.equalToSuperview()
             m.top.equalTo(disView.snp.bottom)
             m.height.equalTo(50)
         })
+        if FZM_EnableChatDeleteFeature {
+            view.addSubview(autoDeleteView)
+            autoDeleteView.snp.makeConstraints({ (m) in
+                m.left.right.equalToSuperview()
+                m.top.equalTo(stickView.snp.bottom)
+                m.height.equalTo(50)
+            })
+        }
 //        view.addSubview(feedbackView)
 //        feedbackView.snp.makeConstraints({ (m) in
 //            m.bottom.left.right.equalToSuperview()
@@ -262,11 +272,26 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
     }()
     
     private lazy var chatRecordView: UIView = {
-        self.getOnlineView(title: "查找聊天记录", rightView: UIView.init(), true, true)
+        self.getOnlineView(title: L("查找聊天记录"), rightView: UIView.init(), true, true)
     }()
     
     private lazy var fileView: UIView = {
-        self.getOnlineView(title: "群文件", rightView: UIView.init(), true, true)
+        self.getOnlineView(title: L("群文件"), rightView: UIView.init(), true, true)
+    }()
+    
+    // 自动删除聊天记录视图
+    private lazy var autoDeleteView: UIView = {
+        let view = self.getOnlineView(title: L("自动删除聊天记录"), rightView: autoDeleteLab, true, false)
+        view.isUserInteractionEnabled = true
+        let tap = UITapGestureRecognizer.init(target: self, action: #selector(autoDeleteViewTap))
+        view.addGestureRecognizer(tap)
+        return view
+    }()
+    
+    // 定时删除聊天记录当前值
+    private lazy var autoDeleteLab: UILabel = {
+        let lab = UILabel.getLab(font: UIFont.regularFont(14), textColor: Color_8A97A5, textAlignment: .right, text: nil)
+        return lab
     }()
     
 //    private lazy var feedbackView: UIView = {
@@ -301,7 +326,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         view.makeOriginalShdowShow()
         
         // 群类型视图
-        let groupTypeView = self.getOnlineView(title: "群类型", rightView: groupTypeLab, false, true)
+        let groupTypeView = self.getOnlineView(title: L("群类型"), rightView: groupTypeLab, false, true)
         view.addSubview(groupTypeView)
         groupTypeView.snp.makeConstraints({ (m) in
             m.top.left.right.equalToSuperview()
@@ -309,7 +334,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         })
         
         let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: nil)
-        lab.text = "企业服务器"
+        lab.text = L("企业服务器")
         view.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -407,25 +432,33 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
             m.top.equalTo(chatLimitView.snp.bottom)
             m.height.equalTo(50)
         })
+        
+        // 入群申请入口（joinType == 2 需要审批时，仅群主/管理员可见）
+        view.addSubview(applyView)
+        applyView.snp.makeConstraints({ (m) in
+            m.left.right.equalToSuperview()
+            m.top.equalTo(chatLimitListView.snp.bottom)
+            m.height.equalTo(0)
+        })
         return view
     }()
     private lazy var managerView : UIView = {
-        return self.getOnlineView(title: "管理员设置", rightView: managerSetLab, true, true)
+        return self.getOnlineView(title: L("管理员设置"), rightView: managerSetLab, true, true)
     }()
     private lazy var transferView : UIView = {
-        return self.getOnlineView(title: "转让群主", rightView: transferLab, true, true)
+        return self.getOnlineView(title: L("转让群主"), rightView: transferLab, true, true)
     }()
     private lazy var addGroupView : UIView = {
-        return self.getOnlineView(title: "加群限制", rightView: addGroupLab, true, true)
+        return self.getOnlineView(title: L("入群方式"), rightView: addGroupLab, true, true)
     }()
     private lazy var addFriendView : UIView = {
-        return self.getOnlineView(title: "加好友限制", rightView: addFriendLab, true, true)
+        return self.getOnlineView(title: L("加好友限制"), rightView: addFriendLab, true, true)
     }()
     private lazy var chatLimitView : UIView = {
-        return self.getOnlineView(title: "全员禁言", rightView: chatLimitSwitch, false, false)
+        return self.getOnlineView(title: L("全员禁言"), rightView: chatLimitSwitch, false, false)
     }()
     private lazy var chatLimitListView : UIView = {
-        return self.getOnlineView(title: "禁言名单", rightView: chatLimitLab, true, false)
+        return self.getOnlineView(title: L("禁言名单"), rightView: chatLimitLab, true, false)
     }()
     // 管理员
     private lazy var managerSetLab : UILabel = {
@@ -458,13 +491,24 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         return self.getNormalLab()
     }()
     
+    // 入群申请入口（需要审批的群）
+    private lazy var applyView : UIView = {
+        return self.getOnlineView(title: L("入群申请"), rightView: applyCountLab, true, true)
+    }()
+    // 待审批的入群申请数量
+    private lazy var applyCountLab : UILabel = {
+        return self.getNormalLab()
+    }()
+    // 入群申请列表数据
+    private var applyList = [GroupApply]()
+    
     private lazy var bottomBtn : UIButton = {
-        let btn = UIButton.getNormalBtn(with: "退出群聊", backgroundColor: Color_FAFBFC)
+        let btn = UIButton.getNormalBtn(with: L("退出群聊"), backgroundColor: Color_FAFBFC)
         return btn
     }()
     
     private lazy var bottomLab: UILabel = {
-        let lab = UILabel.getLab(font: .systemFont(ofSize: 16), textColor: Color_8A97A5, textAlignment: .left, text: "全员群/部门群只能通过退出组织/部门才能退出群聊，退出组织/部门将自动退出对应群！")
+        let lab = UILabel.getLab(font: .systemFont(ofSize: 16), textColor: Color_8A97A5, textAlignment: .left, text: L("全员群/部门群只能通过退出组织/部门才能退出群聊，退出组织/部门将自动退出对应群！"))
         lab.numberOfLines = 0
         lab.isHidden = true
         return lab
@@ -540,6 +584,13 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         if #available(iOS 15.0, *) {   ///  standardAppearance 这个api其实是 13以上就可以使用的 ，这里写 15 其实主要是iOS15上出现的这个死样子
             let naba = UINavigationBarAppearance.init()
             naba.configureWithOpaqueBackground()
+            // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+            naba.buttonAppearance.normal.backgroundImage = UIImage()
+            naba.buttonAppearance.highlighted.backgroundImage = UIImage()
+            naba.doneButtonAppearance.normal.backgroundImage = UIImage()
+            naba.doneButtonAppearance.highlighted.backgroundImage = UIImage()
+            naba.backButtonAppearance.normal.backgroundImage = UIImage()
+            naba.backButtonAppearance.highlighted.backgroundImage = UIImage()
             naba.backgroundColor = Color_F6F7F8
             naba.shadowColor = UIColor.lightGray
             self.navigationController?.navigationBar.standardAppearance = naba
@@ -551,7 +602,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
-        self.navigationItem.title = "群聊详情"
+        self.navigationItem.title = L("群聊详情")
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "icon_qrcode").withRenderingMode(.alwaysTemplate), style: .plain, target: self, action: #selector(qrCodeClick))
         self.navigationItem.rightBarButtonItem?.tintColor = Color_24374E
         
@@ -646,13 +697,13 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
             guard let strongSelf = self, let info = strongSelf.groupDetailInfo else { return }
             
             let alert = TwoBtnInfoAlertView.init()
-            alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
-            alert.leftBtnTitle = "取消"
-            alert.rightBtnTitle = "确定"
+            alert.attributedTitle = NSAttributedString.init(string: L("提示"), attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
+            alert.leftBtnTitle = L("取消")
+            alert.rightBtnTitle = L("确定")
             let alias = info.contactsName
-            var str = "确定解散 \(alias) 群吗?"
+            var str = L("确定解散") + "\(alias)" + L("群吗?")
             if info.owner.memberId != LoginUser.shared().address {
-                str = "确定退出 \(alias) 群吗?"
+                str = L("确定退出") + "\(alias)" + L("群吗?")
             }
             let attStr = NSMutableAttributedString.init(string: str, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)])
             attStr.addAttributes([NSAttributedString.Key.foregroundColor: Color_Theme], range:(str as NSString).range(of: alias as String))
@@ -694,7 +745,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         
         // 群号
         let markId = info.markId ?? ""
-        desLab.text = "群号 " + markId
+        desLab.text = L("群号 ") + markId
         
         // 公开群名
         let pubName = info.publicName
@@ -703,7 +754,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
 //        if !pubName.isBlank, pubName != name {
         if !name.isBlank, !pubName.isBlank {// 当前群名显示的是加密群名
             publicNameLab.isHidden = false
-            publicNameLab.text = "公开群名：" + pubName
+            publicNameLab.text = L("公开群名：") + pubName
             publicNameLab.snp.updateConstraints { (m) in
                 m.height.greaterThanOrEqualTo(20)
             }
@@ -715,7 +766,7 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         }
         
         // 群成员数量
-        memberNumberLab.text = "共\(info.memberNum)人"
+        memberNumberLab.text = L("共") + " \(info.memberNum) " + L("人")
         
         // 我在本群的昵称
         nickNameLab.text = info.person?.memberName
@@ -726,15 +777,21 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         // 置顶聊天
         onTopSwitch.isOn = info.isOnTop
         
+        // 自动删除聊天记录（群聊仅本地生效；对接文档只覆盖私聊）
+        // 群聊默认 7 天：没设置过的群在这里先落一次默认值，再显示
+        ChatManager.shared().applyGroupAutoDeleteDefaultIfNeeded()
+        let autoDeleteOption = SessionManager.shared().getSingleLocalSession(by: SessionID.group(String(self.groupId)))?.autoDeleteOption ?? 0
+        autoDeleteLab.text = self.autoDeleteOptionString(option: autoDeleteOption)
+        
         // 群类型 (0: 普通群, 1: 全员群, 2: 部门群)
         var groupTypeStr = ""
         switch info.groupType {
         case 0:
-            groupTypeStr = "普通群"
+            groupTypeStr = L("普通群")
         case 1:
-            groupTypeStr = "全员群"
+            groupTypeStr = L("全员群")
         case 2:
-            groupTypeStr = "部门群"
+            groupTypeStr = L("部门群")
         default:
             groupTypeStr = ""
         }
@@ -742,31 +799,38 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
         
         
         // 管理员数量
-        managerSetLab.text = "共\(String(info.adminNum ?? 0))人"
+        managerSetLab.text = L("共") + " \(String(info.adminNum ?? 0)) " + L("人")
         
         // 转让群主（群主昵称）
         transferLab.text = info.owner.contactsName
         
-        // 加群限制
-        addGroupLab.text = info.joinType == 0 ? "无需审批" : "禁止加群"
+        // 入群方式 joinType : 0=允许任何人 1=仅管理员邀请 2=入群需审核
+        switch info.joinType {
+        case 1:
+            addGroupLab.text = L("仅管理员邀请")
+        case 2:
+            addGroupLab.text = L("入群需审核")
+        default:
+            addGroupLab.text = L("允许任何人")
+        }
         
         // 加好友限制
-        addFriendLab.text = info.friendType == 0 ? "可加好友" : "禁止加好友"
+        addFriendLab.text = info.friendType == 0 ? L("可加好友") : L("禁止加好友")
         
         // 全员禁言
         chatLimitSwitch.isOn = info.muteType == 1 ? true : false// 禁言， 0=全员可发言， 1=全员禁言(除群主和管理员)
         
         // 禁言名单
-        chatLimitLab.text = "\(info.muteNum)名成员禁言"
+        chatLimitLab.text = "\(info.muteNum)"+L("名成员禁言")
         
         // 底部解散/退出群聊按钮
         if info.groupType == 0 {
             bottomBtn.isHidden = false
             bottomLab.isHidden = true
             if info.owner.memberId == LoginUser.shared().address {
-                bottomBtn.setAttributedTitle(NSAttributedString(string: "解散群聊", attributes: [.foregroundColor: Color_DD5F5F,.font:UIFont.regularFont(16)]), for: .normal)
+                bottomBtn.setAttributedTitle(NSAttributedString(string: L("解散群聊"), attributes: [.foregroundColor: Color_DD5F5F,.font:UIFont.regularFont(16)]), for: .normal)
             }else{
-                bottomBtn.setAttributedTitle(NSAttributedString(string: "退出群聊", attributes: [.foregroundColor: Color_8A97A5,.font:UIFont.regularFont(16)]), for: .normal)
+                bottomBtn.setAttributedTitle(NSAttributedString(string: L("退出群聊"), attributes: [.foregroundColor: Color_8A97A5,.font:UIFont.regularFont(16)]), for: .normal)
             }
         } else {
             bottomBtn.isHidden = true
@@ -806,6 +870,20 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
             m.height.equalTo(memberHeight)
         }
         
+        // 入群申请入口：文档要求 person.memberType >= 1（群主/管理员）才显示「入群方式」「入群申请」
+        let showApplyEntry = info.isCurrentUserManager
+        applyView.isHidden = !showApplyEntry
+        applyView.snp.updateConstraints { (m) in
+            m.height.equalTo(showApplyEntry ? 50 : 0)
+        }
+        if showApplyEntry {
+            // 查询待审批的入群申请
+            self.loadGroupApplyRequest(serverUrl: info.chatServerUrl)
+        } else {
+            self.applyList = []
+            self.applyCountLab.text = ""
+        }
+        
         var configureHeight : CGFloat = 0
         configureView.isHidden = true
         
@@ -833,6 +911,10 @@ class FZMGroupDetailInfoVC: UIViewController, ViewControllerProtocol {
             transferView.snp.updateConstraints { (m) in
                 m.height.equalTo(0)
             }
+        }
+        if showApplyEntry {
+            // 入群申请入口占一行
+            configureHeight += 50
         }
         configureView.snp.updateConstraints { (m) in
             m.height.equalTo(configureHeight)
@@ -967,6 +1049,33 @@ extension FZMGroupDetailInfoVC {
         FZM_NotificationCenter.post(name: FZM_Notify_SessionInfoChanged, object: self.groupId.string)
     }
     
+    // 自动删除聊天记录：当前值显示文案（群聊仅本地生效）
+    private func autoDeleteOptionString(option: Int) -> String {
+        return (ChatAutoDeleteOption(rawValue: option) ?? .off).title
+    }
+    
+    // 自动删除聊天记录：点击弹出选项
+    @objc private func autoDeleteViewTap() {
+        let currentOption = SessionManager.shared().getSingleLocalSession(by: SessionID.group(String(self.groupId)))?.autoDeleteOption ?? 0
+        let alert = UIAlertController(title: L("自动删除聊天记录"), message: L("开启后，超过所选时间的聊天记录将被自动删除"), preferredStyle: .actionSheet)
+        for option in ChatAutoDeleteOption.allCasesInOrder {
+            let title = option.rawValue == currentOption ? option.title + " ✓" : option.title
+            alert.addAction(UIAlertAction(title: title, style: .default, handler: { [weak self] (_) in
+                guard let self = self else { return }
+                SessionManager.shared().updateAutoDeleteOption(session: SessionID.group(String(self.groupId)), option: option.rawValue)
+                // 用户手动改过（包括选「关闭」）⇒ 以后不再套用「群聊默认 7 天」
+                ChatAutoDeleteDefaults.markConfigured(groupId: String(self.groupId))
+                self.autoDeleteLab.text = self.autoDeleteOptionString(option: option.rawValue)
+            }))
+        }
+        alert.addAction(UIAlertAction(title: L("取消"), style: .cancel, handler: nil))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = self.view
+            popover.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 0, height: 0)
+        }
+        self.present(alert, animated: true, completion: nil)
+    }
+    
     private func makeActions() {
         // 群昵称点击
         let nameTap = UITapGestureRecognizer()
@@ -1071,11 +1180,13 @@ extension FZMGroupDetailInfoVC {
                 return
             }
             
-            FZMBottomSelectView.show(with: "加群限制", arr: [
-                                        FZMBottomOption(title: "无需审批", titleColor: Color_24374E, content: "加群无需群主或管理员同意", contentColor: Color_8A97A5, block: {
+            FZMBottomSelectView.show(with: L("入群方式"), arr: [
+                                        FZMBottomOption(title: L("允许任何人"), titleColor: Color_24374E, content: L("群内成员和群外用户都可以直接加入"), contentColor: Color_8A97A5, block: {
                                             strongSelf.updateJoinType(joinType: 0)
-                                        }),FZMBottomOption(title: "禁止加群", titleColor: Color_24374E, content: "除群主或管理员邀请外不允许任何人加群", contentColor: Color_8A97A5, block: {
+                                        }),FZMBottomOption(title: L("仅管理员邀请"), titleColor: Color_24374E, content: L("只有群主和管理员可以邀请他人加入"), contentColor: Color_8A97A5, block: {
                                             strongSelf.updateJoinType(joinType: 1)
+                                        }),FZMBottomOption(title: L("入群需审核"), titleColor: Color_24374E, content: L("群外用户需要申请，普通成员邀请也需要管理员审核"), contentColor: Color_8A97A5, block: {
+                                            strongSelf.updateJoinType(joinType: 2)
                                         })])
         }.disposed(by: disposeBag)
         addGroupLab.addGestureRecognizer(groupTap)
@@ -1084,14 +1195,27 @@ extension FZMGroupDetailInfoVC {
         let friendTap = UITapGestureRecognizer()
         friendTap.rx.event.subscribe {[weak self] (_) in
             guard let strongSelf = self else { return }
-            FZMBottomSelectView.show(with: "加好友限制", arr: [
-                                        FZMBottomOption(title: "群内可加好友", block: {
+            FZMBottomSelectView.show(with: L("加好友限制"), arr: [
+                                        FZMBottomOption(title: L("群内可加好友"), block: {
                                             strongSelf.updateFriendType(friendType: 0)
-                                        }),FZMBottomOption(title: "群内禁止加好友", block: {
+                                        }),FZMBottomOption(title: L("群内禁止加好友"), block: {
                                             strongSelf.updateFriendType(friendType: 1)
                                         })])
         }.disposed(by: disposeBag)
         addFriendLab.addGestureRecognizer(friendTap)
+        
+        // 入群申请（joinType == 2 时群主/管理员可审批）
+        let applyTap = UITapGestureRecognizer()
+        applyTap.rx.event.subscribe { [weak self] (_) in
+            guard let strongSelf = self, let serverUrl = strongSelf.groupDetailInfo?.chatServerUrl, !serverUrl.isBlank else { return }
+            let vc = FZMGroupApplyListVC.init(with: strongSelf.groupId, serverUrl: serverUrl)
+            vc.changedBlock = { [weak self] in
+                guard let strongSelf = self else { return }
+                strongSelf.loadGroupApplyRequest(serverUrl: serverUrl)
+            }
+            strongSelf.navigationController?.pushViewController(vc, animated: true)
+        }.disposed(by: disposeBag)
+        applyView.addGestureRecognizer(applyTap)
         
         // 禁言设置
         let chatLimitTap = UITapGestureRecognizer()
@@ -1130,7 +1254,7 @@ extension FZMGroupDetailInfoVC {
         let fileTap = UITapGestureRecognizer.init()
         fileTap.rx.event.subscribe { [weak self] (_) in
             guard let strongSelf = self else {return}
-            strongSelf.showToast("群文件")
+            strongSelf.showToast(L("群文件"))
             let vc = FZMFileViewController.init(session: Session.init(id: SessionID.group(String(strongSelf.groupId))))
             strongSelf.navigationController?.pushViewController(vc)
 //            let vc = FZMFileViewController.init(conversationType: .group, conversationID: strongSelf.groupId )
@@ -1216,21 +1340,46 @@ extension FZMGroupDetailInfoVC {
         self.showProgress()
 
         if users.isEmpty {
-            self.showToast("请选择好友")
+            self.showToast(L("请选择好友"))
             return
         }
         FZMLog("users --- \(users)")
         
-        // 邀请新群成员请求
+        self.showProgress()
+        // 普通成员在 joinType == 2（入群需审核）时也调这个接口：
+        // 后端会生成待审申请，HTTP 成功不代表对方已进群（等管理员通过后的 SignInGroup）
         GroupManager.shared().inviteGroupMembers(serverUrl: serverUrl, groupId: groupId, memberIds: users) { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            APP.shared().showToast("邀请成功")
+            if info.joinType == 2, !info.isCurrentUserManager {
+                strongSelf.showToast(L("已提交管理员审核"))
+            } else {
+                APP.shared().showToast(L("邀请成功"))
+            }
             strongSelf.reloadViewData()
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("邀请失败")
+            strongSelf.showToast(GroupManager.inviteFailureMessage(error, joinType: info.joinType))
+        }
+    }
+    
+    /// 查询待审核的入群申请数量（群主/管理员）
+    private func loadGroupApplyRequest(serverUrl: String?) {
+        guard let serverUrl = serverUrl, !serverUrl.isBlank else { return }
+        GroupManager.shared().getGroupApplys(serverUrl: serverUrl, groupId: self.groupId, count: 20, offset: 0) { [weak self] (list) in
+            guard let strongSelf = self else { return }
+            // 入口只统计待审核的申请
+            let waitingList = list.filter { $0.isWaiting }
+            strongSelf.applyList = waitingList
+            strongSelf.applyCountLab.text = waitingList.isEmpty ? "" : "\(waitingList.count)"
+        } failureBlock: { (error) in
+            let code = (error as NSError).code
+            if code == -10012 {// 需要管理员权限
+                FZMLog("无权限查看入群申请列表")
+            } else {
+                FZMLog("查询入群申请列表失败 loadGroupApplyRequest-\(error)")
+            }
         }
     }
     
@@ -1248,7 +1397,7 @@ extension FZMGroupDetailInfoVC {
         } failureBlock: { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("修改全员禁言状态失败")
+            strongSelf.showToast(L("修改全员禁言状态失败"))
         }
     }
     
@@ -1259,34 +1408,32 @@ extension FZMGroupDetailInfoVC {
         }
         self.showProgress(with: nil)
         GroupManager.shared().updateFriendType(serverUrl: serverUrl, groupId: self.groupId, friendType: friendType) { [weak self] _ in
-            guard let strongSelf = self, let _ = strongSelf.groupDetailInfo else { return }
+            guard let strongSelf = self else { return }
             strongSelf.hideProgress()
+            // 赋值会触发 refreshView，页面文案会自动刷新
             strongSelf.groupDetailInfo?.friendType = friendType
-            // 加好友限制
-            strongSelf.addFriendLab.text = info.friendType == 0 ? "可加好友" : "禁止加好友"
         } failureBlock: { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("修改全员禁言状态失败")
+            strongSelf.showToast(L("修改加好友限制失败"))
         }
     }
     
-    // 更新加群设置 joinType : 加群方式，0=无需审批（默认），1=禁止加群，群主和管理员邀请加群
+    // 更新加群设置 joinType : 加群方式，0=无需审批（默认），1=禁止加群，群主和管理员邀请加群 2=需要审批
     private func updateJoinType(joinType: Int) {
         guard let info = self.groupDetailInfo, let serverUrl = info.chatServerUrl else {
             return
         }
         self.showProgress(with: nil)
         GroupManager.shared().updateJoinType(serverUrl: serverUrl, groupId: self.groupId, joinType: joinType) { [weak self] _ in
-            guard let strongSelf = self, let _ = strongSelf.groupDetailInfo else { return }
+            guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.groupDetailInfo?.friendType = joinType
-            // 加群限制
-            strongSelf.addGroupLab.text = info.joinType == 0 ? "无需审批" : "群主和管理员邀请加群"
+            // 赋值会触发 refreshView，页面文案与入群申请入口会自动刷新
+            strongSelf.groupDetailInfo?.joinType = joinType
         } failureBlock: { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("修改全员禁言状态失败")
+            strongSelf.showToast(L("修改加群设置失败"))
         }
     }
     
@@ -1299,12 +1446,12 @@ extension FZMGroupDetailInfoVC {
         GroupManager.shared().updateGroupOwner(serverUrl: serverUrl, groupId: self.groupId, memberId: memberId) { [weak self] _ in
             guard let strongSelf = self, let _ = strongSelf.groupDetailInfo else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("转让群成功")
+            strongSelf.showToast(L("转让群成功"))
             strongSelf.reloadViewData()
         } failureBlock: { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("修改全员禁言状态失败")
+            strongSelf.showToast(L("转让群失败"))
         }
     }
     
@@ -1338,14 +1485,14 @@ extension FZMGroupDetailInfoVC {
         GroupManager.shared().disbandGroup(serverUrl: chatServerUrl, groupId: info.id) { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            APP.shared().showToast("您已成功解散该群聊!")
+            APP.shared().showToast(L("您已成功解散该群聊!"))
             
             strongSelf.navigationController?.popToRootViewController(animated: true)
             
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("请求失败，请稍后再试")
+            strongSelf.showToast(L("请求失败，请稍后再试"))
         }
     }
 
@@ -1356,14 +1503,14 @@ extension FZMGroupDetailInfoVC {
         GroupManager.shared().exitGroup(serverUrl: chatServerUrl, groupId: info.id) { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            APP.shared().showToast("您已成功退出该群聊!")
+            APP.shared().showToast(L("您已成功退出该群聊!"))
             
             strongSelf.navigationController?.popToRootViewController(animated: true)
             
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("请求失败，请稍后再试")
+            strongSelf.showToast(L("请求失败，请稍后再试"))
         }
     }
 }

@@ -1,0 +1,12 @@
+/*
+ InfoPlist.strings (ไทย)
+ 键名必须是 Info.plist 的键；权限弹窗跟随系统语言，与 App 内语言切换无关。
+*/
+"NSCameraUsageDescription" = "「Tanxin」ต้องการเข้าถึงกล้องของคุณเพื่อสแกนคิวอาร์โค้ด ถ่ายภาพ และส่งภาพ";
+"NSMicrophoneUsageDescription" = "「Tanxin」ต้องการเข้าถึงไมโครโฟนเพื่อส่งข้อความเสียงและใช้การสนทนาด้วยเสียง";
+"NSLocalNetworkUsageDescription" = "「Tanxin」ต้องการเข้าถึงเครือข่ายท้องถิ่นเพื่อใช้การสนทนาด้วยเสียงและบริการอื่น ๆ ในเครือข่ายเดียวกัน";
+"NSLocationWhenInUseUsageDescription" = "「Tanxin」ต้องการใช้ตำแหน่งของคุณเพื่อใช้บริการตำแหน่ง แผนที่ และบริการที่เกี่ยวข้อง";
+"NSPhotoLibraryUsageDescription" = "「Tanxin」ต้องการเข้าถึงรูปภาพของคุณเพื่อสแกนคิวอาร์โค้ด อัปโหลด และบันทึกรูปภาพ";
+"NSPhotoLibraryAddUsageDescription" = "「Tanxin」ต้องการเข้าถึงรูปภาพของคุณเพื่อสแกนคิวอาร์โค้ด อัปโหลด และบันทึกรูปภาพ";
+"NSFaceIDUsageDescription" = "「Tanxin」ใช้ Face ID เพื่อยืนยันตัวตนแทนรหัสผ่านแชทส่วนตัว (ข้อมูลถูกเก็บไว้ในอุปกรณ์นี้เท่านั้น)";
+"NSSpeechRecognitionUsageDescription" = "“TanXin” ต้องการการรู้จำเสียงเพื่อแปลงข้อความเสียงเป็นข้อความ การรู้จำทำบนอุปกรณ์นี้เท่านั้นและจะไม่อัปโหลดเสียง";

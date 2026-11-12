@@ -1,0 +1,12 @@
+/*
+ InfoPlist.strings (Tiếng Việt)
+ 键名必须是 Info.plist 的键；权限弹窗跟随系统语言，与 App 内语言切换无关。
+*/
+"NSCameraUsageDescription" = "Tanxin muốn truy cập camera để quét mã QR, chụp và gửi ảnh.";
+"NSMicrophoneUsageDescription" = "Tanxin muốn truy cập micrô để gửi tin nhắn thoại và dùng chat thoại.";
+"NSLocalNetworkUsageDescription" = "Tanxin muốn truy cập mạng cục bộ để dùng chat thoại và các dịch vụ liên quan.";
+"NSLocationWhenInUseUsageDescription" = "Tanxin muốn dùng vị trí của bạn để dùng định vị, bản đồ và dịch vụ liên quan.";
+"NSPhotoLibraryUsageDescription" = "Tanxin muốn truy cập thư viện ảnh để quét mã QR, tải lên và lưu ảnh.";
+"NSPhotoLibraryAddUsageDescription" = "Tanxin muốn truy cập thư viện ảnh để quét mã QR, tải lên và lưu ảnh.";
+"NSFaceIDUsageDescription" = "Tanxin dùng Face ID để xác minh danh tính thay cho mật khẩu chat riêng tư (dữ liệu chỉ lưu trên thiết bị này).";
+"NSSpeechRecognitionUsageDescription" = "“Tanxin” cần nhận dạng giọng nói để chuyển tin nhắn thoại thành văn bản. Việc nhận dạng diễn ra trên thiết bị này; âm thanh không bao giờ được tải lên.";

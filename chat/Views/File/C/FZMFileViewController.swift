@@ -92,10 +92,10 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
             switch event {
             case .delete:
                 let alert = TwoBtnInfoAlertView.init()
-                alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
-                alert.leftBtnTitle = "取消"
-                alert.rightBtnTitle = "删除"
-                let str = "删除后将不会出现在你的消息记录中"
+                alert.attributedTitle = NSAttributedString.init(string: L("提示"), attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
+                alert.leftBtnTitle = L("取消")
+                alert.rightBtnTitle = L("删除")
+                let str = L("删除后将不会出现在你的消息记录中")
                 let attStr = NSMutableAttributedString.init(string: str, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)])
                 alert.attributedInfo = attStr
                 alert.leftBtnTouchBlock = {}
@@ -142,12 +142,12 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let selectBtn = UIBarButtonItem.init(title: "选择", style: .done, target: self, action: #selector(selectFileOrCancel))
+        let selectBtn = UIBarButtonItem.init(title: L("选择"), style: .done, target: self, action: #selector(selectFileOrCancel))
         self.navigationItem.rightBarButtonItems = [selectBtn]
         self.xls_navigationBarTintColor = Color_Theme
         self.xls_navigationBarBackgroundColor = .white
         
-        self.title = "聊天文件"
+        self.title = L("聊天文件")
         
         self.view.backgroundColor = .white
         
@@ -162,10 +162,10 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
     
     func createUI() {
         
-        self.view1 = FZMFileListView.init(with: "文件", session: self.session)
+        self.view1 = FZMFileListView.init(with: L("文件"), session: self.session)
 //        self.fileMessagArr = self.view1?.fileMessagArr
         self.fileListVMArr = self.view1?.fileListVMArr
-        self.view2 = FZMVideoListView.init(with: "图片/视频", session: self.session)
+        self.view2 = FZMVideoListView.init(with: L("图片/视频"), session: self.session)
         let param = FZMSegementParam()
         if let view1 = self.view1, let view2 = self.view2 {
             view1.selectBlock = {[weak self] (vm, cell) in
@@ -229,7 +229,7 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
         if let fileArr = self.fileListVMArr,
             let videoArr = self.videoListVmArr,
             fileArr.isEmpty && videoArr.isEmpty {
-            self.showToast("当前没有文件")
+            self.showToast(L("当前没有文件"))
             return
         }
         if let fileArr = self.fileListVMArr,
@@ -238,7 +238,7 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
         }
         
         isSelectStatus = !isSelectStatus
-        let titleStr = isSelectStatus ? "取消" : "选择"
+        let titleStr = isSelectStatus ? L("取消") : L("选择")
         
         self.navigationItem.rightBarButtonItem?.title = titleStr
         
@@ -288,9 +288,9 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
         }
         
         if noDataDownload {
-            self.showToast("请选择下载内容")
+            self.showToast(L("请选择下载内容"))
         } else {
-            self.showToast("已开始下载")
+            self.showToast(L("已开始下载"))
             self.selectFileOrCancel()
         }
     }
@@ -315,7 +315,7 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
                 if case .image = vm.message.msgType {
                     // 清除图片缓存
                     let fileName = "\(vm.message.msgType.cachekey ?? "")"
-                    ImageCache.default.removeImage(forKey: fileName)
+                    ChatMediaCache.removeImage(forKey: fileName)
                 } else {
                     // 删除本地文件
                     if vm.isLocalFileExist {
@@ -349,7 +349,7 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
             self.showPDF(url: URL.init(fileURLWithPath: vm.localFilePath))
             
         } else {
-            APP.shared().showToast("已开始下载")
+            APP.shared().showToast(L("已开始下载"))
             
             vm.downloadData()
             
@@ -385,7 +385,7 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
             // 播放视频
             self.playVideoWithUrl(fileUrl: vm.localFilePath)
         } else {
-            APP.shared().showToast("已开始下载")
+            APP.shared().showToast(L("已开始下载"))
             
             vm.downloadData()
             
@@ -428,7 +428,7 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
             let lanternCell = context.cell as? LanternImageCell
             let placeholder = imageView.image
             // Kingfisher
-            lanternCell?.imageView.kf.setImage(with: URL.init(string: url), placeholder: placeholder)
+            lanternCell?.imageView.kf.setImage(with: URL.init(string: url), placeholder: placeholder, options: [.targetCache(ChatMediaCache)])
         }
         lantern.transitionAnimator = LanternZoomAnimator(previousView: { index -> UIView? in
             return imageView
@@ -452,9 +452,9 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
                     }) { (isSuccess: Bool, error: Error?) in
                         var showMessage = ""
                         if isSuccess {
-                            showMessage = "图片已保存"
+                            showMessage = L("图片已保存")
                         } else{
-                            showMessage = "图片保存失败"
+                            showMessage = L("图片保存失败")
                         }
                         DispatchQueue.main.async {
                             APP.shared().showToast(showMessage)
@@ -463,7 +463,7 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
             } else if let image = img {//保存普通图片到相册
                 UIImageWriteToSavedPhotosAlbum(image, self, #selector(image(image:didFinishSavingWithError:contextInfo:)), nil)
             } else {
-                self.showToast("图片保存失败")
+                self.showToast(L("图片保存失败"))
             }
         } else {// 保存视频
             guard let filePath = self.curTapVM?.localFilePath else {
@@ -479,9 +479,9 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
     @objc func video(videoPath: String, didFinishSavingWithError error: NSError, contextInfo info: AnyObject) {
         var showMessage = ""
         if error.code != 0 {
-            showMessage = "视频保存失败"
+            showMessage = L("视频保存失败")
         } else {
-            showMessage = "视频已保存"
+            showMessage = L("视频已保存")
         }
         DispatchQueue.main.async {
             APP.shared().showToast(showMessage)
@@ -492,9 +492,9 @@ class FZMFileViewController: UIViewController, ViewControllerProtocol {
     @objc func image(image: UIImage, didFinishSavingWithError error: NSError?, contextInfo: AnyObject) {
         var showMessage = ""
         if error != nil{
-            showMessage = "图片保存失败"
+            showMessage = L("图片保存失败")
         }else{
-            showMessage = "图片已保存"
+            showMessage = L("图片已保存")
 
         }
         DispatchQueue.main.async {

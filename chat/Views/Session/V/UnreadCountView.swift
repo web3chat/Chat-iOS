@@ -2,7 +2,7 @@
 //  UnreadCountLabel.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/11.
+//  Created by fzm on 2021/1/11.
 //
 
 import UIKit
@@ -47,15 +47,26 @@ class UnreadCountView: UILabel {
             return
         }
         self.isHidden = false
+        // ⚠️ 不要再在这里设 frame：红点的尺寸是 SnapKit 约束控制的（见
+        //    `SessionCollectionViewCell`），frame 会被下一帧布局覆盖，改了也无效。
         if isMuteNotification {
             self.text = ""
-            self.frame = CGRect.init(x: self.frame.minX, y: self.frame.minY, width: 10, height: 10)
             self.layer.cornerRadius = 5
         } else {
-            self.text = count > 99 ? "..." : "\(count)"
-            self.frame = CGRect.init(x: self.frame.minX, y: self.frame.minY, width: 16, height: 16)
+            // 超过 99 显示 `99+`（原来写死成 `"..."`，用户看到的就是两个省略号）
+            self.text = count > 99 ? "99+" : "\(count)"
             self.layer.cornerRadius = 8
         }
     }
-    
+
+    /// 红点需要的宽度（供 cell 的约束用）。
+    /// 1~2 位数固定 16；`99+` 比 16 宽，不跟着放宽会被 UIKit 截成省略号。
+    var fittedWidth: CGFloat {
+        guard !self.isMuteNotification else { return 10 }
+        guard let text = self.text, !text.isEmpty else { return 16 }
+        let font = self.font ?? UIFont.systemFont(ofSize: 11)
+        let textWidth = ceil((text as NSString).size(withAttributes: [.font: font]).width)
+        return max(16, textWidth + 3)
+    }
+
 }

@@ -2,7 +2,7 @@
 //  Color.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/4.
+//  Created by fzm on 2021/1/4.
 //
 
 import Foundation
@@ -12,6 +12,17 @@ import SwifterSwift
 let Color_Theme_Light = UIColor.init(hexString: "#32B2F7", transparency: 0.1)!// 0.1透明度的主题色 用户文字背景
 
 let Color_Theme = #colorLiteral(red: 0.1960784314, green: 0.6980392157, blue: 0.968627451, alpha: 1)    // 主题色，用于突出文字、按钮
+
+/// 身份标签（我 / 公众号）背景：比主题色深一档，配白字才压得住
+/// （广场帖子 / 作者页 / 评论 / 我的信息 / 分享图共用同一套样式）
+let Color_Identity_Tag = UIColor.init(hex: 0x0E86CE)
+
+/// 「官方号」身份标签背景（**只有平台官方号那一个** `square-official` 用）：
+/// 比金标 `Color_Gold` 更亮更饱和，昵称后更醒目；认证公众号的「公众号」标签仍用 `Color_Identity_Tag`
+let Color_Official_Tag = UIColor.init(hex: 0xFF9500)
+
+/// 金标（运营授予的公众号认证）：广场帖子 / 作者页 / 金标目录墙共用
+let Color_Gold = UIColor.init(hex: 0xF5A623)
 
 let Color_Auxiliary = #colorLiteral(red: 0.9176470588, green: 0.9647058824, blue: 1, alpha: 1)   // 辅助色，用于模块背景、按钮
 

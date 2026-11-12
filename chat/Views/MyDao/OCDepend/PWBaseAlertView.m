@@ -2,8 +2,8 @@
 //  PWBaseAlertView.m
 //  PWallet
 //
-//  Created by 陈健 on 2018/8/15.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Created by fzm on 2018/8/15.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "PWBaseAlertView.h"

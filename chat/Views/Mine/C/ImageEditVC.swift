@@ -102,7 +102,7 @@ class ImageEditVC: UIViewController, ViewControllerProtocol, UIScrollViewDelegat
         }
         
         let okBtn = UIButton.init(type: .custom)
-        okBtn.setTitle("确定", for: .normal)
+        okBtn.setTitle(L("确定"), for: .normal)
         okBtn.setTitleColor(.white, for: .normal)
         okBtn.titleLabel?.font = .regularFont(16)
         okBtn.addTarget(self, action: #selector(clickOkBtn), for: .touchUpInside)

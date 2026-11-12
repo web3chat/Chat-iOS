@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by fzm on 2021/4/16.
-//  Copyright © 2021 陈健. All rights reserved.
+//  Copyright © 2021 fzm. All rights reserved.
 //
 
 #import "PWScanSuccessAlertView.h"

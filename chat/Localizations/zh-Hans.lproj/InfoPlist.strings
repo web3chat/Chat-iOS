@@ -1,0 +1,16 @@
+/*
+ InfoPlist.strings（简体中文）
+ ⚠️ 文件名必须是 InfoPlist.strings —— iOS 只认这个名字。
+ ⚠️ key 必须是 Info.plist 里的「键名」（NSCameraUsageDescription …），不是提示文案本身。
+ ⚠️ 权限弹窗的语言 = 系统/App 语言（设置 → 谈信开源 → 语言），
+    App 内那个语言切换（UserDefaults "AppSelectedLanguage"）影响不到系统弹窗。
+ 本文件的值与 chat/Info.plist 里的中文一字不差。
+*/
+"NSCameraUsageDescription" = "“谈信开源”想访问您的相机,以便您能正常使用扫一扫,拍摄照片并发送和上传";
+"NSMicrophoneUsageDescription" = "“谈信开源”想访问您的麦克风,以便您正常使用发送语音、语音房通话等功能";
+"NSLocalNetworkUsageDescription" = "“谈信开源”需要访问本地网络,以便您能正常使用同一网络下的语音房通话等服务";
+"NSLocationWhenInUseUsageDescription" = "“谈信开源”需要使用位置,以便您正常使用定位、地图等服务";
+"NSPhotoLibraryUsageDescription" = "“谈信开源”需要访问您的相册,以便您正常使用扫一扫、图片上传、保存等服务";
+"NSPhotoLibraryAddUsageDescription" = "“谈信开源”需要访问您的相册,以便您正常使用扫一扫、图片上传、保存等服务";
+"NSFaceIDUsageDescription" = "“谈信开源”需要使用面容 ID 验证你的身份，用于替代输入密聊密码（绑定信息只保存在本机）";
+"NSSpeechRecognitionUsageDescription" = "“谈信开源”需要使用语音识别，把您收到的语音消息转成文字（只在本机识别，音频不会上传）";

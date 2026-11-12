@@ -78,20 +78,29 @@
          </EnvironmentVariable>
       </EnvironmentVariables>
       <AdditionalOptions>
-         <AdditionalOption
-            key = "MallocStackLogging"
-            value = ""
-            isEnabled = "YES">
-         </AdditionalOption>
+         <!-- 这三个都是本地 Run 的诊断开关，会明显拖慢真机调试，而且会改变内存行为：
+              MallocStackLogging 记录每次 malloc 的调用栈；NSZombieEnabled 会延迟释放对象
+              （内存涨、且崩溃/野指针行为与线上不一致，容易误判）。
+              需要排查内存问题时可在 Xcode：Edit Scheme → Run → Diagnostics 里临时勾回。 -->
          <AdditionalOption
             key = "PrefersMallocStackLoggingLite"
             value = ""
-            isEnabled = "YES">
+            isEnabled = "NO">
+         </AdditionalOption>
+         <AdditionalOption
+            key = "MallocStackLogging"
+            value = ""
+            isEnabled = "NO">
+         </AdditionalOption>
+         <AdditionalOption
+            key = "NSZombieEnabled"
+            value = "YES"
+            isEnabled = "NO">
          </AdditionalOption>
       </AdditionalOptions>
    </LaunchAction>
    <ProfileAction
-      buildConfiguration = "Release"
+      buildConfiguration = "Debug"
       shouldUseLaunchSchemeArgsEnv = "YES"
       savedToolIdentifier = ""
       useCustomWorkingDirectory = "NO"

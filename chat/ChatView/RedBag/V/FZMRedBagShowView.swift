@@ -2,7 +2,7 @@
 //  IMRedBagShowView.swift
 //  IM_SocketIO_Demo
 //
-//  Created by 吴文拼 on 2018/7/11.
+//  Created by fzm on 2018/7/11.
 //  Copyright © 2018年 Wang. All rights reserved.
 //
 
@@ -46,14 +46,14 @@ class FZMRedBagShowView: UIView {
     lazy var pastView: UIView = {
        let v = UIView.init()
         v.backgroundColor = UIColor.init(hex: 0xE14D5C)
-        let lab = UILabel.getLab(font: UIFont.boldFont(30), textColor: UIColor.init(hex: 0xFBDA30), textAlignment: .center, text: "红包已过期")
+        let lab = UILabel.getLab(font: UIFont.boldFont(30), textColor: UIColor.init(hex: 0xFBDA30), textAlignment: .center, text: L("红包已过期"))
         v.addSubview(lab)
         lab.snp.makeConstraints({ (m) in
             m.top.equalToSuperview().offset(103)
             m.centerX.equalToSuperview()
             m.height.equalTo(30)
         })
-        let lab2 = UILabel.getLab(font: UIFont.regularFont(17), textColor: UIColor.init(hex: 0xFBDA30), textAlignment: .center, text: "超过24小时未领取的红包将会\n被退回至原账户")
+        let lab2 = UILabel.getLab(font: UIFont.regularFont(17), textColor: UIColor.init(hex: 0xFBDA30), textAlignment: .center, text: L("超过24小时未领取的红包将会\n被退回至原账户"))
         lab2.numberOfLines = 0
         v.addSubview(lab2)
         lab2.snp.makeConstraints({ (m) in
@@ -78,7 +78,7 @@ class FZMRedBagShowView: UIView {
             m.size.equalTo(CGSize.init(width: 9, height: 16))
         })
         let backTitleBtn = UIButton(type: UIButton.ButtonType.custom)
-        backTitleBtn.setAttributedTitle(NSAttributedString.init(string: "打开红包", attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
+        backTitleBtn.setAttributedTitle(NSAttributedString.init(string: L("打开红包"), attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
         backTitleBtn.addTarget(self, action: #selector(backRedBagBtnClick), for: UIControl.Event.touchUpInside)
         backTitleBtn.enlargeClickEdge( 20, 20, 20, 20)
         view.addSubview(backTitleBtn)
@@ -111,7 +111,7 @@ class FZMRedBagShowView: UIView {
     //查看分享按钮
     lazy var shareBtn : UIButton = {
         let btn = UIButton(type: .custom)
-        btn.setAttributedTitle(NSAttributedString.init(string: "查看/分享红包二维码", attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
+        btn.setAttributedTitle(NSAttributedString.init(string: L("查看/分享红包二维码"), attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
         btn.addTarget(self, action: #selector(shareBtnClick), for: .touchUpInside)
         return btn
     }()
@@ -120,7 +120,7 @@ class FZMRedBagShowView: UIView {
         let imageView = UIImageView(image: UIImage(named:"open_bag_receiveall"))
         imageView.isUserInteractionEnabled = true
         let btn = UIButton(type: .custom)
-        btn.setAttributedTitle(NSAttributedString.init(string: "查看领取详情", attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
+        btn.setAttributedTitle(NSAttributedString.init(string: L("查看领取详情"), attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
         btn.addTarget(self, action: #selector(detailBtnClick), for: .touchUpInside)
         imageView.addSubview(btn)
         btn.snp.makeConstraints({ (m) in
@@ -174,7 +174,7 @@ class FZMRedBagShowView: UIView {
             m.top.equalTo(headImageView.snp.bottom).offset(10)
             m.height.equalTo(17)
         }
-        let alertLab = UILabel.getLab(font: UIFont.regularFont(14), textColor:UIColor.white, textAlignment: NSTextAlignment.center, text: "发了一个\(self.packet.coinname ?? "")红包")
+        let alertLab = UILabel.getLab(font: UIFont.regularFont(14), textColor:UIColor.white, textAlignment: NSTextAlignment.center, text: String(format: L("发了一个%@红包"), self.packet.coinname ?? ""))
         redBagView.addSubview(alertLab)
         alertLab.snp.makeConstraints { (m) in
             m.centerX.equalToSuperview()
@@ -196,7 +196,7 @@ class FZMRedBagShowView: UIView {
                 m.top.equalTo(alertLab.snp.bottom).offset(30)
                 m.size.equalTo(CGSize.init(width: 238, height: 61))
             }
-            shareBtn.setAttributedTitle(NSAttributedString.init(string: "红包二维码", attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
+            shareBtn.setAttributedTitle(NSAttributedString.init(string: L("红包二维码"), attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
             redBagView.addSubview(shareBtn)
             shareBtn.snp.makeConstraints { (m) in
                 m.left.equalToSuperview().offset(18)
@@ -204,7 +204,7 @@ class FZMRedBagShowView: UIView {
                 m.size.equalTo(CGSize.init(width: 80, height: 20))
             }
             let detailBtn = UIButton(type: UIButton.ButtonType.custom)
-            detailBtn.setAttributedTitle(NSAttributedString.init(string: "领取详情", attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
+            detailBtn.setAttributedTitle(NSAttributedString.init(string: L("领取详情"), attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(15)]), for: UIControl.State.normal)
             detailBtn.addTarget(self, action: #selector(detailBtnClick), for: .touchUpInside)
             redBagView.addSubview(detailBtn)
             detailBtn.snp.makeConstraints { (m) in
@@ -249,7 +249,7 @@ class FZMRedBagShowView: UIView {
             m.top.equalToSuperview().offset(19)
             m.size.equalTo(CGSize.init(width: 150, height: 150))
         }
-        let pasteLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: FZM_BlackWordColor, textAlignment: NSTextAlignment.center, text: "点击复制红包链接")
+        let pasteLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: FZM_BlackWordColor, textAlignment: NSTextAlignment.center, text: L("点击复制红包链接"))
         codeView.addSubview(pasteLab)
         pasteLab.snp.makeConstraints { (m) in
             m.centerX.equalToSuperview()

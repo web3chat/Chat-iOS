@@ -2,7 +2,7 @@
 //  IMRedBagShareView.swift
 //  IM_SocketIO_Demo
 //
-//  Created by 吴文拼 on 2018/7/12.
+//  Created by fzm on 2018/7/12.
 //  Copyright © 2018年 Wang. All rights reserved.
 //
 
@@ -49,7 +49,7 @@ class FZMRedBagShareView: UIView {
             m.top.equalToSuperview().offset(30)
             m.height.equalTo(20)
         }
-        let desLab = UILabel.getLab(font: UIFont.regularFont(12), textColor: UIColor.white, textAlignment: NSTextAlignment.center, text: "未领取红包将于24小时后退回账户")
+        let desLab = UILabel.getLab(font: UIFont.regularFont(12), textColor: UIColor.white, textAlignment: NSTextAlignment.center, text: L("未领取红包将于24小时后退回账户"))
         centerView.addSubview(desLab)
         desLab.snp.makeConstraints { (m) in
             m.centerX.equalToSuperview()
@@ -74,7 +74,7 @@ class FZMRedBagShareView: UIView {
             m.top.equalToSuperview().offset(19)
             m.size.equalTo(CGSize.init(width: 146, height: 146))
         }
-        let alertLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: FZM_BlackWordColor, textAlignment: NSTextAlignment.center, text: "点击复制红包链接")
+        let alertLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: FZM_BlackWordColor, textAlignment: NSTextAlignment.center, text: L("点击复制红包链接"))
         codeView.addSubview(alertLab)
         alertLab.snp.makeConstraints { (m) in
             m.centerX.equalToSuperview()

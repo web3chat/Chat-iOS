@@ -2,8 +2,8 @@
 //  FZMGroupMemberListView.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/30.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/30.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -68,7 +68,7 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
         
         let cancelBtn = UIButton.init(type: .custom)
         cancelBtn.enlargeClickEdge(10, 10, 10, 15)
-        cancelBtn.setTitle("取消", for: .normal)
+        cancelBtn.setTitle(L("取消"), for: .normal)
         cancelBtn.setTitleColor(Color_Theme, for: .normal)
         cancelBtn.titleLabel?.font = UIFont.boldFont(16)
         cancelBtn.addTarget(self, action: #selector(hideSearchView), for: .touchUpInside)
@@ -76,7 +76,7 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
         cancelBtn.snp.makeConstraints({ (m) in
             m.centerY.equalTo(circleView)
             m.right.equalToSuperview().offset(-15)
-            m.size.equalTo(CGSize(width: 40, height: 25))
+            m.size.equalTo(CGSize(width: LanguageManager.shared.isChinese ? 40 : 50, height: 25))
         })
         
         let imageV = UIImageView(image: #imageLiteral(resourceName: "tool_search").withRenderingMode(.alwaysTemplate))
@@ -100,7 +100,7 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
         input.textAlignment = .left
         input.font = UIFont.regularFont(16)
         input.textColor = Color_24374E
-        input.attributedPlaceholder = NSAttributedString(string: "搜索群成员", attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("搜索群成员"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])
         input.returnKeyType = .search
         input.addTarget(self, action: #selector(textFiledEditChanged(_:)), for: .editingChanged)
         return input
@@ -119,7 +119,7 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
         let v = UIView.init()
         v.isHidden = true
         v.backgroundColor = Color_FAFBFC
-        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: "没有匹配的对象", btnTitle: nil, clickBlock: nil)
+        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: L("没有匹配的对象"), btnTitle: nil, clickBlock: nil)
         v.addSubview(imgView)
         imgView.snp.makeConstraints({ (m) in
             m.top.equalToSuperview().offset(65)
@@ -160,7 +160,7 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
         super.viewDidLoad()
         
         self.view.backgroundColor = .white
-        self.navigationItem.title = "群成员"
+        self.navigationItem.title = L("群成员")
         if fromTag == 1{ // 专属红包过来的
             self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "tool_search"), style: .plain, target: self, action: #selector(showSearchView))
         }else {
@@ -243,18 +243,18 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
 //            self.navigationController?.pushViewController(vc, animated: true)
         }
         if let person = group.person, person.memberType == 2 {
-            let view = FZMMenuView(with: [FZMMenuItem(title: "添加新成员", block: {
+            let view = FZMMenuView(with: [FZMMenuItem(title: L("添加新成员"), block: {
                 addBlock()
-            }),FZMMenuItem(title: "删除成员", block: {
+            }),FZMMenuItem(title: L("删除成员"), block: {
                 deleteBlock()
-            }),FZMMenuItem(title: "设置管理员", block: {
+            }),FZMMenuItem(title: L("设置管理员"), block: {
                 managerBlock()
             })])
             view.show(in: CGPoint(x: k_ScreenWidth-15, y: k_StatusNavigationBarHeight))
         }else if let person = group.person, person.memberType == 1 {
-            let view = FZMMenuView(with: [FZMMenuItem(title: "添加新成员", block: {
+            let view = FZMMenuView(with: [FZMMenuItem(title: L("添加新成员"), block: {
                 addBlock()
-            }),FZMMenuItem(title: "删除成员", block: {
+            }),FZMMenuItem(title: L("删除成员"), block: {
                 deleteBlock()
             })])
             view.show(in: CGPoint(x: k_ScreenWidth-15, y: k_StatusNavigationBarHeight))
@@ -307,7 +307,7 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("获取群成员列表失败")
+            strongSelf.showToast(L("获取群成员列表失败"))
             strongSelf.refreshMembersUserInfoRequest()
         }
     }
@@ -377,6 +377,15 @@ class FZMGroupMemberListVC: UIViewController, ViewControllerProtocol {
         self.memberListView.sectionIndexView(items: items)
         self.memberListView.reloadData()
     }
+
+    /// 供子类（如专属红包选人页的常驻搜索框）复用的搜索入口。
+    /// ⚠️ 必须声明在**类主体**里：extension 中的非 @objc 方法不能被子类 override
+    /// （否则报 Non-'@objc' instance method ... declared in extension ... cannot be overridden）。
+    /// ⚠️ 也不直接开放 `search(_:)`：子类 FZMGroupCtrlMemberVC 自己也声明了同名的 private search，
+    /// 基类方法一旦变成 internal 就会与子类同名方法撞车（Ambiguous use of 'search'）。
+    func searchMembers(with text: String) {
+        self.search(text)
+    }
 }
 
 extension FZMGroupMemberListVC: UITableViewDelegate, UITableViewDataSource {
@@ -391,9 +400,9 @@ extension FZMGroupMemberListVC: UITableViewDelegate, UITableViewDataSource {
         let array = model.value
         var title = ""
         if !self.isSearch{
-            title = section == 0 ? "群主、管理员(\(array.count)人)" : "\(model.title)(\(array.count)人)"
+            title = section == 0 ?  L("群主、管理员(")+"\(array.count)"+L("人)") : "\(model.title)(\(array.count)"+L("人)")
         }else{
-            title = "\(model.title)(\(array.count)人)"
+            title = "\(model.title)(\(array.count)"+L("人)")
         }
         let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 12), textColor: Color_8A97A5, textAlignment: .left, text: "       " + title)
         lab.backgroundColor = Color_FFFFFF
@@ -455,13 +464,16 @@ extension FZMGroupMemberListVC {
             }
         }
     }
-    
+
     private func search(_ text: String) {
         if text.isEmpty {
             self.noDataView.isHidden = true
             self.tapControl.isHidden = false
             self.searchString = nil
+            self.isSearch = false
             self.memberList = self.dealtList
+            // 清空搜索时要把列表刷回完整成员列表（常驻搜索框删空文字依赖这里）
+            self.reloadData()
             return
         }
         

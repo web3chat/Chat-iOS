@@ -2,7 +2,7 @@
 //  FZMFullTextSearchCell.swift
 //  IMSDK
 //
-//  Created by 陈健 on 2019/9/20.
+//  Created by fzm on 2019/9/20.
 //
 
 import UIKit
@@ -133,7 +133,7 @@ extension FZMFullTextSearchCell {
                         self.nameLab.text = name
                         var desString = ""
                         if data.name.lowercased().contains(searchString.lowercased()) {
-                            desString = "昵称: " + data.name
+                            desString = L("昵称: ") + data.name
                         }
                         guard desString != "" else { return }
                         self.desLab.snp.updateConstraints { (m) in

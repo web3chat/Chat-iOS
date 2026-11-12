@@ -1,0 +1,12 @@
+/*
+ InfoPlist.strings (繁體中文 - 香港)
+ 鍵名必須是 Info.plist 的鍵；權限彈窗跟隨系統語言，與 App 內語言切換無關。
+*/
+"NSCameraUsageDescription" = "「談信」需要取用你的相機，以便掃描二維碼、拍攝並傳送相片。";
+"NSMicrophoneUsageDescription" = "「談信」需要取用你的麥克風，以便傳送語音訊息及使用語音通話。";
+"NSLocalNetworkUsageDescription" = "「談信」需要取用你的本地網絡，以便使用語音通話及同一網絡上的其他服務。";
+"NSLocationWhenInUseUsageDescription" = "「談信」需要使用你的位置，以便使用定位、地圖及相關服務。";
+"NSPhotoLibraryUsageDescription" = "「談信」需要取用你的相片，以便掃描二維碼、上載及儲存相片。";
+"NSPhotoLibraryAddUsageDescription" = "「談信」需要取用你的相片，以便掃描二維碼、上載及儲存相片。";
+"NSFaceIDUsageDescription" = "「談信」需要使用 Face ID 驗證身份，以代替輸入密聊密碼（綁定資料只儲存在本裝置）。";
+"NSSpeechRecognitionUsageDescription" = "「談信」需要使用語音識別，把您收到的語音訊息轉成文字（只在本機識別，音訊不會上傳）";

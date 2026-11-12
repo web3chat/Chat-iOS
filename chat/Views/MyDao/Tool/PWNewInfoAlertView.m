@@ -2,12 +2,14 @@
 //  PWNewInfoAlertView.m
 //  PWallet
 //
-//  Created by 陈健 on 2018/11/15.
-//  Copyright © 2018 陈健. All rights reserved.
+//  Created by fzm on 2018/11/15.
+//  Copyright © 2018 fzm. All rights reserved.
 //
 
 #import "PWNewInfoAlertView.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWNewInfoAlertView()
 
 @end
@@ -95,7 +97,7 @@
 
     UILabel *noticeLabel = [[UILabel alloc]init];
     [whiteView addSubview:noticeLabel];
-    noticeLabel.text = @"二维码";
+    noticeLabel.text = L(@"二维码");
     noticeLabel.font = [UIFont boldSystemFontOfSize:14];
     noticeLabel.textColor = SGColorRGBA(51, 54, 73, 1);
     [noticeLabel mas_makeConstraints:^(MASConstraintMaker *make) {

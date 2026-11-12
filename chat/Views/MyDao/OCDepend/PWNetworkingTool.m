@@ -2,8 +2,8 @@
 //  PWNetworkingTool.m
 //  PWallet
 //
-//  Created by 陈健 on 2018/5/16.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Created by fzm on 2018/5/16.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "PWNetworkingTool.h"
@@ -11,6 +11,13 @@
 #import "PWSessionManagerSingleton.h"
 #import "NSError+PWError.h"
 #import "PWDataBaseManager.h"
+
+// 只在 Debug 打印请求/响应；Release 不再把 URL、参数、响应体写进系统日志。
+#if DEBUG
+#define PWNetLog(fmt, ...) NSLog(fmt, ##__VA_ARGS__)
+#else
+#define PWNetLog(fmt, ...) do {} while (0)
+#endif
 
 
 @implementation PWNetworkingTool
@@ -20,8 +27,8 @@
              successBlock:(requestSuccessBlock)successBlock
               failureBlock:(requestFailureBlock)failureBlock {
     AFHTTPSessionManager *manager = [PWSessionManagerSingleton sharedSessionManager];
-    NSLog(@"PWNetworkingTool请求URL:%@",url);
-    NSLog(@"PWNetworkingTool请求参数:%@",parameters);
+    PWNetLog(@"PWNetworkingTool请求URL:%@",url);
+    PWNetLog(@"PWNetworkingTool请求参数:%@",parameters);
     
     [manager GET:url parameters:parameters headers:nil progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
         [self requestResponseObject:responseObject successBlock:successBlock failureBlock:failureBlock];
@@ -37,8 +44,8 @@
                   parameters:(id)parameters
               successBlock:(requestSuccessBlock)successBlock
                failureBlock:(requestFailureBlock)failureBlock {
-    NSLog(@"PWNetworkingTool请求URL:%@",url);
-    NSLog(@"PWNetworkingTool请求参数:%@",parameters);
+    PWNetLog(@"PWNetworkingTool请求URL:%@",url);
+    PWNetLog(@"PWNetworkingTool请求参数:%@",parameters);
     AFHTTPSessionManager *manager = [PWSessionManagerSingleton sharedSessionManager];
    
     [manager POST:url parameters:parameters headers:nil progress:nil success:^(NSURLSessionDataTask * _Nonnull task, id  _Nullable responseObject) {
@@ -52,8 +59,8 @@
 
 + (void)postRequestWithUrl:(NSString *)url parameters:(NSDictionary *)parameters data:(NSData *)fileData FieldName:(NSString *)fieldName FileName:(NSString *)fileName MimeType:(NSString *)mimeType successBlock:(requestSuccessBlock)successBlock failureBlock:(requestFailureBlock)failureBlock
 {
-    NSLog(@"PWNetworkingTool请求URL:%@",url);
-    NSLog(@"PWNetworkingTool请求参数:%@",parameters);
+    PWNetLog(@"PWNetworkingTool请求URL:%@",url);
+    PWNetLog(@"PWNetworkingTool请求参数:%@",parameters);
     AFHTTPSessionManager *manager = [PWSessionManagerSingleton sharedSessionManager];
     [manager.requestSerializer setValue:@"coin_wallet" forHTTPHeaderField:@"FZM-Ca-AppKey"];
     
@@ -86,7 +93,7 @@
                   failureBlock:(requestFailureBlock)failureBlock {
     
      responseObject = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingMutableLeaves error:nil];
-    NSLog(@"PWNetworkingTool请求返回信息%@",responseObject);
+    PWNetLog(@"PWNetworkingTool请求返回信息%@",responseObject);
     if (responseObject[@"code"] != nil) {
         if ([responseObject[@"code"] integerValue] == 0 || [responseObject[@"code"] integerValue] == 200) {
             if (successBlock) {

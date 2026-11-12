@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/8/15.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "GameGoFunction.h"
@@ -34,10 +34,27 @@
 {
     NSString *fromAddress = @"";
     NSArray *coinArray = [[PWDataBaseManager shared] queryCoinArrayBasedOnSelectedWalletID];
-    for (LocalCoin *coin in coinArray) {
-        if ([coin.coin_type isEqualToString:chain]) {
-            fromAddress = coin.coin_address;
-            break;
+    /// BitYuan 主网 Web3 与 `PWUtils getEthBtyAddress` 一致：原生币为 coin_type=BTY、coin_chain=ETH（EVM）
+    if ([chain isEqualToString:@"BTY"]) {
+        for (LocalCoin *coin in coinArray) {
+            if ([coin.coin_type isEqualToString:@"BTY"] && [coin.coin_chain isEqualToString:@"ETH"]) {
+                fromAddress = coin.coin_address;
+                break;
+            }
+        }
+    } else if ([chain isEqualToString:@"ETH"]) {
+        for (LocalCoin *coin in coinArray) {
+            if ([coin.coin_type isEqualToString:@"ETH"] && [coin.coin_chain isEqualToString:@"ETH"]) {
+                fromAddress = coin.coin_address;
+                break;
+            }
+        }
+    } else {
+        for (LocalCoin *coin in coinArray) {
+            if ([coin.coin_type isEqualToString:chain]) {
+                fromAddress = coin.coin_address;
+                break;
+            }
         }
     }
     return fromAddress == nil ? @"" : fromAddress;

@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/21.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "CommonViewController.h"
@@ -35,12 +35,26 @@
     if (self.navigationController.navigationBar.hidden) {
         self.showMaskLine = false;
     }
+    [self notifyFloatingAIVisibilityShouldUpdate];
+}
+
+- (void)viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    [self notifyFloatingAIVisibilityShouldUpdate];
 }
 
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
-   
+    [self notifyFloatingAIVisibilityShouldUpdate];
+}
+
+/// 「资产」「发现」这两个 Tab 里的页面都是本类（或其子类），它们的 push/pop **不会**走 Swift 侧的
+/// `ViewControllerIntercepter`（那不是它们的导航代理）⇒ 在这里补一次通知，
+/// 让 TabBar 上的 AI 客服悬浮球在进出二级页面时重新判断显隐。
+/// ⚠️ 通知名必须与 Swift 侧 `FZM_Notify_FloatingAIVisibilityShouldUpdate`（chat/BusinessTool/Common/CommonTools.swift）**完全一致**。
+- (void)notifyFloatingAIVisibilityShouldUpdate {
+    [[NSNotificationCenter defaultCenter] postNotificationName:@"FZM_Notify_FloatingAIVisibilityShouldUpdate" object:nil];
 }
 
 
@@ -58,24 +72,15 @@
 
 - (UIBarButtonItem *)rt_customBackItemWithTarget:(id)target
                                           action:(SEL)action {
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-    [button setImage:[UIImage imageNamed:@"backArrow"] forState:UIControlStateNormal];
-    
-    if (@available(iOS 11.0, *)) {
-        
-    }else{
-        button.imageEdgeInsets = UIEdgeInsetsMake(0,10, 0, -10);
-    }
-
-    //添加空格字符串 增加点击面积
-    [button setTitle:@"    " forState:UIControlStateNormal];
-    button.titleLabel.font = [UIFont systemFontOfSize:44];
-    [button sizeToFit];
-    [button addTarget:self
-               action:@selector(backAction)
-     forControlEvents:UIControlEventTouchUpInside];
-    
-    return [[UIBarButtonItem alloc] initWithCustomView:button];
+    // 使用系统 UIBarButtonItem，左内边距由系统给。
+    // ⚠️ 旧写法是 initWithCustomView:（按钮里塞 4 个空格把图标顶到最左边），
+    //    在 iOS 26/27 上还会被套上「液态玻璃」胶囊，并且整体偏左。
+    UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"nav_back"]
+                                                             style:UIBarButtonItemStylePlain
+                                                            target:target
+                                                            action:action];
+    item.tintColor = SGColorFromRGB(0x333649);
+    return item;
 }
 
 - (void)backAction{
@@ -93,7 +98,10 @@
 - (void)setNavigationBar
 {
     self.navigationController.navigationBar.translucent = NO;
-    [self.navigationController.navigationBar setBarTintColor:[UIColor whiteColor]];
+    // ⚠️ 这里**不要**再写死白色 barTintColor：iOS 26/27 上它会把 appearance.backgroundColor 盖掉，
+    //    表现为「状态栏一条是页面要的颜色，导航栏本体却是白色」。背景色统一交给各页面的
+    //    UINavigationBarAppearance 控制。
+    [self.navigationController.navigationBar setBarTintColor:nil];
     //去掉分割线
     self.navBarHairlineImageView = [self findHairlineImageViewUnder:self.navigationController.navigationBar];
     self.navBarHairlineImageView.backgroundColor =  [UIColor whiteColor]; //CMColorFromRGB(0xD2D8E1);
@@ -108,7 +116,8 @@
     }
     
     for (UIView *subview in view.subviews) {
-        subview.backgroundColor = [UIColor whiteColor];
+        // 只找高度 <= 1 的分割线，**不要**像老代码那样把每个子视图都刷成白色
+        // （那会把导航栏背景视图涂白，iOS 26 上就出现「上边一条颜色 + 整条白底」）。
         UIImageView *imageView = [self findHairlineImageViewUnder:subview];
         
         if (imageView) {

@@ -2,7 +2,7 @@
 //  SetServerVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/2/25.
+//  Created by fzm on 2021/2/25.
 //
 
 import UIKit
@@ -19,7 +19,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var nameTextField: UITextField = {
         let input = UITextField()
         input.font = UIFont.systemFont(ofSize: 16)
-        input.attributedPlaceholder = NSAttributedString(string: "请输入服务器名称", attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("请输入服务器名称"), attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
         input.textColor = Color_24374E
         input.backgroundColor = Color_F6F7F8
         if case .edit(let server) = self.type {
@@ -34,7 +34,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
         let v = UIView.init()
         v.backgroundColor = Color_F6F7F8
         v.layer.cornerRadius = 5
-        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: "服务器名称")
+        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: L("服务器名称"))
         v.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -58,7 +58,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var valueTextField: UITextField = {
         let input = UITextField()
         input.font = UIFont.systemFont(ofSize: 16)
-        input.attributedPlaceholder = NSAttributedString(string: "请输入域名", attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("请输入域名"), attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
         input.textColor = Color_24374E
         input.backgroundColor = Color_F6F7F8
         if case .edit(let server) = self.type {
@@ -73,7 +73,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
         let v = UIView.init()
         v.backgroundColor = Color_F6F7F8
         v.layer.cornerRadius = 5
-        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: "域名")
+        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: L("域名"))
         v.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -110,7 +110,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var deleteBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
         btn.frame = CGRect.init(x: 0, y: 0, width: 50, height: 30)
-        btn.setAttributedTitle(NSAttributedString(string: "删除", attributes: [.foregroundColor: Color_DD5F5F,.font:UIFont.systemFont(ofSize: 14)]), for: .normal)
+        btn.setAttributedTitle(NSAttributedString(string: L("删除"), attributes: [.foregroundColor: Color_DD5F5F,.font:UIFont.systemFont(ofSize: 14)]), for: .normal)
         btn.layer.cornerRadius = 15
         btn.layer.masksToBounds = true
         btn.isEnabled = false
@@ -120,7 +120,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     
     private lazy var saveBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
-        btn.setTitle("保存", for: .normal)
+        btn.setTitle(L("保存"), for: .normal)
         btn.setTitleColor(Color_FFFFFF, for: .normal)
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         btn.backgroundColor = Color_C8D3DE
@@ -154,7 +154,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
         v.addSubview(whiteView)
         
         
-        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 17), textColor: Color_Theme, textAlignment: .center, text: "添加记录")
+        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 17), textColor: Color_Theme, textAlignment: .center, text: L("添加记录"))
         whiteView.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.centerX.equalToSuperview()
@@ -163,7 +163,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
         }
         
         let cancelBtn = UIButton.init(type: .custom)
-        cancelBtn.setTitle("取消", for: .normal)
+        cancelBtn.setTitle(L("取消"), for: .normal)
         cancelBtn.setTitleColor(Color_8A97A5, for: .normal)
         cancelBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
         cancelBtn.addTarget(self, action: #selector(hideServerListView), for: .touchUpInside)
@@ -172,7 +172,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
         cancelBtn.snp.makeConstraints { (m) in
             m.centerY.equalTo(lab)
             m.left.equalToSuperview().offset(15)
-            m.size.equalTo(CGSize.init(width: 35, height: 20))
+            m.size.equalTo(CGSize.init(width: LanguageManager.shared.isChinese ? 35 : 50, height: 20))
         }
         
         whiteView.addSubview(self.tableView)
@@ -207,13 +207,13 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
         self.type = type
         super.init(nibName: nil, bundle: nil)
         if case .add = type {
-            self.title = "添加服务器"
+            self.title = L("添加服务器")
         } else if case .addNewIMServer = type {
-            self.title = "添加聊天服务器"
+            self.title = L("添加聊天服务器")
         } else if case .addNewBlockchain = type {
-            self.title = "添加区块链节点"
+            self.title = L("添加区块链节点")
         } else {
-            self.title = "编辑服务器"
+            self.title = L("编辑服务器")
         }
     }
     

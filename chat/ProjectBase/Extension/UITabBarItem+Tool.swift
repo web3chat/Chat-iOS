@@ -2,13 +2,16 @@
 //  UITabBarItem+Tool.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/29.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/29.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import Foundation
 import UIKit
 import SnapKit
+
+/// 只在第一次走兜底时打一行日志，避免每次未读刷新都刷屏
+private var didLogTabBadgeFallback = false
 
 extension UITabBarItem {
     
@@ -21,7 +24,18 @@ extension UITabBarItem {
                 bgView = subView
             }
         }
-        guard bgView != nil else { return }
+        // 🔴 iOS 26+（Liquid Glass TabBar）层级变了：已经找不到 `UITabBarSwappableImageView`，
+        //    原来这里直接 return ⇒ 底部导航栏的未读数彻底不显示了（用户 iOS 27 反馈）。
+        //    ⇒ 自定义 label 没地方挂时，退回系统官方的 `badgeValue`（系统角标同样能显示 99+）。
+        guard bgView != nil else {
+            let text = count > 0 ? (count > 99 ? "99+" : "\(count)") : nil
+            self.badgeValue = text
+            if !didLogTabBadgeFallback {
+                didLogTabBadgeFallback = true
+                FZMLog("TabBar 角标：找不到 UITabBarSwappableImageView（iOS 26+ 层级变了），改用系统 badgeValue\(text ?? "nil")")
+            }
+            return
+        }
         var getView : UIView?
         bgView?.subviews.forEach({ (subView) in
             if subView.tag == 200 {
@@ -53,7 +67,11 @@ extension UITabBarItem {
                 bgView = subView
             }
         }
-        guard bgView != nil else { return }
+        guard bgView != nil else {
+            // 同 `setUnreadCount`：iOS 26+ 找不到 `UITabBarSwappableImageView` 时退回系统 badgeValue
+            self.badgeValue = text.isEmpty ? nil : text
+            return
+        }
         var getView : UIView?
         bgView?.subviews.forEach({ (subView) in
             if subView.tag == 300 {

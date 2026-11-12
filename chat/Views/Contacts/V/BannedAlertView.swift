@@ -25,7 +25,7 @@ class BannedAlertView : UIView {
         v.layer.cornerRadius = 5
         
         let cancelBtn = UIButton(type: .custom)
-        cancelBtn.setAttributedTitle(NSAttributedString(string: "取消", attributes: [.font:UIFont.mediumFont(16),.foregroundColor:Color_Theme]), for: .normal)
+        cancelBtn.setAttributedTitle(NSAttributedString(string: L("取消"), attributes: [.font:UIFont.mediumFont(16),.foregroundColor:Color_Theme]), for: .normal)
         cancelBtn.addTarget(self, action: #selector(cancelClick), for: .touchUpInside)
         v.addSubview(cancelBtn)
         cancelBtn.snp.makeConstraints({ (m) in
@@ -34,7 +34,7 @@ class BannedAlertView : UIView {
             m.height.equalTo(50)
         })
         let confirmBtn = UIButton(type: .custom)
-        confirmBtn.setAttributedTitle(NSAttributedString(string: "确定", attributes: [.font:UIFont.mediumFont(16),.foregroundColor:Color_Theme]), for: .normal)
+        confirmBtn.setAttributedTitle(NSAttributedString(string: L("确定"), attributes: [.font:UIFont.mediumFont(16),.foregroundColor:Color_Theme]), for: .normal)
         confirmBtn.addTarget(self, action: #selector(confirmClick), for: .touchUpInside)
         v.addSubview(confirmBtn)
         confirmBtn.snp.makeConstraints({ (m) in
@@ -124,7 +124,12 @@ class BannedAlertView : UIView {
         return btn
     }()
     
-    let timeArr : [[String:Any]] = [["title":"永远","number": Int(k_OnedaySeconds) * 30],["title":"24小时","number":Int(k_OnedaySeconds)],["title":"10小时","number":36000],["title":"2小时","number":7200],["title":"30分钟","number":1800],["title":"10分钟","number":600],]
+    let timeArr : [[String:Any]] = [["title":L("永远"),"number": Int(k_OnedaySeconds) * 30],
+                                    ["title":L("24小时"),"number":Int(k_OnedaySeconds)],
+                                    ["title":L("10小时"),"number":36000],
+                                    ["title":L("2小时"),"number":7200],
+                                    ["title":L("30分钟"),"number":1800],
+                                    ["title":L("10分钟"),"number":600],]
     
     init(with userId: String, groupId: Int){
         self.groupId = groupId
@@ -171,7 +176,7 @@ extension BannedAlertView {
         self.showProgress(with: nil)
         GroupManager.shared().updateMemberMuteTime(serverUrl: serverUrl, groupId: groupId, muteTime: number, memberIds: [self.userId]) { _ in
             self.hideProgress()
-            self.showToast("设置成功")
+            self.showToast(L("设置成功"))
             self.completeBlock?()
             self.hide()
         } failureBlock: { (error) in
@@ -185,7 +190,7 @@ extension BannedAlertView {
         self.showProgress(with: nil)
         GroupManager.shared().updateMemberMuteTime(serverUrl: serverUrl, groupId: groupId, muteTime: 0, memberIds: [self.userId]) { _ in
             self.hideProgress()
-            self.showToast("设置成功")
+            self.showToast(L("设置成功"))
             self.cancelBlock?()
             self.hide()
         } failureBlock: { (error) in
@@ -218,16 +223,16 @@ extension BannedAlertView {
             }
             let distance = (userInfo.memberMuteTime - Date.timestamp)
             self.popAnimation(time: Double(distance)/1000,name: userInfo.contactsName)
-            timeTitleView.text = "更改禁言时间"
+            timeTitleView.text = L("更改禁言时间")
             cancelCtrlBtn.isHidden = false
-            cancelCtrlBtn.setTitle("取消禁言", for: .normal)
+            cancelCtrlBtn.setTitle(L("取消禁言"), for: .normal)
         }else{
-            let attrStr = NSMutableAttributedString(string: "确定将 ")
+            let attrStr = NSMutableAttributedString(string: L("确定将 "))
             attrStr.append(NSAttributedString(string: userInfo.contactsName, attributes: [.foregroundColor:Color_Theme]))
-            attrStr.append(NSAttributedString(string:" 禁言吗？"))
+            attrStr.append(NSAttributedString(string:L(" 禁言吗？")))
             titleView.attributedText = attrStr
             
-            timeTitleView.text = "选择禁言时间"
+            timeTitleView.text = L("选择禁言时间")
         }
         
     }
@@ -238,7 +243,7 @@ extension BannedAlertView {
             let formatter = DateFormatter.getDataformatter()
             formatter.dateFormat = "HH:mm:ss"
             let attrStr = NSMutableAttributedString(string: name, attributes: [.foregroundColor:Color_Theme])
-            attrStr.append(NSAttributedString(string: "禁言"))
+            attrStr.append(NSAttributedString(string: L("禁言")))
             FZMAnimationTool.countdown(with: titleView, fromValue: time, toValue: 0, block: { [weak self] (useTime) in
                 let time = useTime - 8 * 3600
                 let date = Date.init(timeIntervalSince1970: TimeInterval(time))
@@ -250,7 +255,7 @@ extension BannedAlertView {
             })
         }else{
             let attrStr = NSMutableAttributedString(string: name, attributes: [.foregroundColor:Color_Theme])
-            attrStr.append(NSAttributedString(string: "永远禁言"))
+            attrStr.append(NSAttributedString(string: L("永远禁言")))
             self.titleView.attributedText = attrStr
         }
     }

@@ -2,8 +2,8 @@
 //  String+Extension.swift
 //  xls
 //
-//  Created by 陈健 on 2020/8/31.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/8/31.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import Foundation
@@ -52,6 +52,7 @@ extension String {
     /// String使用下标截取字符串
     /// string[index] 例如："abcdefg"[3] // c
     subscript (i:Int)->String{
+        guard i >= 0, i < count else { return "" }
         let startIndex = self.index(self.startIndex, offsetBy: i)
         let endIndex = self.index(startIndex, offsetBy: 1)
         return String(self[startIndex..<endIndex])
@@ -60,8 +61,11 @@ extension String {
     /// string[index..<index] 例如："abcdefg"[3..<4] // d
     subscript (r: Range<Int>) -> String {
         get {
-            let startIndex = self.index(self.startIndex, offsetBy: r.lowerBound)
-            let endIndex = self.index(self.startIndex, offsetBy: r.upperBound)
+            let lower = Swift.max(0, r.lowerBound)
+            let upper = Swift.min(count, r.upperBound)
+            guard lower < upper else { return "" }
+            let startIndex = self.index(self.startIndex, offsetBy: lower)
+            let endIndex = self.index(self.startIndex, offsetBy: upper)
             return String(self[startIndex..<endIndex])
         }
     }
@@ -69,8 +73,12 @@ extension String {
     /// string[index,length] 例如："abcdefg"[3,2] // de
     subscript (index:Int , length:Int) -> String {
         get {
-            let startIndex = self.index(self.startIndex, offsetBy: index)
-            let endIndex = self.index(startIndex, offsetBy: length)
+            let start = Swift.max(0, index)
+            let len = Swift.max(0, length)
+            guard start < count else { return "" }
+            let end = Swift.min(count, start + len)
+            let startIndex = self.index(self.startIndex, offsetBy: start)
+            let endIndex = self.index(self.startIndex, offsetBy: end)
             return String(self[startIndex..<endIndex])
         }
     }
@@ -145,7 +153,7 @@ extension String {
         if dateNumber == todayNumber {
             // 上午下午待定
         } else if dateNumber == todayNumber - 1 {
-            resultDateString = "昨天" + resultDateString
+            resultDateString = L("昨天") + resultDateString
         } else {
             formatter.dateFormat = "yyyy/MM/dd"
             resultDateString = formatter.string(from: date)
@@ -293,7 +301,7 @@ extension String{
         if dateNumber == todayNumber {
             // 上午下午待定
         } else if dateNumber == todayNumber - 1 {
-            resultDateString = "昨天" + resultDateString
+            resultDateString = L("昨天") + resultDateString
         } else {
             formatter.dateFormat = "yyyy/MM/dd"
             resultDateString = formatter.string(from: date)
@@ -333,11 +341,12 @@ extension String{
         if date.isToday {
             formatter.dateFormat = "HH:mm"
         }else if date.isYesterday {
-            formatter.dateFormat = "昨天HH:mm"
+            formatter.dateFormat = "HH:mm"
+            return L("昨天") + formatter.string(from: date)
         }else if date.isTheYear {
-            formatter.dateFormat = "M月d日 HH:mm"
+            formatter.dateFormat = LanguageManager.shared.isChinese ? "M月d日 HH:mm" : "MMM d HH:mm"
         }else{
-            formatter.dateFormat = "yyyy年M月d日 HH:mm"
+            formatter.dateFormat = LanguageManager.shared.isChinese ? "yyyy年M月d日 HH:mm" : "yyyy MMM d HH:mm"
         }
         
         return formatter.string(from: date)

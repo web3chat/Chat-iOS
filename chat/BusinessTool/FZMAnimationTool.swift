@@ -2,8 +2,8 @@
 //  FZMAnimationTool.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/9/19.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/9/19.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -17,13 +17,19 @@ class FZMAnimationTool: NSObject {
         let prop = POPAnimatableProperty.property(withName: "CountDown") {(property) in
             guard let property = property else { return }
             property.writeBlock = { (obj, value) in
-                let number = value![0]
+                // pop 的 value 指针可能为空：强解包会崩
+                guard let value = value else { return }
+                let number = value[0]
                 block(number)
             }
             property.threshold = 1.0
         }
+        guard let basicProperty = prop as? POPAnimatableProperty else {
+            FZMLog("倒计时动画创建失败：POPAnimatableProperty 为空")
+            return
+        }
         let basic = POPBasicAnimation()
-        basic.property = (prop as! POPAnimatableProperty)
+        basic.property = basicProperty
         basic.timingFunction = CAMediaTimingFunction.init(name: CAMediaTimingFunctionName.linear)
         basic.duration = fromValue
         basic.fromValue = fromValue

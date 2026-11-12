@@ -2,8 +2,8 @@
 //  PWDataBaseSQLCollection.h
 //  JTB
 //
-//  Created by 吴文拼 on 2018/1/17.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/1/17.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #ifndef PWDataBaseSQLCollection_h
@@ -63,6 +63,18 @@ PRIMARY KEY (coin_id) \
 'rmb_country_rate' FLOAT,\
 'lock' INTEGER,\
 PRIMARY KEY (coinprice_id) \
+)"
+
+#pragma mark  表-用户信息
+#define SQL_CREATE_USERINFO @"CREATE TABLE IF NOT EXISTS 'userinfo'(\
+'phone' VARCHAR(1000), \
+'address' VARCHAR(1000), \
+'0xaddress' VARCHAR(1000), \
+'avatarurl' VARCHAR(1000), \
+'name' VARCHAR(1000), \
+'encryptedRemembercode' VARCHAR(1000), \
+'encryptedPassword' VARCHAR(1000), \
+PRIMARY KEY (address) \
 )"
 
 

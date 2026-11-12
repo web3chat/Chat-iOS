@@ -1,0 +1,12 @@
+/*
+ InfoPlist.strings (Nederlands)
+ 键名必须是 Info.plist 的键；权限弹窗跟随系统语言，与 App 内语言切换无关。
+*/
+"NSCameraUsageDescription" = "「Tanxin」wil toegang tot je camera om QR-codes te scannen, foto's te maken en te versturen.";
+"NSMicrophoneUsageDescription" = "「Tanxin」wil toegang tot je microfoon om spraakberichten te sturen en spraakchat te gebruiken.";
+"NSLocalNetworkUsageDescription" = "「Tanxin」wil toegang tot je lokale netwerk voor spraakchat en andere diensten.";
+"NSLocationWhenInUseUsageDescription" = "「Tanxin」wil je locatie gebruiken voor locatie, kaarten en gerelateerde diensten.";
+"NSPhotoLibraryUsageDescription" = "「Tanxin」wil toegang tot je foto's om QR-codes te scannen, afbeeldingen te uploaden en foto's op te slaan.";
+"NSPhotoLibraryAddUsageDescription" = "「Tanxin」wil toegang tot je foto's om QR-codes te scannen, afbeeldingen te uploaden en foto's op te slaan.";
+"NSFaceIDUsageDescription" = "「Tanxin」gebruikt Face ID om je identiteit te verifiëren in plaats van het privéchats-wachtwoord (gegevens blijven alleen op dit apparaat).";
+"NSSpeechRecognitionUsageDescription" = "“Tanxin” heeft spraakherkenning nodig om spraakberichten om te zetten in tekst. Herkenning gebeurt op dit toestel; audio wordt nooit geüpload.";

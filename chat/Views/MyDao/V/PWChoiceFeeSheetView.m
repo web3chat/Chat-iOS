@@ -9,7 +9,9 @@
 #import "PWChoiceFeeSheetView.h"
 #import "PWChoiceFeeSheetCell.h"
 #import <JKBigInteger/JKBigInteger.h>
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWChoiceFeeSheetView()<UITableViewDelegate, UITableViewDataSource>
 {
     BOOL _selected[10000];
@@ -32,6 +34,10 @@
 @property (nonatomic, assign) NSInteger selectedInx;
 @property (nonatomic, strong) NSString *selectedGas;
 @property (nonatomic, strong) NSString *selectedGasPrice;
+/// 是否使用外部传入的档位数据（不再内部请求 gasPrice）
+@property (nonatomic, assign) BOOL useExternalDataArr;
+/// 自定义手输换算除数：GWEI 口径为 1e9（Gas × GasPrice(GWEI) ÷ 1e9）
+@property (nonatomic, assign) double customFeeDivisor;
 
 
 @end
@@ -50,6 +56,9 @@
     self = [super initWithFrame:frame];
     if (self) {
         self.backgroundColor = SGColorRGBA(0, 0, 0, .5f);
+        self.useExternalDataArr = NO;
+        // 旧逻辑：自定义按 wei 口径换算，保持原行为
+        self.customFeeDivisor = 1000000000000000000.0;
         [self initView];
         
         for (int i = 0; i < 4; i++) {
@@ -65,18 +74,63 @@
             self.isCustom = index == 3 ? YES : NO;
             self.selectedInx = index;
         }
-        self.dataArr = @[@{@"name":@"最快",
+        self.dataArr = @[@{@"name":L(@"最快"),
                            @"value":@"0.000000",
                            @"detail":@""},
-                         @{@"name":@"标准",
+                         @{@"name":L(@"标准"),
                            @"value":@"0.000000",
                            @"detail":@""},
-                         @{@"name":@"经济",
+                         @{@"name":L(@"经济"),
                            @"value":@"0.000000",
                            @"detail":@""},
-                         @{@"name":@"自定义",
+                         @{@"name":L(@"自定义"),
                            @"value":@"",
                            @"detail":@""}];
+    }
+    return self;
+}
+
+/// 外部给定档位数据（TransferBottomView 用）：不请求链上 gasPrice
+- (instancetype)initWithFrame:(CGRect)frame
+                      dataArr:(NSArray<NSDictionary *> *)dataArr
+                     gasLimit:(NSString *)gasLimit
+                selectedIndex:(NSInteger)selectedIndex {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = SGColorRGBA(0, 0, 0, .5f);
+        self.useExternalDataArr = YES;
+        // 手输 GWEI：Gas × GasPrice(GWEI) ÷ 1e9
+        self.customFeeDivisor = 1000000000.0;
+        [self initView];
+
+        for (int i = 0; i < 4; i++) {
+            _selected[i] = NO;
+        }
+        self.dataArr = [dataArr copy];
+        if (selectedIndex < 0 || selectedIndex > 3) {
+            selectedIndex = 1;
+        }
+        _selected[selectedIndex] = YES;
+        self.selectedInx = selectedIndex;
+        self.isCustom = (selectedIndex == 3);
+
+        NSDictionary *sel = (selectedIndex < self.dataArr.count) ? self.dataArr[selectedIndex] : nil;
+        NSMutableDictionary *prefill = [NSMutableDictionary dictionary];
+        if (sel != nil) {
+            [prefill addEntriesFromDictionary:sel];
+        }
+        if (gasLimit.length > 0) {
+            prefill[@"gas"] = gasLimit;
+        }
+        // 自定义的 GasPrice 默认不预填（用户手输 GWEI）；非自定义档预填该档 GasPrice
+        prefill[@"gasPrice"] = (selectedIndex != 3 && sel[@"gasPrice"] != nil) ? sel[@"gasPrice"] : @"";
+        self.selectedDict = prefill;
+
+        if (!self.isCustom) {
+            self.selectedFeeStr = sel[@"value"];
+            self.selectedGas = gasLimit;
+            self.selectedGasPrice = sel[@"gasPrice"];
+        }
     }
     return self;
 }
@@ -87,7 +141,7 @@
     [self addSubview:self.contentsView];
     [self.contentsView addSubview:self.tableView];
     [self.contentsView addSubview:self.titleLab];
-    self.titleLab.text = @"矿工费";
+    self.titleLab.text = L(@"矿工费");
     
     [self.contentsView addSubview:self.closeBtn];
     [self.contentsView addSubview:self.confirmBtn];
@@ -209,12 +263,13 @@
         self.selectedGas = self.gasTextField.text;
         self.selectedGasPrice = self.gasPriceTextField.text;
         
-        double customFee = (self.selectedGasPrice.doubleValue * self.selectedGas.doubleValue) / 1000000000.0;
-        self.selectedFeeStr = [NSString stringWithFormat:@"%.6f",customFee];
+        double divisor = self.customFeeDivisor > 0 ? self.customFeeDivisor : 1000000000000000000.0;
+        double customFee = (self.selectedGasPrice.doubleValue * self.selectedGas.doubleValue) / divisor;
+        self.selectedFeeStr = [NSString stringWithFormat:@"%.8f",customFee];
     }
-    NSDictionary *dict = @{@"value":self.selectedFeeStr,
-                           @"gas":self.selectedGas,
-                           @"gasPrice":self.selectedGasPrice,
+    NSDictionary *dict = @{@"value":self.selectedFeeStr == nil ? @"0" : self.selectedFeeStr,
+                           @"gas":self.selectedGas == nil ? @"0" : self.selectedGas,
+                           @"gasPrice":self.selectedGasPrice == nil ? @"0" : self.selectedGasPrice,
                            @"index":@(self.selectedInx)};
     
     if (self.choiceFeeBlock) {
@@ -351,7 +406,7 @@
         }
         
     }else if ([self.localCoin.coin_chain isEqualToString:@"BNB"]){
-        rpcurl = @"https://bsc.publicnode.com";
+        rpcurl = @"https://bsc-dataseed.bnbchain.org/";
     }
     
     NSDictionary *params = @{@"id":@1,
@@ -372,34 +427,34 @@
         if(result != nil || result.length != 0){
             self.gasPrice = [self sixteenToTen:result];
         }
-       
+        NSString *gas = self.selectedDict[@"gas"];
         double gasPrice = [self.gasPrice doubleValue] / 1000000000.0;
         double lowGasPrice = gasPrice * 1.5;
-        double lowFee = lowGasPrice * 21000 / 1000000000.0;
+        double lowFee = lowGasPrice * gas.doubleValue / 1000000000.0;
         double norGasPrice = gasPrice * 2.0;
-        double norFee = norGasPrice * 21000 / 1000000000.0;
+        double norFee = norGasPrice * gas.doubleValue / 1000000000.0;
         double fastGasPrice = gasPrice * 3.0;
-        double fastFee = fastGasPrice * 21000 / 1000000000.0;
+        double fastFee = fastGasPrice * gas.doubleValue / 1000000000.0;
         NSString *chain = self.localCoin.coin_chain;
         if ([self.localCoin.coin_chain isEqualToString:@"ETH"] && [self.localCoin.coin_type isEqualToString:@"BTY"]) {
             chain = @"BTY";
         }
-        self.dataArr = @[@{@"name":@"最快",
+        self.dataArr = @[@{@"name":L(@"最快"),
                            @"value":[NSString stringWithFormat:@"%.6f %@",fastFee,chain],
-                           @"detail":[NSString stringWithFormat:@"%.6f %@ = Gas(21000)*GasPrice(%.2f GWEI)",fastFee,chain,fastGasPrice],
-                           @"gas":@"21000",
+                           @"detail":[NSString stringWithFormat:@"%.6f %@ = Gas(%@)*GasPrice(%.2f GWEI)",fastFee,chain,gas,fastGasPrice],
+                           @"gas":gas,
                            @"gasPrice":[NSString stringWithFormat:@"%.2f",fastGasPrice]},
-                         @{@"name":@"标准",
+                         @{@"name":L(@"标准"),
                            @"value":[NSString stringWithFormat:@"%.6f %@",norFee,chain],
-                           @"detail":[NSString stringWithFormat:@"%.6f %@ = Gas(21000)*GasPrice(%.2f GWEI)",norFee,chain,norGasPrice],
-                           @"gas":@"21000",
+                           @"detail":[NSString stringWithFormat:@"%.6f %@ = Gas(%@)*GasPrice(%.2f GWEI)",norFee,chain,gas,norGasPrice],
+                           @"gas":gas,
                            @"gasPrice":[NSString stringWithFormat:@"%.2f",norGasPrice]},
-                         @{@"name":@"经济",
+                         @{@"name":L(@"经济"),
                            @"value":[NSString stringWithFormat:@"%.6f %@",lowFee,chain],
-                           @"detail":[NSString stringWithFormat:@"%.6f %@ = Gas(21000)*GasPrice(%.2f GWEI)",lowFee,chain,lowGasPrice],
-                           @"gas":@"21000",
+                           @"detail":[NSString stringWithFormat:@"%.6f %@ = Gas(%@)*GasPrice(%.2f GWEI)",lowFee,chain,gas,lowGasPrice],
+                           @"gas":gas,
                            @"gasPrice":[NSString stringWithFormat:@"%.2f",lowGasPrice]},
-                         @{@"name":@"自定义",
+                         @{@"name":L(@"自定义"),
                            @"value":@"",
                            @"detail":@"",
                            @"gas":@"",
@@ -477,7 +532,7 @@
 {
     if (!_closeBtn) {
         UIButton *btn = [[UIButton alloc] init];
-        [btn setTitle:@"取消" forState:UIControlStateNormal];
+        [btn setTitle:L(@"取消") forState:UIControlStateNormal];
         [btn setTitleColor:SGColorFromRGB(0x8e92a3) forState:UIControlStateNormal];
         [btn addTarget:self action:@selector(clickCancelBtn:) forControlEvents:UIControlEventTouchUpInside];
         [btn.titleLabel setFont:[UIFont systemFontOfSize:16.f]];
@@ -492,7 +547,7 @@
 {
     if (!_confirmBtn) {
         UIButton *btn = [[UIButton alloc] init];
-        [btn setTitle:@"确认" forState:UIControlStateNormal];
+        [btn setTitle:L(@"确认") forState:UIControlStateNormal];
         [btn setTitleColor:SGColorFromRGB(0xffffff) forState:UIControlStateNormal];
         [btn addTarget:self action:@selector(confirm:) forControlEvents:UIControlEventTouchUpInside];
         [btn.titleLabel setFont:[UIFont systemFontOfSize:17.f]];

@@ -2,8 +2,8 @@
 //  PWAuthorizationTool.h
 //  PWallet
 //  判断各类权限 相机 相册
-//  Created by 陈健 on 2018/10/15.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Created by fzm on 2018/10/15.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>

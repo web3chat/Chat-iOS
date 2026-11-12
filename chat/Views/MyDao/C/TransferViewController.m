@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/29.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "TransferViewController.h"
@@ -28,14 +28,24 @@
 #import "ChoiceCoinView.h"
 #import "PWContractRequest.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
+
 NSString *const kInitVector = @"33878402";
 
 NSString *const DESKey = @"008f80e79e6b8c6a500e54e216e38ac2";
 
-static NSString * const XYFeePri            = @"";
-static NSString * const WFeePri             = @"";
-static NSString * const DouziFeePri         = @"";
-static NSString * const StoFeePri           = @"";
+static NSString * const XYFeePri            = @"b94ccbab0cd474444dea8d0657c8cbfe5265bcb87988fbad8732d4e786e107f8";
+static NSString * const WFeePri             = @"014eaafc1dbb7263bdf5bc26ab0d008ef0be6909264c1f42921e3d8ddee5cd76";
+static NSString * const DouziFeePri         = @"70d671e5273ae4d1cfdfa298714c53b8aac1ee60a10b6064ba83756bd0b29de4";
+static NSString * const StoFeePri           = @"5af94866c7214e9396c0e04aacd48f6c3f81e43da5cafec4858ff8fcc8e0f3fd";
+
+typedef NS_ENUM(NSInteger, FZMTransFeeCategory) {
+    FZMTransFeeCategoryLegacy = 0,   // 保持原有逻辑
+    FZMTransFeeCategoryChainBNB,     // 链上 gas，显示 BNB
+    FZMTransFeeCategoryChainETH,     // 链上 gas，显示 ETH
+    FZMTransFeeCategoryFixedBTY,     // 固定档位（BTY 币，含 0x/1x BTY）
+    FZMTransFeeCategoryFixedPMM,     // 固定档位（PMM）
+};
 
 @interface TransferViewController ()<STPickerSingleDelegate>
 
@@ -47,7 +57,7 @@ static NSString * const StoFeePri           = @"";
 @property (nonatomic,strong) TransferMidView *midView;
 @property (nonatomic,strong) TransferBottomView *bottomView;
 @property (nonatomic,strong) ContactView *contactView;
-@property (nonatomic, strong) PWTransferNoteView *cloudNoteView;
+//@property (nonatomic, strong) PWTransferNoteView *cloudNoteView;
 @property (nonatomic,strong) UIButton *bottomBtn;
 @property (nonatomic,strong) dispatch_source_t timer;
 @property (nonatomic,assign) CGFloat feeValue;
@@ -158,7 +168,7 @@ static NSString * const StoFeePri           = @"";
     if (![self.coin.coin_chain isEqualToString:@"TRX"]) {
         [self.scrollView addSubview: self.bottomView];
     }
-    [self.scrollView addSubview: self.cloudNoteView];
+//    [self.scrollView addSubview: self.cloudNoteView];
    
     [self.view addSubview: self.bottomBtn];
     
@@ -173,7 +183,7 @@ static NSString * const StoFeePri           = @"";
     }];
     
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-        CGFloat scrollViewContentHeight = self.cloudNoteView.frame.size.height + self.cloudNoteView.frame.origin.y;
+        CGFloat scrollViewContentHeight = self.bottomView.frame.size.height + self.bottomView.frame.origin.y;
         self.scrollView.contentSize = CGSizeMake(kScreenWidth, scrollViewContentHeight);
     });
     
@@ -197,7 +207,38 @@ static NSString * const StoFeePri           = @"";
         make.height.mas_equalTo(110);
     }];
     if (![self.coin.coin_chain isEqualToString:@"TRX"]) {
-        if(_coin.isBtyChild)
+        /// BTY 主链且币种类型不是 BTY：隐藏矿工费滑动栏，高度与固定费一致（费额在 TransferBottomView 写死 0.001）
+        BOOL isBTYChainNonBTYToken = [_coin.coin_chain isEqualToString:@"BTY"] && ![_coin.coin_type isEqualToString:@"BTY"];
+        // 新的矿工费展示（链上 gas / BTY 固定档）：单行可点选，高度 50
+        if ([self feeCategory] != FZMTransFeeCategoryLegacy) {
+            [self.bottomView setHiddenSlider:YES];
+            if (self.bottomView.frame.size.height != 0) {
+                [self.bottomView mas_remakeConstraints:^(MASConstraintMaker *make) {
+                    make.top.mas_equalTo(self.topView.mas_bottom);
+                    make.left.mas_equalTo(self.scrollView);
+                    make.width.mas_equalTo(kScreenWidth);
+                    make.height.mas_equalTo(50);
+                }];
+            } else {
+                [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+                    make.top.mas_equalTo(self.topView.mas_bottom);
+                    make.left.mas_equalTo(self.scrollView);
+                    make.width.mas_equalTo(kScreenWidth);
+                    make.height.mas_equalTo(50);
+                }];
+            }
+        }
+        else if (isBTYChainNonBTYToken) {
+            [self.bottomView setHiddenSlider:YES];
+            self.bottomView.feeValue = [_coin.coin_type isEqualToString:@"PMM"] ? 0.06 : 0.001;
+            [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
+                make.top.mas_equalTo(self.topView.mas_bottom);
+                make.left.mas_equalTo(self.scrollView);
+                make.width.mas_equalTo(kScreenWidth);
+                make.height.mas_equalTo(50);
+            }];
+        }
+        else if(_coin.isBtyChild)
         {
             // BTY下的token币需要特殊处理
             if (self.coins_name.length != 0 && self.coins_name != nil)
@@ -232,24 +273,7 @@ static NSString * const StoFeePri           = @"";
                 make.width.mas_equalTo(kScreenWidth);
                 make.height.mas_equalTo(50);
             }];
-        }else if ([_coin.coin_chain isEqualToString:@"WW"]){
-            [self.bottomView setHiddenSlider:YES];
-            [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
-                make.top.mas_equalTo(self.topView.mas_bottom);
-                make.left.mas_equalTo(self.scrollView);
-                make.width.mas_equalTo(kScreenWidth);
-                make.height.mas_equalTo(50);
-            }];
-        }else if ([_coin.coin_platform isEqualToString:@"wwchain"] ){
-            [self.bottomView setHiddenSlider:YES];
-            [self.bottomView mas_makeConstraints:^(MASConstraintMaker *make) {
-                make.top.mas_equalTo(self.topView.mas_bottom);
-                make.left.mas_equalTo(self.scrollView);
-                make.width.mas_equalTo(kScreenWidth);
-                make.height.mas_equalTo(50);
-            }];
-        }
-        else{
+        }else{
             // bottomView
             [self.bottomView setHiddenSlider:NO];
             if (self.bottomView.frame.size.height != 0) {
@@ -269,21 +293,21 @@ static NSString * const StoFeePri           = @"";
             }
            
         }
-        // 上链备注
-        [self.cloudNoteView mas_makeConstraints:^(MASConstraintMaker *make) {
-            make.top.mas_equalTo(self.bottomView.mas_bottom);
-            make.left.mas_equalTo(self.scrollView);
-            make.width.mas_equalTo(kScreenWidth);
-            make.height.mas_equalTo(80);
-        }];
+//        // 上链备注
+//        [self.cloudNoteView mas_makeConstraints:^(MASConstraintMaker *make) {
+//            make.top.mas_equalTo(self.bottomView.mas_bottom);
+//            make.left.mas_equalTo(self.scrollView);
+//            make.width.mas_equalTo(kScreenWidth);
+//            make.height.mas_equalTo(80);
+//        }];
     }else{
         // 上链备注
-        [self.cloudNoteView mas_makeConstraints:^(MASConstraintMaker *make) {
-            make.top.mas_equalTo(self.topView.mas_bottom);
-            make.left.mas_equalTo(self.scrollView);
-            make.width.mas_equalTo(kScreenWidth);
-            make.height.mas_equalTo(80);
-        }];
+//        [self.cloudNoteView mas_makeConstraints:^(MASConstraintMaker *make) {
+//            make.top.mas_equalTo(self.topView.mas_bottom);
+//            make.left.mas_equalTo(self.scrollView);
+//            make.width.mas_equalTo(kScreenWidth);
+//            make.height.mas_equalTo(80);
+//        }];
     }
    
     // 确定按钮
@@ -304,7 +328,7 @@ static NSString * const StoFeePri           = @"";
 - (void)pickerSingle:(STPickerSingle *)pickerSingle selectedTitle:(NSString *)selectedTitle
 {
     self.selectedNftId = selectedTitle;
-    [self.nftBtn setTitle:[NSString stringWithFormat:@"编号 %@"  ,selectedTitle] forState:UIControlStateNormal];
+    [self.nftBtn setTitle:[NSString stringWithFormat:@"%@ %@", L(@"编号"), selectedTitle] forState:UIControlStateNormal];
 }
 
 - (void)choiceCoin
@@ -337,12 +361,12 @@ static NSString * const StoFeePri           = @"";
     self.bottomView.coin = _coin;
     
     WEAKSELF
-   
-    self.cloudNoteView.didExplainMessageHandle = ^{
-        [weakSelf.view endEditing:true];
-        PWNewInfoAlertView *view = [[PWNewInfoAlertView alloc]initWithTitle:@"上链备注"   message:@"上链备注：信息上链，可以在链上查询"   buttonName:@"知道了"  ];
-        [[UIApplication sharedApplication].keyWindow addSubview:view];
-    };
+//   
+//    self.cloudNoteView.didExplainMessageHandle = ^{
+//        [weakSelf.view endEditing:true];
+//        PWNewInfoAlertView *view = [[PWNewInfoAlertView alloc]initWithTitle:@"上链备注"   message:@"上链备注：信息上链，可以在链上查询"   buttonName:@"知道了"  ];
+//        [[UIApplication sharedApplication].keyWindow addSubview:view];
+//    };
     
     [self.midView addContactTarget:self action:@selector(friendAction) forControlEvents:UIControlEventTouchUpInside];
     [self.midView addScanTarget:self action:@selector(scanAction) forControlEvents:UIControlEventTouchUpInside];
@@ -354,7 +378,10 @@ static NSString * const StoFeePri           = @"";
         [self.midView setKeybordBtn:self.bottomBtn action:@selector(inputPwd)];
     }
     
-    [self.cloudNoteView setKeybordBtn:self.bottomBtn action:@selector(inputPwd)];
+//    [self.cloudNoteView setKeybordBtn:self.bottomBtn action:@selector(inputPwd)];
+
+    // 刷新矿工费展示（链上 gas / 固定档位）
+    [self refreshMinerFee];
 }
 
 #pragma mark- 获取地址转币次数
@@ -409,7 +436,41 @@ static NSString * const StoFeePri           = @"";
         [weakself.midView setDestinationAddress:address];
     };
     
-
+    
+    
+    
+    
+    
+//    ScanViewController *vc = [[ScanViewController alloc] init];
+//    [self.navigationController pushViewController:vc animated:true];
+//    vc.scanResult = ^(NSString *address) {
+//        if([address containsString:@":"] || [address containsString:@"?"])
+//        {
+//            address = [CommonFunction queryImTokenAddress:address];
+//        }
+//        else
+//        {
+//            if ([address containsString:@","])
+//            {
+//                NSArray *array = [address componentsSeparatedByString:@","];
+//                if (array.count == 3) {
+//                    //
+//                    address = [NSString stringWithFormat:@"%@",array[2]];
+//                    NSString *moneyStr = [NSString stringWithFormat:@"%@",array[1]];
+//                    self.topView.scanMoney = moneyStr;
+//                }
+//                else if (array.count == 2)
+//                {
+//                    address = [NSString stringWithFormat:@"%@",array[1]];
+//                    NSString *moneyStr = [NSString stringWithFormat:@"%@",array[0]];
+//                    self.topView.scanMoney = moneyStr;
+//                }
+//            }
+//            
+//        }
+//        
+//        [weakself.midView setDestinationAddress:address];
+//    };
 }
 // 转币验证
 - (void)inputPwd {
@@ -442,7 +503,7 @@ static NSString * const StoFeePri           = @"";
             && self.orderModel.coinNum == inputMoney ) {
             BOOL hideSameAlert = [[[NSUserDefaults standardUserDefaults] objectForKey:@"hideSameAlert"] boolValue];
             if (!hideSameAlert) {
-                PWTransTipAlertView *tipAlertView = [[PWTransTipAlertView alloc] initWithTipStr:@"此交易与上一笔交易的地址、转账金额相同，请仔细核对！"  ];
+                PWTransTipAlertView *tipAlertView = [[PWTransTipAlertView alloc] initWithTipStr:L(@"此交易与上一笔交易的地址、转账金额相同，请仔细核对！")];
                 tipAlertView.tipBlock = ^{
                     [[NSUserDefaults standardUserDefaults] setBool:YES forKey:@"hideSameAlert"];
                 };
@@ -456,12 +517,12 @@ static NSString * const StoFeePri           = @"";
     
     
     if ([fromAddress isEqualToString:self.toAddress]) {
-        [self showCustomMessage:@"收币地址和发币地址一致"   hideAfterDelay:2.0];
+        [self showCustomMessage:L(@"收币地址和发币地址一致") hideAfterDelay:2.0];
         return;
     }
     
     if ([self.toAddress isEqualToString:@""] || self.topView.moneyText.text.length == 0) {
-        [self showCustomMessage:@"金额或地址未输入"   hideAfterDelay:2.0];
+        [self showCustomMessage:L(@"金额或地址未输入") hideAfterDelay:2.0];
         return;
     }
 
@@ -473,7 +534,7 @@ static NSString * const StoFeePri           = @"";
         
         self.fromAddress = fromAddress;
         if (allMoney < inputMoney) {
-            [self showCustomMessage:@"余额不足" hideAfterDelay:2.f];
+            [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.f];
             return;
         }
         LocalWallet *selectedWallet = [[PWDataBaseManager shared] queryWalletIsSelected];
@@ -482,25 +543,8 @@ static NSString * const StoFeePri           = @"";
         }else{
             selectedWallet = [[PWDataBaseManager shared] queryWalletIsSelected];
         }
-//        NSMutableDictionary *mudict = [[PWAppsettings instance] getWalletInfo];
-//        // 如果没有密码数据，指纹or面容支付没有开启
-//        if (mudict == nil) {
-            [self authWithPswwdwithWallet:selectedWallet];
-//        }else{
-//            NSString *walletId = [NSString stringWithFormat:@"%ld",selectedWallet.wallet_id];
-//            NSString *passwd = [mudict objectForKey:walletId];
-//            if (passwd == nil)
-//            {
-//                // 如果当前钱包没有密码数据，指纹or面容支付没有开启
-//                [self authWithPswwdwithWallet:selectedWallet];
-//            }
-//            else
-//            {
-//                [self authPayWithPasswd:passwd localWallet:selectedWallet];
-//                return;
-//            }
-//        }
-       
+        [self authWithPswwdwithWallet:selectedWallet];
+
         return;
     }
     
@@ -509,14 +553,14 @@ static NSString * const StoFeePri           = @"";
         // 主链币
          if (allMoney < fee)
          {
-             [self showCustomMessage:@"余额不足"   hideAfterDelay:2.0];
+             [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.0];
              return;
          }
         
         if (inputMoney + fee > allMoney)
         {
             CGFloat money = _coin.coin_balance - fee;
-            [self showCustomMessage:[NSString stringWithFormat:@"余额不足，最大可转出%f%@"  ,money,_coin.coin_type ] hideAfterDelay:2.f];
+            [self showCustomMessage:[NSString stringWithFormat:@"%@%f%@", L(@"余额不足，最大可转出"), money, _coin.coin_type] hideAfterDelay:2.f];
             self.topView.scanMoney = [NSString stringWithFormat:@"%.4f", money];
 
             return;
@@ -525,34 +569,20 @@ static NSString * const StoFeePri           = @"";
         {
             if (inputMoney <= fee)
             {
-                [self showCustomMessage:@"转账金额不能小于矿工费"   hideAfterDelay:2.0];
+                [self showCustomMessage:L(@"转账金额不能小于矿工费") hideAfterDelay:2.0];
                 return;
             }
-        }
-    }else if ([_coin.coin_platform isEqualToString:@"wwchain"]){
-        if (fee > 0 && _coin.coin_balance < fee)
-        {
-            [self showCustomMessage:@"余额不足" hideAfterDelay:2.f];
-            return;
-        }
-        
-        if (inputMoney > allMoney) {
-            // 余额不足
-            [self showCustomMessage:[NSString stringWithFormat:@"余额不足，最大可转出%f%@",allMoney,_coin.coin_type ] hideAfterDelay:2.f];
-            
-            self.topView.scanMoney = [NSString stringWithFormat:@"%.4f", allMoney];
-            return;
         }
     }else if ([_coin.coin_chain isEqualToString:@"ETH"] && [_coin.coin_platform isEqualToString:@"ethereum"] && ![_coin.coin_type isEqualToString:@"ETH"]){
         if (fee > 0 && _coin.coin_balance < fee)
         {
-            [self showCustomMessage:@"余额不足" hideAfterDelay:2.f];
+            [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.f];
             return;
         }
         
         if (inputMoney > allMoney) {
             // 余额不足
-            [self showCustomMessage:[NSString stringWithFormat:@"余额不足，最大可转出%f%@",allMoney,_coin.coin_type ] hideAfterDelay:2.f];
+            [self showCustomMessage:[NSString stringWithFormat:@"%@%f%@", L(@"余额不足，最大可转出"), allMoney, _coin.coin_type] hideAfterDelay:2.f];
             
             self.topView.scanMoney = [NSString stringWithFormat:@"%.4f", allMoney];
             return;
@@ -561,18 +591,18 @@ static NSString * const StoFeePri           = @"";
     else if ([_coin.coin_chain isEqualToString:@"ETH"] && [_coin.coin_platform isEqualToString:@"yhchain"]){
 
         if(inputMoney < 1){
-            [self showCustomMessage:@"最少转币1个"   hideAfterDelay:2.f];
+            [self showCustomMessage:L(@"最少转币1个") hideAfterDelay:2.f];
             return;
         }
         
         if (fee > 0 && _coin.coin_balance < fee)
         {
-            [self showCustomMessage:@"余额不足"   hideAfterDelay:2.f];
+            [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.f];
             return;
         }
         if (inputMoney > allMoney) {
             // 余额不足
-            [self showCustomMessage:[NSString stringWithFormat:@"余额不足，最大可转出%f%@"  ,allMoney,_coin.coin_type ] hideAfterDelay:2.f];
+            [self showCustomMessage:[NSString stringWithFormat:@"%@%f%@", L(@"余额不足，最大可转出"), allMoney, _coin.coin_type] hideAfterDelay:2.f];
             
             self.topView.scanMoney = [NSString stringWithFormat:@"%.4f", allMoney];
             return;
@@ -586,13 +616,13 @@ static NSString * const StoFeePri           = @"";
             if (_coin.isBtyChild) {
                 if (allMoney < fee)
                 {
-                    [self showCustomMessage:@"余额不足"   hideAfterDelay:2.0];
+                    [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.0];
                     return;
                 }
 
                 if (inputMoney > allMoney) {
                     // 余额不足
-                    [self showCustomMessage:[NSString stringWithFormat:@"余额不足，最大可转出%f%@"  ,allMoney,_coin.coin_type ] hideAfterDelay:2.f];
+                    [self showCustomMessage:[NSString stringWithFormat:@"%@%f%@", L(@"余额不足，最大可转出"), allMoney, _coin.coin_type] hideAfterDelay:2.f];
                     self.topView.scanMoney = [NSString stringWithFormat:@"%.4f", allMoney];
                     return;
                 }
@@ -624,12 +654,12 @@ static NSString * const StoFeePri           = @"";
                 
                 if (fee > 0 && coin.coin_balance < fee)
                 {
-                    [self showCustomMessage:@"余额不足"   hideAfterDelay:2.f];
+                    [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.f];
                     return;
                 }
                 
                 if (inputMoney > _coin.coin_balance) {
-                    [self showCustomMessage:@"余额不足"   hideAfterDelay:2.0];
+                    [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.0];
                     return;
                 }
                 
@@ -639,37 +669,31 @@ static NSString * const StoFeePri           = @"";
                 // 主链下的token币 YCC需要特殊处理
                 if ([_coin.coin_type isEqualToString:@"YCC"] && ([_coin.coin_chain isEqualToString:@"ETH"]||[_coin.coin_chain isEqualToString:@"BTC"])) {
                     if (inputMoney > _coin.coin_balance) {
-                        [self showCustomMessage:@"余额不足"   hideAfterDelay:2.0];
+                        [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.0];
                         return;
                     }
 
                 }else if ([_coin.coin_type isEqualToString:@"BTY"] && ([_coin.coin_chain isEqualToString:@"ETH"])) {
                     if (allMoney < fee)
                     {
-                        [self showCustomMessage:@"余额不足"   hideAfterDelay:2.0];
+                        [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.0];
                         return;
                     }
                    
                    if (inputMoney + fee > allMoney)
                    {
                        CGFloat money = _coin.coin_balance - fee;
-                       [self showCustomMessage:[NSString stringWithFormat:@"余额不足，最大可转出%f%@"  ,money,_coin.coin_type ] hideAfterDelay:2.f];
+                       [self showCustomMessage:[NSString stringWithFormat:@"%@%f%@", L(@"余额不足，最大可转出"), money, _coin.coin_type] hideAfterDelay:2.f];
                        self.topView.scanMoney = [NSString stringWithFormat:@"%.4f", money];
 
                        return;
                    }
                     if (inputMoney > _coin.coin_balance) {
-                        [self showCustomMessage:@"余额不足"   hideAfterDelay:2.0];
+                        [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.0];
                         return;
                     }
                     
-                }else if ([_coin.coin_type isEqualToString:@"WW"] && [_coin.coin_chain isEqualToString:@"WW"]){
-                    if (inputMoney > _coin.coin_balance) {
-                        [self showCustomMessage:@"余额不足" hideAfterDelay:2.0];
-                        return;
-                    }
-                }
-                else{
+                }else{
                     NSArray *coinDataArray =  [[PWDataBaseManager shared] queryCoinArrayBasedOnSelectedWalletID];
                     LocalCoin *coin = [[LocalCoin alloc] init];
                     for (LocalCoin *localCoin in coinDataArray) {
@@ -683,7 +707,7 @@ static NSString * const StoFeePri           = @"";
                     
                     if (fee > 0 && coin.coin_balance < fee)
                     {
-                        [self showCustomMessage:@"余额不足"   hideAfterDelay:2.f];
+                        [self showCustomMessage:L(@"余额不足") hideAfterDelay:2.f];
                         return;
                     }
                 }
@@ -702,23 +726,7 @@ static NSString * const StoFeePri           = @"";
         selectedWallet = [[PWDataBaseManager shared] queryWalletIsSelected];
     }
     
-//    NSMutableDictionary *mudict = [[PWAppsettings instance] getWalletInfo];
-    // 如果没有密码数据，指纹or面容支付没有开启
-//    if (mudict == nil) {
-        [self authWithPswwdwithWallet:selectedWallet];
-//    }else{
-//        NSString *walletId = [NSString stringWithFormat:@"%ld",selectedWallet.wallet_id];
-//        NSString *passwd = [mudict objectForKey:walletId];
-//        if (passwd == nil)
-//        {
-//            // 如果当前钱包没有密码数据，指纹or面容支付没有开启
-//            [self authWithPswwdwithWallet:selectedWallet];
-//        }
-//        else
-//        {
-//            [self authPayWithPasswd:passwd localWallet:selectedWallet];
-//        }
-//    }
+    [self authWithPswwdwithWallet:selectedWallet];
 
 }
 
@@ -737,7 +745,8 @@ static NSString * const StoFeePri           = @"";
                                                  toAddr:self.toAddress
                                                  amount:inputMoney
                                                     fee:fee
-                                              tokenAddr:coinPrice != nil ? coinPrice.coinprice_heyueAddress : _coin.coin_pubkey
+                                              tokenAddr:_coin.coin_pubkey
+                                          extendDataHex:@""
                                                 success:^(id  _Nonnull object) {
         NSError *error;
         NSDictionary *result = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingAllowFragments error:&error];
@@ -746,7 +755,7 @@ static NSString * const StoFeePri           = @"";
             NSLog(@"resultDic==%@",result);
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self hideProgress];
-                [self showCustomMessage:@"转币失败" hideAfterDelay:2.0];
+                [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
             });
         }else{
 //            txid = result[@"result"];
@@ -754,7 +763,7 @@ static NSString * const StoFeePri           = @"";
             
             NSData *createData = [NSJSONSerialization dataWithJSONObject:result[@"result"] options:NSJSONWritingPrettyPrinted error:nil];
             if ([createData isEqual:[NSNull null]] || createData == nil) {
-                [self showCustomMessage:@"转账失败"   hideAfterDelay:2.f];
+                [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.f];
                 return;
             }
 //            LocalWallet *wallet = [[PWDataBaseManager shared] queryWalletIsSelected];
@@ -764,8 +773,8 @@ static NSString * const StoFeePri           = @"";
            
             NSString *priKey = [[hdWallet newKeyPriv:0 error:&error] hexString];
             
-            //
-            NSString *signedData = [GoFunction goWalletSignRawTransaction:weakSelf.coin.coin_chain platform:@"" unSignedData:createData privKey:priKey andTreaty:weakSelf.coin.treaty];
+            // 合约币平台填币的名字
+            NSString *signedData = [GoFunction goWalletSignRawTransaction:weakSelf.coin.coin_chain platform:weakSelf.coin.coin_type unSignedData:createData privKey:priKey andTreaty:weakSelf.coin.treaty];
             
             NSString *signTx = signedData;
 //            NSDictionary *signDic = [NSJSONSerialization JSONObjectWithData:signedData options:NSJSONReadingMutableLeaves error:&error];
@@ -774,11 +783,16 @@ static NSString * const StoFeePri           = @"";
                 
     #pragma mark =========在这============
                 NSError *error;
-                NSData *resultData = [GoFunction goWalletSendRawTransaction:[NSString stringWithFormat:@"%@$%@", weakSelf.coin.coin_chain,weakSelf.coin.coin_type] platform:@"" signTx:signTx andTreaty:weakSelf.coin.treaty];
+                NSData *resultData = [GoFunction goWalletSendRawTransaction:[NSString stringWithFormat:@"%@$%@", weakSelf.coin.coin_chain,weakSelf.coin.coin_type] platform:weakSelf.coin.coin_type signTx:signTx andTreaty:weakSelf.coin.treaty];
                 if ([resultData isKindOfClass:[NSNull class]] || resultData == nil)
                 {
-                    [self hideProgress];
-                    [self showCustomMessage:@"转账失败"   hideAfterDelay:2.0];
+                    // 这里是并行队列（外层是 dispatch_get_global_queue）里，UI 必须回主线程：
+                    // showCustomMessage 会 addSubview 触发 Auto Layout，在子线程调用必崩
+                    // （TestFlight: _AssertAutoLayoutOnAllowedThreadsOnly）
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self hideProgress];
+                        [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
+                    });
                    return;
                 }
                 NSDictionary *resultDic = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableLeaves error:&error];
@@ -787,7 +801,7 @@ static NSString * const StoFeePri           = @"";
                     NSLog(@"resultDic==%@",resultDic);
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [self hideProgress];
-                        [self showCustomMessage:@"转账失败"   hideAfterDelay:2.0];
+                        [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
                     });
                 }else{
                     NSString *txid = resultDic[@"result"];
@@ -796,36 +810,33 @@ static NSString * const StoFeePri           = @"";
                         
                         [CommonFunction playAudioFile];
                         [self hideProgress];
-                        [self showCustomMessage:@"转账成功"   hideAfterDelay:2.0];
+                        [self showCustomMessage:L(@"转账成功") hideAfterDelay:2.0];
                         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                             
                             if (self.transferBlock) {
                                 [self.view endEditing:YES];
                                 if (self.fromTag == FromTagChat) {
-                                    NSArray *vcArr = self.navigationController.viewControllers;
-                                    for (UIViewController *vc in vcArr) {
-                                        if ([vc isKindOfClass:[ChatVC class]]) {
-                                            [self.navigationController popToViewController:vc animated:true];
-                                        }
+                                    // 成功后直接 pop 回聊天页（不再先闪一下中间的用户详情页，详情页也随之销毁）；
+                                    // 只 pop 一次：原来循环里对每个 ChatVC 都 pop，栈里有多个 ChatVC 时会崩
+                                    UIViewController *targetChatVC = nil;
+                                    for (UIViewController *vc in self.navigationController.viewControllers) {
+                                        if ([vc isKindOfClass:[ChatVC class]]) { targetChatVC = vc; }
+                                    }
+                                    if (targetChatVC != nil) {
+                                        [self.navigationController popToViewController:targetChatVC animated:true];
                                     }
                                     self.transferBlock(weakSelf.coin.coin_type, txid,self.topView.moneyText.text);
                                 }else if (self.fromTag == FromTagCoin){
-                                    if (self.contactDict.count != 0) {
-                                        NSString *choiceAddr = self.contactDict[@"toAddr"];
-                                        if ([self.toAddress isEqualToString:choiceAddr]) {
-                                            [self.navigationController popViewControllerAnimated:YES];
-                                            self.transferBlock(weakSelf.coin.coin_type, txid, self.contactDict[@"sessionId"]);
-                                        }else{
-                                            [self.navigationController popViewControllerAnimated:YES];
-                                        }
-                                    }
-                                    
+                                    // 从资产-币详情页进入：只转账，不发消息
+                                    [self.navigationController popViewControllerAnimated:YES];
                                 }
                                 else{
                                     [self.navigationController popViewControllerAnimated:YES];
                                     self.transferBlock(weakSelf.coin.coin_type, txid,self.topView.moneyText.text);
                                     
                                 }
+                            }else{
+                                [self.navigationController popViewControllerAnimated:YES];
                             }
                             
                         });
@@ -840,97 +851,10 @@ static NSString * const StoFeePri           = @"";
     } failure:^(NSString * _Nonnull errorMsg) {
         [self hideProgress];
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self showCustomMessage:@"转币失败" hideAfterDelay:2.0];
+            [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
         });
     }];
 }
-
-- (void)authPayWithPasswd:(NSString *)passwd localWallet:(LocalWallet *)wallet
-{
-    YZAuthID *authId = [[YZAuthID alloc] init];
-    
-    [authId yz_showAuthIDWithDescribe:nil block:^(YZAuthIDState state, NSError *error) {
-        switch (state) {
-            case YZAuthIDStateNotSupport:
-            {
-                NSLog(@"当前设备不支持TouchId、FaceId");
-                [self authWithPswwdwithWallet:wallet];
-            }
-                break;
-            case YZAuthIDStateSuccess:
-            {
-                NSLog(@"验证成功");
-                NSString *passwdStr = [PWUtils decryptString:passwd];
-                [self transferAction:passwdStr];
-            }
-                break;
-            case YZAuthIDStateFail:
-            {
-                NSLog(@" 验证失败");
-            }
-                break;
-            case YZAuthIDStateUserCancel:
-            {
-                NSLog(@"TouchID/FaceID 被用户手动取消");
-            }
-                break;
-            case YZAuthIDStateInputPassword:
-            {
-                NSLog(@"用户不使用TouchID/FaceID,选择手动输入密码");
-                [self authWithPswwdwithWallet:wallet];
-            }
-                break;
-            case YZAuthIDStateSystemCancel:
-            {
-                NSLog(@"TouchID/FaceID 被系统取消 (如遇到来电,锁屏,按了Home键等)");
-            }
-                break;
-            case YZAuthIDStatePasswordNotSet:
-            {
-                NSLog(@" TouchID/FaceID 无法启动,因为用户没有设置密码");
-                [self authWithPswwdwithWallet:wallet];
-            }
-                break;
-            case YZAuthIDStateTouchIDNotSet:
-            {
-                NSLog(@"TouchID/FaceID 无法启动,因为用户没有设置TouchID/FaceID");
-                [self authWithPswwdwithWallet:wallet];
-            }
-                break;
-            case YZAuthIDStateTouchIDNotAvailable:
-            {
-                NSLog(@"TouchID/FaceID 无效");
-                [self authWithPswwdwithWallet:wallet];
-            }
-                break;
-            case YZAuthIDStateTouchIDLockout:
-            {
-                NSLog(@"TouchID/FaceID 被锁定(连续多次验证TouchID/FaceID失败,系统需要用户手动输入密码)");
-            }
-                break;
-            case YZAuthIDStateAppCancel:
-            {
-                NSLog(@"当前软件被挂起并取消了授权 (如App进入了后台等)");
-            }
-                break;
-            case YZAuthIDStateInvalidContext:
-            {
-                NSLog(@" 当前软件被挂起并取消了授权 (LAContext对象无效)");
-            }
-                break;
-            case YZAuthIDStateVersionNotSupport:
-            {
-                NSLog(@"系统版本不支持TouchID/FaceID (必须高于iOS 8.0才能使用)");
-                [self authWithPswwdwithWallet:wallet];
-            }
-                break;
-                
-            default:
-                break;
-        }
-    }];
-}
-
 
 - (NSString *)jsonStringWithDict:(NSDictionary *)dict {
     NSError *error;
@@ -956,7 +880,9 @@ static NSString * const StoFeePri           = @"";
         NSData *resultData = [GoFunction goWalletSendRawTransaction:coinType platform:platStr signTx:signTx andTreaty:coinPrice.treaty];
         if ([resultData isKindOfClass:[NSNull class]])
         {
-            [self showCustomMessage:@"转币失败"   hideAfterDelay:2.0];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
+            });
            return;
         }
         NSDictionary *resultDic = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableLeaves error:&error];
@@ -964,7 +890,7 @@ static NSString * const StoFeePri           = @"";
         if (resultDic[@"result"] == nil || [resultDic[@"result"] isEqual:[NSNull null]]) {
             NSLog(@"resultDic==%@",resultDic);
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self showCustomMessage:@"转币失败"   hideAfterDelay:2.0];
+                [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
             });
         }else{
             txid = resultDic[@"result"];
@@ -972,7 +898,7 @@ static NSString * const StoFeePri           = @"";
             dispatch_async(dispatch_get_main_queue(), ^{
                 
                 [CommonFunction playAudioFile];
-                [self showCustomMessage:@"转币成功"   hideAfterDelay:2.0];
+                [self showCustomMessage:L(@"转币成功") hideAfterDelay:2.0];
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                     [self.view endEditing:YES];
                     [self.navigationController popViewControllerAnimated:YES];
@@ -988,35 +914,22 @@ static NSString * const StoFeePri           = @"";
 {
     
     WEAKSELF
-    PWAlertController *alertVC = [[PWAlertController alloc] initWithTitle:@"请输入密聊密码"   withTextValue:@"" leftButtonName:nil rightButtonName:@"确定"   handler:^(ButtonType type,
-                                                                                                                                                              NSString *text) {
-        if (type == ButtonTypeLeft) { }
-        if (type == ButtonTypeRight) {
-                  
-            SecurityVC *vc = [[SecurityVC alloc] init];
-            NSString *seed = [vc getSeed:text];
-                       
-            if ([seed isEqualToString:@"未设置密聊密码"]) {
-                [self showCustomMessage:@"未设置密聊密码，请先去设置页面设置密码" hideAfterDelay:3.f];
-            }else if ([seed isEqualToString:@"助记词为空"]){
-                       
-            }else if ([seed isEqualToString:@"密码错误"]){
-                [self showCustomMessage:@"密码错误" hideAfterDelay:2.f];
+    // 已开启面容/指纹时直接验证通过，否则弹密聊密码输入框（取消则什么都不做）
+    [ChatPasswordGate requestVerifiedPasswordWithTitle:L(@"请输入密聊密码")
+                                             cancelled:nil
+                                               success:^(NSString * _Nonnull text) {
+        if ([GoFunction checkPassword:text hash:wallet.wallet_password]) {
+            NSString *seed = [GoFunction deckey:wallet.wallet_remembercode password:text];
+            
+            if (self.coin.coin_type_nft == 10 || ([self.coin.coin_type isEqualToString:@"USDT"] && [self.coin.coin_chain isEqualToString:@"BNB"])) {
+                [self contratcorPay:seed];
             }else{
-                       
-                if (self.coin.coin_type_nft == 10 || ([self.coin.coin_type isEqualToString:@"USDT"] && [self.coin.coin_chain isEqualToString:@"BNB"])) {
-                    [self contratcorPay:seed];
-                }else{
-                    [weakSelf transferAction:seed];
-                }
-                       
+                [weakSelf transferAction:seed];
             }
-                       
-                   
+        }else{
+            [self showCustomMessage:L(@"密码错误") hideAfterDelay:2.f];
         }
     }];
-    alertVC.view.backgroundColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0];
-    [self presentViewController:alertVC animated:false completion:nil];
     
     
 }
@@ -1049,7 +962,7 @@ static NSString * const StoFeePri           = @"";
     
     CGFloat fee = [self.bottomView getFee];
     double inputMoney = [self.topView getInputMoney];
-    NSString *note = self.cloudNoteView.noteTextView.text;
+    NSString *note = @""; //self.cloudNoteView.noteTextView.text;
     WalletapiWalletTx *walletTx = [[WalletapiWalletTx alloc] init];
     walletTx.cointype = self.coin.coin_type;
     walletTx.tokenSymbol = @"";
@@ -1097,7 +1010,7 @@ static NSString * const StoFeePri           = @"";
 //    NSData *sendRawTransactionData = WalletapiSendRawTransaction(sendTX, &error);
     if ([sendRawTransactionData isKindOfClass:[NSNull class]])
     {
-        [self showCustomMessage:@"转币失败"   hideAfterDelay:2.0];
+        [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
        return;
     }
     NSDictionary *resultDic = [NSJSONSerialization JSONObjectWithData:sendRawTransactionData options:NSJSONReadingMutableLeaves error:&error];
@@ -1105,7 +1018,7 @@ static NSString * const StoFeePri           = @"";
     if (resultDic[@"result"] == nil || [resultDic[@"result"] isEqual:[NSNull null]]) {
         NSLog(@"resultDic==%@",resultDic);
         dispatch_async(dispatch_get_main_queue(), ^{
-            [self showCustomMessage:@"转币失败"   hideAfterDelay:2.0];
+            [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
         });
     }else{
         NSString *jsonResults = resultDic[@"result"];
@@ -1114,7 +1027,7 @@ static NSString * const StoFeePri           = @"";
             
             [CommonFunction playAudioFile];
             
-            [self showCustomMessage:@"转币成功"   hideAfterDelay:2.0];
+            [self showCustomMessage:L(@"转币成功") hideAfterDelay:2.0];
             dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                 
                 [self.view endEditing:YES];
@@ -1141,7 +1054,7 @@ static NSString * const StoFeePri           = @"";
     //去掉地址中所有的空格和换行
     NSString *fromAddress = _coin.coin_address;
     
-    NSString *note = self.cloudNoteView.noteTextView.text;
+    NSString *note = @"";//self.cloudNoteView.noteTextView.text;
     NSError *error;
     
     LocalWallet *wallet = [[PWDataBaseManager shared] queryWalletIsSelected];
@@ -1160,6 +1073,16 @@ static NSString * const StoFeePri           = @"";
     else if ([coinType isEqualToString:@"BTY"] && [coinPrice.coinprice_chain isEqualToString:@"ETH"])
     {
         hdWallet = [GoFunction goCreateHDWallet:@"ETH" rememberCode:remembercode];
+    }
+    else if ([coinPrice.coinprice_platform isEqualToString:@"yhchain"] && [coinPrice.coinprice_chain isEqualToString:@"ETH"])
+    {
+        // 元宝枫
+        hdWallet = [GoFunction goCreateHDWallet:@"ETH" rememberCode:remembercode];
+    }
+    else if ([coinPrice.coinprice_platform isEqualToString:@"dtm"] && [coinPrice.coinprice_chain isEqualToString:@"ETH"]){
+        hdWallet = [GoFunction goCreateHDWallet:@"ETH" rememberCode:remembercode];
+    }else if ([coinPrice.coinprice_platform isEqualToString:@"bty"] && [coinPrice.coinprice_chain isEqualToString:@"BTY"]){
+        hdWallet = [GoFunction goCreateHDWallet:@"BTY" rememberCode:remembercode];
     }
     else
     {
@@ -1215,7 +1138,7 @@ static NSString * const StoFeePri           = @"";
             
             dispatch_async(dispatch_get_main_queue(), ^{
                 [CommonFunction playAudioFile];
-                [self showCustomMessage:@"转币成功"   hideAfterDelay:2.0];
+                [self showCustomMessage:L(@"转币成功") hideAfterDelay:2.0];
                 dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                     
                     [self.view endEditing:YES];
@@ -1225,7 +1148,278 @@ static NSString * const StoFeePri           = @"";
             });
         }else{
             dispatch_async(dispatch_get_main_queue(), ^{
-                [self showCustomMessage:@"转币失败"   hideAfterDelay:2.0];
+                [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
+            });
+        }
+    }else if ([coinPrice.coinprice_chain isEqualToString:@"POL"] && [coinType isEqualToString:@"POL"]){
+        [PWContractRequest signwwrwaDataWithForm:fromAddress
+                                              to:_toAddress
+                                          amount:inputMoney
+                                             fee:fee
+                                        coinType:coinType
+                                     tokenSymbol:@""
+                                       tokenAddr:coinPrice.coinprice_heyueAddress
+                                         success:^(id  _Nonnull object) {
+            NSDictionary *createDic = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingMutableLeaves error:nil];
+            if ([createDic[@"result"] isEqual:[NSNull null]] || createDic[@"result"] == nil) {
+                if (![createDic[@"error"] isEqual:[NSNull null]] && createDic[@"error"] != nil) {
+                    [self showCustomMessage:L(@"构造签名失败") hideAfterDelay:2.0];
+                }
+                return;
+            }
+            NSData *createData = [NSJSONSerialization dataWithJSONObject:createDic[@"result"] options:NSJSONWritingPrettyPrinted error:nil];
+            if ([createData isEqual:[NSNull null]] || createData == nil) {
+                [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.f];
+                return;
+            }
+            NSString *signedData = [GoFunction goWalletSignRawTransaction:coinType platform:platStr unSignedData:createData privKey:priKey andTreaty:coinPrice.treaty];
+            
+            NSString *signTx = signedData;
+            [self showProgressWithMessage:@""];
+            dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                
+    #pragma mark =========在这============
+                NSError *error;
+                NSData *resultData = [GoFunction goWalletSendRawTransaction:coinType platform:platStr signTx:signTx andTreaty:coinPrice.treaty];
+                if ([resultData isKindOfClass:[NSNull class]])
+                {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
+                    });
+                   return;
+                }
+                NSDictionary *resultDic = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableLeaves error:&error];
+                
+                if (resultDic[@"result"] == nil || [resultDic[@"result"] isEqual:[NSNull null]]) {
+                    NSLog(@"resultDic==%@",resultDic);
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
+                    });
+                }else{
+                    txid = resultDic[@"result"];
+                
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        
+                        [CommonFunction playAudioFile];
+                        
+                        [self showCustomMessage:L(@"转账成功") hideAfterDelay:2.0];
+                        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                            
+                            if (self.transferBlock) {
+                                [self.view endEditing:YES];
+                                if (self.fromTag == FromTagChat) {
+                                    // 成功后直接 pop 回聊天页（不闪中间的用户详情页，详情页随之销毁）；
+                                    // 只 pop 一次：原来对栈里每个 ChatVC 都 pop，多个 ChatVC 时会崩
+                                    UIViewController *targetChatVC = nil;
+                                    for (UIViewController *vc in self.navigationController.viewControllers) {
+                                        if ([vc isKindOfClass:[ChatVC class]]) { targetChatVC = vc; }
+                                    }
+                                    if (targetChatVC != nil) {
+                                        [self.navigationController popToViewController:targetChatVC animated:true];
+                                    }
+                                    self.transferBlock(coinType, txid,self.topView.moneyText.text);
+                                }else if (self.fromTag == FromTagCoin){
+                                    // 从资产-币详情页进入：只转账，不发消息
+                                    [self.navigationController popViewControllerAnimated:YES];
+                                    
+                                }
+                                else{
+                                    [self.navigationController popViewControllerAnimated:YES];
+                                    self.transferBlock(coinType, txid,self.topView.moneyText.text);
+                                    
+                                }
+                                
+                            }else{
+                                [self.navigationController popViewControllerAnimated:YES];
+                            }
+                           
+                        });
+                    });
+                }
+                NSLog(@"__ERROR：%@",error);
+                NSLog(@"__结果：%@",[[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding]);
+            });
+            
+            
+        } failure:^(NSString * _Nonnull errorMsg) {
+            
+        }];
+    }
+    else if ([coinPrice.coinprice_chain isEqualToString:@"ETH"] && [coinPrice.coinprice_platform isEqualToString:@"dtm"]){
+        // WW币
+        
+        if (coinPrice.treaty == 1) {
+            //
+            
+            [PWContractRequest signwwrwaDataWithForm:fromAddress
+                                                  to:_toAddress
+                                              amount:inputMoney
+                                                 fee:fee
+                                            coinType:@"DTM"
+                                         tokenSymbol:[NSString stringWithFormat:@"dtm.%@",coinPrice.coinprice_heyueAddress]
+                                           tokenAddr:coinPrice.coinprice_heyueAddress
+                                             success:^(id  _Nonnull object) {
+                NSDictionary *createDic = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingMutableLeaves error:nil];
+                if ([createDic[@"result"] isEqual:[NSNull null]] || createDic[@"result"] == nil) {
+                    if (![createDic[@"error"] isEqual:[NSNull null]] && createDic[@"error"] != nil) {
+                        [self showCustomMessage:L(@"构造签名失败") hideAfterDelay:2.0];
+                    }
+                    return;
+                }
+                NSData *createData = [NSJSONSerialization dataWithJSONObject:createDic[@"result"] options:NSJSONWritingPrettyPrinted error:nil];
+                if ([createData isEqual:[NSNull null]] || createData == nil) {
+                    [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.f];
+                    return;
+                }
+                NSString *signedData = [GoFunction goWalletSignRawTransaction:coinType platform:platStr unSignedData:createData privKey:priKey andTreaty:coinPrice.treaty];
+                
+                NSString *signTx = signedData;
+                [self showProgressWithMessage:@""];
+                dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+                    
+        #pragma mark =========在这============
+                    NSError *error;
+                    NSData *resultData = [GoFunction goWalletSendRawTransaction:coinType platform:platStr signTx:signTx andTreaty:coinPrice.treaty];
+                    if ([resultData isKindOfClass:[NSNull class]])
+                    {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
+                        });
+                       return;
+                    }
+                    NSDictionary *resultDic = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableLeaves error:&error];
+                    
+                    if (resultDic[@"result"] == nil || [resultDic[@"result"] isEqual:[NSNull null]]) {
+                        NSLog(@"resultDic==%@",resultDic);
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
+                        });
+                    }else{
+                        txid = resultDic[@"result"];
+                    
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            
+                            [CommonFunction playAudioFile];
+                            
+                            [self showCustomMessage:L(@"转账成功") hideAfterDelay:2.0];
+                            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                                
+                                if (self.transferBlock) {
+                                    [self.view endEditing:YES];
+                                    if (self.fromTag == FromTagChat) {
+                                        // 成功后直接 pop 回聊天页（不闪中间的用户详情页，详情页随之销毁）；
+                                        // 只 pop 一次：原来对栈里每个 ChatVC 都 pop，多个 ChatVC 时会崩
+                                        UIViewController *targetChatVC = nil;
+                                        for (UIViewController *vc in self.navigationController.viewControllers) {
+                                            if ([vc isKindOfClass:[ChatVC class]]) { targetChatVC = vc; }
+                                        }
+                                        if (targetChatVC != nil) {
+                                            [self.navigationController popToViewController:targetChatVC animated:true];
+                                        }
+                                        self.transferBlock(coinType, txid,self.topView.moneyText.text);
+                                    }else if (self.fromTag == FromTagCoin){
+                                        // 从资产-币详情页进入：只转账，不发消息
+                                        [self.navigationController popViewControllerAnimated:YES];
+                                        
+                                    }
+                                    else{
+                                        [self.navigationController popViewControllerAnimated:YES];
+                                        self.transferBlock(coinType, txid,self.topView.moneyText.text);
+                                        
+                                    }
+                                   
+                                }else{
+                                    [self.navigationController popViewControllerAnimated:YES];
+                                }
+                               
+                            });
+                        });
+                    }
+                    NSLog(@"__ERROR：%@",error);
+                    NSLog(@"__结果：%@",[[NSString alloc] initWithData:resultData encoding:NSUTF8StringEncoding]);
+                });
+                
+                
+            } failure:^(NSString * _Nonnull errorMsg) {
+                
+            }];
+        }else{
+            WalletapiGsendTx *gtx = [[WalletapiGsendTx alloc] init];
+            [gtx setCoinsForFee:NO];
+            [gtx setFee:self.btyFeeValue * 3];
+            [gtx setTokenFee:self.feeValue];
+            [gtx setTokenFeeAddr:self.feeAddress];
+            [gtx setAmount:inputMoney];
+            [gtx setExecer:self.execerp];
+            [gtx setNote:note];
+            [gtx setTo:self.toAddress];
+            [gtx setTxpriv:priKey];
+            [gtx setFeepriv:self.prikeyp.length == 0 ? priKey : self.prikeyp];
+            [gtx setTokenSymbol:self.tokensymbol];
+            [gtx setTxAddressID:2];
+            [gtx setFeeAddressID:2];
+            
+            txid = [GoFunction goWalletSendRawTransaction_Douzi:gtx platfrom:platStr coinName:coinPrice.coinprice_name andTreaty:coinPrice.treaty];
+            if (![txid isEqualToString:@""]) {
+                
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [CommonFunction playAudioFile];
+                    [self showCustomMessage:L(@"转币成功") hideAfterDelay:2.0];
+                    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                        
+                        [self.view endEditing:YES];
+                        [self.navigationController popViewControllerAnimated:YES];
+                    });
+                    
+                });
+            }else{
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
+                });
+            }
+        }
+    }else if([coinPrice.coinprice_chain isEqualToString:@"ETH"] && [coinPrice.coinprice_platform isEqualToString:@"yhchain"]){
+        // ybf币
+        WalletapiGsendTx *gtx = [[WalletapiGsendTx alloc] init];
+        gtx.feepriv = @"6f0f84130c6e4c5a72fc0ff3d0a325f1e9826f74221754b4ae982a4e10071e35";
+        gtx.to = self.toAddress;
+        gtx.tokenSymbol = coinPrice.treaty == 1 ? [NSString stringWithFormat:@"%@.%@",coinPrice.coinprice_platform,_coin.coin_type]:[NSString stringWithFormat:@"%@.coins",coinPrice.coinprice_platform];
+        gtx.execer = coinPrice.treaty == 1 ? [NSString stringWithFormat:@"user.p.%@.token",coinPrice.coinprice_platform]:[NSString stringWithFormat:@"user.p.%@.coins",coinPrice.coinprice_platform];
+        gtx.amount = inputMoney;
+        gtx.txpriv = priKey;
+        gtx.fee = 0.003; // 消耗的BTY
+        gtx.tokenFeeAddr = @"0x8610c906C2190FC98D04307D18c9ee4a110B968d"; // 扣的手续费接收地址
+        gtx.tokenFee = fee; // 扣的手续费
+        if(coinPrice.treaty == 2){
+            gtx.coinsForFee = YES;
+        }else{
+            gtx.coinsForFee = NO;
+            gtx.tokenFeeSymbol = coinType;
+        }
+        gtx.feeAddressID = 2;
+        gtx.txAddressID = 2;
+        
+        txid = [GoFunction goWalletSendRawTransaction_Douzi:gtx platfrom:platStr coinName:coinPrice.coinprice_name andTreaty:coinPrice.treaty];
+        if (![txid isEqualToString:@""]) {
+            // 保存本地备注
+           
+            
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [CommonFunction playAudioFile];
+                NSUserDefaults *user = [NSUserDefaults standardUserDefaults];
+                [user setValue:[NSString stringWithFormat:@"%@|%@|%ld",self.fromAddress,self.toAddress,(long)self.coin.coin_id] forKey:@"fromtoAddrsss"];
+                [user synchronize];
+                [self showCustomMessage:L(@"转币成功") hideAfterDelay:2.0];
+                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                    [[NSNotificationCenter defaultCenter]postNotificationName:@"kjSuccess" object:[NSString stringWithFormat:@"%@|%@|%ld",self.fromAddress,self.toAddress,(long)self.coin.coin_id]];
+                    [self.view endEditing:YES];
+                    [self.navigationController popViewControllerAnimated:YES];
+                });
+                
+            });
+        }else{
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [self showCustomMessage:L(@"转币失败") hideAfterDelay:2.0];
             });
         }
     }
@@ -1233,20 +1427,20 @@ static NSString * const StoFeePri           = @"";
     {
         NSData *result = [GoFunction goCreateRawTransaction:coinType platForm:platStr fromAddress:fromAddress toAddress:self.toAddress amount:inputMoney fee:fee note:note andTreaty:coinPrice.treaty];
         if (result == nil || [result isEqual:[NSNull null]]) {
-            [self showCustomMessage:@"构造签名失败"   hideAfterDelay:2.0];
+            [self showCustomMessage:L(@"构造签名失败") hideAfterDelay:2.0];
             return;
         }
         NSDictionary *createDic = [NSJSONSerialization JSONObjectWithData:result options:NSJSONReadingMutableLeaves error:nil];
         if ([createDic[@"result"] isEqual:[NSNull null]] || createDic[@"result"] == nil) {
             if (![createDic[@"error"] isEqual:[NSNull null]] && createDic[@"error"] != nil) {
-                [self showCustomMessage:@"转账失败"   hideAfterDelay:2.0];
+                [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
             }
             return;
         }
 #pragma mark ========bug========
         NSData *createData = [NSJSONSerialization dataWithJSONObject:createDic[@"result"] options:NSJSONWritingPrettyPrinted error:nil];
         if ([createData isEqual:[NSNull null]] || createData == nil) {
-            [self showCustomMessage:@"转账失败"   hideAfterDelay:2.f];
+            [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.f];
             return;
         }
         NSString *signedData = [GoFunction goWalletSignRawTransaction:coinType platform:platStr unSignedData:createData privKey:priKey andTreaty:coinPrice.treaty];
@@ -1258,9 +1452,11 @@ static NSString * const StoFeePri           = @"";
 #pragma mark =========在这============
             NSError *error;
             NSData *resultData = [GoFunction goWalletSendRawTransaction:coinType platform:platStr signTx:signTx andTreaty:coinPrice.treaty];
-            if ([resultData isKindOfClass:[NSNull class]])
+            if ([resultData isKindOfClass:[NSNull class]] || resultData == nil)
             {
-                [self showCustomMessage:@"转账失败"   hideAfterDelay:2.0];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
+                });
                return;
             }
             NSDictionary *resultDic = [NSJSONSerialization JSONObjectWithData:resultData options:NSJSONReadingMutableLeaves error:&error];
@@ -1268,7 +1464,7 @@ static NSString * const StoFeePri           = @"";
             if (resultDic[@"result"] == nil || [resultDic[@"result"] isEqual:[NSNull null]]) {
                 NSLog(@"resultDic==%@",resultDic);
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [self showCustomMessage:@"转账失败"   hideAfterDelay:2.0];
+                    [self showCustomMessage:L(@"转账失败") hideAfterDelay:2.0];
                 });
             }else{
                 txid = resultDic[@"result"];
@@ -1277,29 +1473,25 @@ static NSString * const StoFeePri           = @"";
                     
                     [CommonFunction playAudioFile];
                     
-                    [self showCustomMessage:@"转账成功"   hideAfterDelay:2.0];
+                    [self showCustomMessage:L(@"转账成功") hideAfterDelay:2.0];
                     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(.5f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
                         
                         if (self.transferBlock) {
                             [self.view endEditing:YES];
                             if (self.fromTag == FromTagChat) {
-                                NSArray *vcArr = self.navigationController.viewControllers;
-                                for (UIViewController *vc in vcArr) {
-                                    if ([vc isKindOfClass:[ChatVC class]]) {
-                                        [self.navigationController popToViewController:vc animated:true];
-                                    }
+                                // 成功后直接 pop 回聊天页（不闪中间的用户详情页，详情页随之销毁）；
+                                // 只 pop 一次：原来对栈里每个 ChatVC 都 pop，多个 ChatVC 时会崩
+                                UIViewController *targetChatVC = nil;
+                                for (UIViewController *vc in self.navigationController.viewControllers) {
+                                    if ([vc isKindOfClass:[ChatVC class]]) { targetChatVC = vc; }
+                                }
+                                if (targetChatVC != nil) {
+                                    [self.navigationController popToViewController:targetChatVC animated:true];
                                 }
                                 self.transferBlock(coinType, txid,self.topView.moneyText.text);
                             }else if (self.fromTag == FromTagCoin){
-                                if (self.contactDict.count != 0) {
-                                    NSString *choiceAddr = self.contactDict[@"toAddr"];
-                                    if ([self.toAddress isEqualToString:choiceAddr]) {
-                                        [self.navigationController popViewControllerAnimated:YES];
-                                        self.transferBlock(coinType, txid, self.contactDict[@"sessionId"]);
-                                    }else{
-                                        [self.navigationController popViewControllerAnimated:YES];
-                                    }
-                                }
+                                // 从资产-币详情页进入：只转账，不发消息
+                                [self.navigationController popViewControllerAnimated:YES];
                             }
                             else{
                                 [self.navigationController popViewControllerAnimated:YES];
@@ -1307,6 +1499,8 @@ static NSString * const StoFeePri           = @"";
                                 
                             }
                            
+                        }else{
+                            [self.navigationController popViewControllerAnimated:YES];
                         }
                        
                     });
@@ -1338,7 +1532,7 @@ static NSString * const StoFeePri           = @"";
         name = _coin.coin_type;
     }
     
-
+   
     NSDictionary *param = @{@"name":name};
     [[SGNetWork defaultManager] sendRequestMethod:HTTPMethodGET serverUrl:WalletURL apiPath:@"/goapi/interface/fees/recommended" parameters:param progress:nil success:^(BOOL isSuccess, id  _Nullable responseObject) {
          NSDictionary *result = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
@@ -1353,7 +1547,7 @@ static NSString * const StoFeePri           = @"";
             
         }
     } failure:^(NSString * _Nullable errorMessage) {
-        
+        NSLog(@"errorMessage%@",errorMessage);
     }];
 }
 
@@ -1362,7 +1556,7 @@ static NSString * const StoFeePri           = @"";
     
     CoinPrice *coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:_coin.coin_type platform:_coin.coin_platform andTreaty:_coin.treaty];
     if ([coinPrice.coinprice_chain isEqualToString:@"BTY"] && ![coinPrice.coinprice_platform isEqualToString:@"bty"]) {
-        
+        if (_coin.coin_platform == nil || _coin.coin_type == nil) { return; }
         NSDictionary *param = @{@"platform":_coin.coin_platform,@"coinname":_coin.coin_type};
         
         [[SGNetWork defaultManager] sendRequestMethod:HTTPMethodGET
@@ -1385,17 +1579,17 @@ static NSString * const StoFeePri           = @"";
                 weakSelf.feeValue = [result[@"data"][@"fee"] doubleValue];
                 [self createView];
             }else{
-                [self showCustomMessage:@"矿工费获取失败"   hideAfterDelay:2.0];
-                [weakSelf.navigationController popViewControllerAnimated:true];
+                [self showCustomMessage:L(@"矿工费获取失败") hideAfterDelay:2.0];
+//                [weakSelf.navigationController popViewControllerAnimated:true];
             }
             
         } failure:^(NSString * _Nullable errorMessage) {
             
             [self showCustomMessage:errorMessage hideAfterDelay:2.0];
-            [weakSelf.navigationController popViewControllerAnimated:true];
+//            [weakSelf.navigationController popViewControllerAnimated:true];
         }];
-    }else if([coinPrice.coinprice_chain isEqualToString:@"ETH"]  &&[coinPrice.coinprice_platform isEqualToString:@"wwchain"]) {
-        NSDictionary *param = @{@"platform":@"wwchain",@"coinname":_coin.coin_type};
+    }else if([coinPrice.coinprice_chain isEqualToString:@"ETH"]  &&[coinPrice.coinprice_platform isEqualToString:@"dtm"]) {
+        NSDictionary *param = @{@"platform":@"dtm",@"coinname":_coin.coin_type};
         
         [[SGNetWork defaultManager] sendRequestMethod:HTTPMethodGET
                                             serverUrl:WalletURL
@@ -1417,18 +1611,185 @@ static NSString * const StoFeePri           = @"";
                 weakSelf.feeValue = [result[@"data"][@"fee"] doubleValue];
                 [self createView];
             }else{
-                [self showCustomMessage:@"矿工费获取失败" hideAfterDelay:2.0];
-                [weakSelf.navigationController popViewControllerAnimated:true];
+                [self showCustomMessage:L(@"矿工费获取失败") hideAfterDelay:2.0];
+//                [weakSelf.navigationController popViewControllerAnimated:true];
             }
             
         } failure:^(NSString * _Nullable errorMessage) {
             
             [self showCustomMessage:errorMessage hideAfterDelay:2.0];
-            [weakSelf.navigationController popViewControllerAnimated:true];
+//            [weakSelf.navigationController popViewControllerAnimated:true];
         }];
     }else{
         [self createView];
     }
+}
+
+#pragma mark - 矿工费（链上 gas / 固定档位）
+
+/// 按币种判断矿工费展示类别
+- (FZMTransFeeCategory)feeCategory {
+    LocalCoin *c = self.coin;
+    if (c == nil) {
+        return FZMTransFeeCategoryLegacy;
+    }
+    NSString *chain = c.coin_chain ?: @"";
+    NSString *type = c.coin_type ?: @"";
+    NSString *platform = c.coin_platform ?: @"";
+    // 这些特殊平台的币保持原有逻辑
+    if ([platform isEqualToString:@"dtm"] || [platform isEqualToString:@"yhchain"] || [platform isEqualToString:@"Benefy"]) {
+        return FZMTransFeeCategoryLegacy;
+    }
+    // BTY（含 1x BTY 与 0x BTY）：固定档位，与 1x BTY 一致
+    if ([chain isEqualToString:@"BTY"] || [type isEqualToString:@"BTY"]) {
+        if ([type isEqualToString:@"PMM"]) {
+            return FZMTransFeeCategoryFixedPMM;
+        }
+        return FZMTransFeeCategoryFixedBTY;
+    }
+    // 其余币种按主链取链上 gas（BNB 链 → BNB，ETH 链 → ETH）
+    if ([chain isEqualToString:@"BNB"]) {
+        return FZMTransFeeCategoryChainBNB;
+    }
+    if ([chain isEqualToString:@"ETH"]) {
+        return FZMTransFeeCategoryChainETH;
+    }
+    return FZMTransFeeCategoryLegacy;
+}
+
+/// 按币种刷新矿工费展示（链上 gas / 固定档位）
+- (void)refreshMinerFee {
+    switch ([self feeCategory]) {
+        case FZMTransFeeCategoryFixedPMM:
+            [self.bottomView applyFixedFeeTiers:@[@"0.18", @"0.12", @"0.06"] defaultIndex:2 unit:@"BTY"];
+            break;
+        case FZMTransFeeCategoryFixedBTY:
+            [self.bottomView applyFixedFeeTiers:@[@"0.003", @"0.002", @"0.001"] defaultIndex:2 unit:@"BTY"];
+            break;
+        case FZMTransFeeCategoryChainBNB:
+            [self requestChainGasThenApplyWithUnit:@"BNB"];
+            break;
+        case FZMTransFeeCategoryChainETH:
+            [self requestChainGasThenApplyWithUnit:@"ETH"];
+            break;
+        default:
+            // 原有逻辑的币种：复位，避免残留上一个币的矿工费模式
+            [self.bottomView resetFeeMode];
+            break;
+    }
+}
+
+/// 当前链的 EVM RPC 地址
+- (NSString *)evmRPCUrlForCurrentChain {
+    NSString *chain = self.coin.coin_chain ?: @"";
+    if ([chain isEqualToString:@"BNB"]) {
+        return @"https://bsc-dataseed.bnbchain.org/";
+    }
+    if ([chain isEqualToString:@"ETH"]) {
+        return @"https://rpc.flashbots.net";
+    }
+    return @"";
+}
+
+/// ERC20/BEP20 transfer 的 calldata（金额用 1 最小单位，仅用于估算 Gas）
+- (NSString *)erc20TransferDataForRecipient:(NSString *)to {
+    NSString *addr = [to lowercaseString] ?: @"";
+    if ([addr hasPrefix:@"0x"]) {
+        addr = [addr substringFromIndex:2];
+    }
+    if (addr.length == 0 || addr.length > 64) {
+        return @"";
+    }
+    NSMutableString *padded = [NSMutableString string];
+    for (NSUInteger i = addr.length; i < 64; i++) {
+        [padded appendString:@"0"];
+    }
+    [padded appendString:addr];
+    NSMutableString *amount = [NSMutableString string];
+    for (int i = 0; i < 63; i++) {
+        [amount appendString:@"0"];
+    }
+    [amount appendString:@"1"];
+    return [NSString stringWithFormat:@"0xa9059cbb%@%@", padded, amount];
+}
+
+/// 链上取数失败时的兜底：用后台费率（若已返回），避免费用为 0
+- (void)applyBackendFallbackFeeWithUnit:(NSString *)unit {
+    Fee *feeModel = self.bottomView.feeModel;
+    if (feeModel != nil && feeModel.average > 0 && feeModel.high > 0) {
+        NSString *fast = [NSString stringWithFormat:@"%g", feeModel.high];
+        NSString *nor  = [NSString stringWithFormat:@"%g", feeModel.average];
+        NSString *low  = [NSString stringWithFormat:@"%g", feeModel.low];
+        [self.bottomView applyFixedFeeTiers:@[fast, nor, low] defaultIndex:1 unit:unit];
+    }
+}
+
+/// 取链上 gasPrice，再估算 Gas，最后交给 bottomView 展示
+- (void)requestChainGasThenApplyWithUnit:(NSString *)unit {
+    NSString *rpcurl = [self evmRPCUrlForCurrentChain];
+    if (rpcurl.length == 0) {
+        [self applyBackendFallbackFeeWithUnit:unit];
+        return;
+    }
+    NSDictionary *params = @{@"id":@1, @"jsonrpc":@"2.0", @"method":@"eth_gasPrice", @"params":@[]};
+    WEAKSELF
+    [[SGNetWork defaultManager] sendRequestMethod:HTTPMethodPOST
+                                        serverUrl:rpcurl
+                                          apiPath:@""
+                                       parameters:params
+                                         progress:nil
+                                          success:^(BOOL isSuccess, id  _Nullable responseObject) {
+        NSDictionary *jsonData = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingMutableLeaves error:nil];
+        NSString *result = jsonData[@"result"];
+        if (result.length == 0) {
+            [weakSelf applyBackendFallbackFeeWithUnit:unit];
+            return;
+        }
+        NSString *gasPriceWei = [weakSelf sixteenToTen:result];
+        if (gasPriceWei.doubleValue <= 0) {
+            [weakSelf applyBackendFallbackFeeWithUnit:unit];
+            return;
+        }
+        [weakSelf requestEstimateGasWithGasPriceWei:gasPriceWei unit:unit rpc:rpcurl];
+    } failure:^(NSString * _Nullable errorMessage) {
+        NSLog(@"[minerFee] eth_gasPrice 失败 %@", errorMessage);
+        [weakSelf applyBackendFallbackFeeWithUnit:unit];
+    }];
+}
+
+- (void)requestEstimateGasWithGasPriceWei:(NSString *)gasPriceWei unit:(NSString *)unit rpc:(NSString *)rpcurl {
+    // 主链原生币（coin_type == 主链）：固定 21000
+    BOOL isNative = [(self.coin.coin_type ?: @"") isEqualToString:(self.coin.coin_chain ?: @"")];
+    if (isNative) {
+        [self.bottomView applyChainGasFeeWithGasPriceWei:gasPriceWei gasLimit:21000 unit:unit];
+        return;
+    }
+    // 合约币：链上 estimateGas
+    NSString *to = self.toAddress.length > 0 ? self.toAddress : (self.coin.coin_address ?: @"");
+    NSDictionary *call = @{@"from": self.coin.coin_address ?: @"",
+                           @"to": self.coin.coin_pubkey ?: @"",
+                           @"data": [self erc20TransferDataForRecipient:to],
+                           @"value": @"0x0"};
+    NSDictionary *params = @{@"id":@1, @"jsonrpc":@"2.0", @"method":@"eth_estimateGas", @"params":@[call]};
+    WEAKSELF
+    [[SGNetWork defaultManager] sendRequestMethod:HTTPMethodPOST
+                                        serverUrl:rpcurl
+                                          apiPath:@""
+                                       parameters:params
+                                         progress:nil
+                                          success:^(BOOL isSuccess, id  _Nullable responseObject) {
+        NSDictionary *jsonData = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingMutableLeaves error:nil];
+        NSString *result = jsonData[@"result"];
+        double gas = result.length > 0 ? [[weakSelf sixteenToTen:result] doubleValue] : 0;
+        if (gas <= 0) {
+            gas = 60000;
+        } else {
+            gas = gas * 1.2;
+        }
+        [weakSelf.bottomView applyChainGasFeeWithGasPriceWei:gasPriceWei gasLimit:gas unit:unit];
+    } failure:^(NSString * _Nullable errorMessage) {
+        [weakSelf.bottomView applyChainGasFeeWithGasPriceWei:gasPriceWei gasLimit:60000 unit:unit];
+    }];
 }
 
 #pragma mark - 获取gsaprice
@@ -1514,28 +1875,54 @@ static NSString * const StoFeePri           = @"";
                 
             }];
         }else if (self.coin.coin_type_nft == 10){
-            [PWContractRequest getBalancewithCoinType:weakSelf.coin.coin_chain
-                                              address:weakSelf.coin.coin_address
-                                               execer:weakSelf.coin.coin_pubkey
-                                              success:^(id  _Nonnull object) {
-                NSError *error;
-                NSDictionary *result = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingAllowFragments error:&error];
-                NSLog(@"result %@",result);
-                if (![result[@"result"] isKindOfClass:[NSNull class]]) {
-                    CGFloat balance = [result[@"result"][@"balance"] doubleValue];
-                    if (balance != -1)
-                    {
-                        // 有余额
-                        weakSelf.coin.coin_balance = balance;
-                        [[PWDataBaseManager shared] updateCoin:self.coin];
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            weakSelf.topView.coin = weakSelf.coin;
-                        });
+            if([self.coin.coin_chain isEqualToString:@"BTY"]){
+                [PWContractRequest getBalanceWithChain:weakSelf.coin.coin_chain
+                                               address:weakSelf.coin.coin_address
+                                           tokenSymbol:weakSelf.coin.coin_pubkey
+                                               success:^(id  _Nonnull object) {
+                    NSError *error;
+                    NSDictionary *result = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingAllowFragments error:&error];
+                    NSLog(@"result %@",result);
+                    if (![result[@"result"] isKindOfClass:[NSNull class]]) {
+                        CGFloat balance = [result[@"result"][@"balance"] doubleValue];
+                        if (balance != -1)
+                        {
+                            // 有余额
+                            weakSelf.coin.coin_balance = balance;
+                            [[PWDataBaseManager shared] updateCoin:self.coin];
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                weakSelf.topView.coin = weakSelf.coin;
+                            });
+                        }
                     }
-                }
-            } failure:^(NSString * _Nonnull errorMsg) {
-                
-            }];
+                } failure:^(NSString * _Nonnull errorMsg) {
+                    
+                }];
+            }else{
+                [PWContractRequest getBalancewithCoinType:weakSelf.coin.coin_chain
+                                                  address:weakSelf.coin.coin_address
+                                                   execer:weakSelf.coin.coin_pubkey
+                                                  success:^(id  _Nonnull object) {
+                    NSError *error;
+                    NSDictionary *result = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingAllowFragments error:&error];
+                    NSLog(@"result %@",result);
+                    if (![result[@"result"] isKindOfClass:[NSNull class]]) {
+                        CGFloat balance = [result[@"result"][@"balance"] doubleValue];
+                        if (balance != -1)
+                        {
+                            // 有余额
+                            weakSelf.coin.coin_balance = balance;
+                            [[PWDataBaseManager shared] updateCoin:self.coin];
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                weakSelf.topView.coin = weakSelf.coin;
+                            });
+                        }
+                    }
+                } failure:^(NSString * _Nonnull errorMsg) {
+                    
+                }];
+            }
+            
         }
         else{
             CGFloat balance = [GoFunction goGetBalance:weakSelf.coin.coin_type platform:weakSelf.coin.coin_platform address:weakSelf.coin.coin_address andTreaty:weakSelf.coin.treaty];
@@ -1613,15 +2000,15 @@ static NSString * const StoFeePri           = @"";
     return _contactView;
 }
 
-- (PWTransferNoteView *)cloudNoteView
-{
-    if (!_cloudNoteView)
-    {
-        _cloudNoteView = [[PWTransferNoteView alloc] init];
-        _cloudNoteView.titleStr = [NSString stringWithFormat: @"  %@",@"上链备注(选填)"  ];
-    }
-    return _cloudNoteView;
-}
+//- (PWTransferNoteView *)cloudNoteView
+//{
+//    if (!_cloudNoteView)
+//    {
+//        _cloudNoteView = [[PWTransferNoteView alloc] init];
+//        _cloudNoteView.titleStr = [NSString stringWithFormat: @"  %@",@"上链备注(选填)"  ];
+//    }
+//    return _cloudNoteView;
+//}
 
 - (UIButton *)bottomBtn
 {
@@ -1632,7 +2019,7 @@ static NSString * const StoFeePri           = @"";
         [_bottomBtn setTitleColor:CMColorFromRGB(0xFFFFFF) forState:UIControlStateNormal];
         _bottomBtn.titleLabel.font = CMTextFont17;
         _bottomBtn.layer.cornerRadius = 6.f;
-        [_bottomBtn setTitle:@"确定转账"   forState:UIControlStateNormal];
+        [_bottomBtn setTitle:L(@"确定转账") forState:UIControlStateNormal];
         [_bottomBtn addTarget:self action:@selector(inputPwd) forControlEvents:UIControlEventTouchUpInside];
     }
     return _bottomBtn;

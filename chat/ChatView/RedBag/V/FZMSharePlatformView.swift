@@ -2,7 +2,7 @@
 //  IMSharePlatformView.swift
 //  IM_SocketIO_Demo
 //
-//  Created by 吴文拼 on 2018/7/12.
+//  Created by fzm on 2018/7/12.
 //  Copyright © 2018年 Wang. All rights reserved.
 //
 
@@ -12,7 +12,7 @@ class FZMSharePlatformView: UIView {
     
     init(clickBlock : ((_ clickIndex : Int)->())?) {
         super.init(frame: CGRect.zero)
-        let titleLab = UILabel.getLab(font: UIFont.regularFont(12), textColor: UIColor.white, textAlignment: NSTextAlignment.center, text: "选择你的分享方式")
+        let titleLab = UILabel.getLab(font: UIFont.regularFont(12), textColor: UIColor.white, textAlignment: NSTextAlignment.center, text: L("选择你的分享方式"))
         self.addSubview(titleLab)
         titleLab.snp.makeConstraints { (m) in
             m.centerX.top.equalToSuperview()

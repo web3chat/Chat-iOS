@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 郑晨 on 2021/7/12.
-//  Copyright © 2021 陈健. All rights reserved.
+//  Copyright © 2021 fzm. All rights reserved.
 //
 
 #import "PWSingelCoinTransListViewController.h"
@@ -12,6 +12,8 @@
 #import "TradeDetailViewController.h"
 #import "Depend.h"
 #import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWSingelCoinTransListViewController ()
 <UITableViewDelegate,UITableViewDataSource>
 @property (nonatomic, strong) UITableView *tableView;
@@ -29,7 +31,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
-    self.title = @"转账记录";
+    self.title = L(@"转账记录");
     [self.view addSubview:self.tableView];
     self.transactionArray = [[NSMutableArray alloc] init];
     
@@ -105,7 +107,7 @@
     UILabel *countLab = [UILabel getLabWithFont:[UIFont systemFontOfSize:14]
                                       textColor:CMColorFromRGB(0xd4b171)
                                   textAlignment:NSTextAlignmentLeft
-                                           text:[NSString stringWithFormat:@"已转%@(个)",_selectedCoin.coin_type]];
+                                           text:[NSString stringWithFormat:L(@"已转%@(个)"),_selectedCoin.coin_type]];
     [backgroundImgView addSubview:countLab];
     
     UILabel *counntDeatilLab = [UILabel getLabWithFont:[UIFont fontWithName:@"DINAlternate-Bold" size:36]
@@ -261,8 +263,7 @@
 //    NSData *jsonData = [NSJSONSerialization dataWithJSONObject:param options:0 error:nil];
 //    
 //    NSString *strJson = [[NSString alloc] initWithData:jsonData encoding:NSUTF8StringEncoding];
-//    // https://183.129.226.77:8083
-//    NSString *url = GoNodeUrl;// @"https://go.biqianbao.net";
+//    NSString *url = GoNodeUrl;
 //    AFURLSessionManager *manager = [[AFURLSessionManager alloc] initWithSessionConfiguration:[NSURLSessionConfiguration defaultSessionConfiguration]];
 //    NSMutableURLRequest *req = [[AFJSONRequestSerializer serializer] requestWithMethod:@"POST" URLString:url parameters:nil error:nil];
 //    AFSecurityPolicy *securityPolicy = [AFSecurityPolicy policyWithPinningMode:AFSSLPinningModeNone];

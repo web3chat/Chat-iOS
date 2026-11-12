@@ -13,7 +13,7 @@ class FZMAtPeopleVC: FZMGroupMemberListVC {
     private let disposeBag = DisposeBag.init()
     
     private lazy var allNumberLab : UILabel = {
-        let lab = UILabel.getLab(font: UIFont.mediumFont(16), textColor: Color_24374E, textAlignment: .left, text: "所有人(\(group.memberNum))")
+        let lab = UILabel.getLab(font: UIFont.mediumFont(16), textColor: Color_24374E, textAlignment: .left, text: L("所有人")+"(\(group.memberNum))")
         return lab
     }()
     
@@ -42,7 +42,7 @@ class FZMAtPeopleVC: FZMGroupMemberListVC {
             }
             let tap = UITapGestureRecognizer.init()
             tap.rx.event.subscribe({[weak self] (_) in
-                self?.select(uid: "ALL", name: "所有人")
+                self?.select(uid: "ALL", name: L("所有人"))
             }).disposed(by: disposeBag)
             v.addGestureRecognizer(tap)
             return v
@@ -55,13 +55,13 @@ class FZMAtPeopleVC: FZMGroupMemberListVC {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.navigationItem.title = "选择成员"
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "取消", style: .plain, target: self, action: #selector(cancelClick))
+        self.navigationItem.title = L("选择成员")
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: L("取消"), style: .plain, target: self, action: #selector(cancelClick))
         self.navigationItem.rightBarButtonItems?.remove(at: 0)
     }
     
     override func deal(with list: [GroupMember]) {
-        self.allNumberLab.text = "所有人(\(list.count))"
+        self.allNumberLab.text = L("所有人")+"(\(list.count))"
         
         self.view.showProgress()
         DispatchQueue.global().async {
@@ -96,7 +96,7 @@ extension FZMAtPeopleVC {
         let model = self.memberList[section]
         var title = ""
         if !self.isSearch{
-            title = section == 0 ? "群主、管理员" : "\(model.title)"
+            title = section == 0 ? L("群主、管理员") : "\(model.title)"
         }else{
             title = "\(model.title)"
         }

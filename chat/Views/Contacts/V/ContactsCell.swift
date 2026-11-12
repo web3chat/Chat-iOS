@@ -2,7 +2,7 @@
 //  ContactsCell.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/25.
+//  Created by fzm on 2021/1/25.
 //
 
 import UIKit
@@ -128,14 +128,15 @@ class ContactsCell: UITableViewCell {
         self.nameLab.attributedText = nil
         self.desLab.text = nil
         self.desLab.attributedText = nil
-        
-        self.headerImageView.kf.setImage(with: URL.init(string: contactModel.avatar), placeholder: contactModel.type == .person ? #imageLiteral(resourceName: "friend_chat_avatar") : #imageLiteral(resourceName: "group_chat_avatar"))
+
+        let placeholder = contactModel.type == .person ? #imageLiteral(resourceName: "friend_chat_avatar") : #imageLiteral(resourceName: "group_chat_avatar")
+        applyAvatar(urlString: contactModel.avatar, placeholder: placeholder, cacheKey: contactModel.sessionIDStr)
         
         let nameStr = contactModel.name
         self.nameLab.text = nameStr
         // 群类型 (0: 普通群, 1: 全员群, 2: 部门群)
         if contactModel.type == .group, let group = contactModel.group, group.groupType != 0 {
-            let typeStr = group.groupType == 1 ? "全员" : "部门"
+            let typeStr = group.groupType == 1 ? L("全员") : L("部门")
             self.typeLab.text = typeStr
             self.typeLab.isHidden = false
             
@@ -166,7 +167,16 @@ class ContactsCell: UITableViewCell {
             self.dealSearchString(data: contactModel)
         }
     }
-    
+
+    /// 头像贴图：同步优先（本地缩略图 → Kingfisher 内存 → Kingfisher 磁盘），
+    /// 都没有才占位 + 异步下载。具体取图链路见 `UIImageView.loadAvatarSynchronously`。
+    private func applyAvatar(urlString: String, placeholder: UIImage, cacheKey: String) {
+        headerImageView.loadAvatarSynchronously(cacheKey: cacheKey,
+                                                urlString: urlString,
+                                                placeholder: placeholder,
+                                                size: CGSize(width: 35, height: 35))
+    }
+
     private func dealSearchString(data: ContactViewModel) {
         if let searchString = data.searchString, let user = data.user {
             let name = data.name
@@ -178,7 +188,7 @@ class ContactsCell: UITableViewCell {
                 self.nameLab.text = name
                 var desString = ""
                 if user.contactsName.lowercased().contains(searchString.lowercased()) {
-                    desString = "昵称: " + user.contactsName
+                    desString = L("昵称: ") + user.contactsName
                 }
                 guard desString != "" else { return }
                 self.desLab.snp.updateConstraints { (m) in

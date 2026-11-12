@@ -22,8 +22,8 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
         view.addShadow(ofColor: UIColor.init(hexString: "#24374E", transparency: 0.35)!, radius: 5, offset: .zero, opacity: 1)
         
         let label1 = UILabel.init()
-        let str = "加入团队"
-        let alias = "加入"
+        let str = L("加入团队")
+        let alias = L("加入")
         let attStr = NSMutableAttributedString.init(string: str, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.boldFont(16)])
         attStr.addAttributes([NSAttributedString.Key.foregroundColor: UIColor.init(hexString: "#F7B500")!], range:(str as NSString).range(of: alias as String))
         label1.attributedText = attStr
@@ -35,7 +35,7 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
         
         let label2 = UILabel()
         label2.font = .regularFont(14)
-        label2.text = "你的团队已经在使用\(APPNAME)，可通过扫描团队二维码进入团队，与成员一起沟通协作，高效作业。"
+        label2.text = String(format: L("你的团队已经在使用%@，可通过扫描团队二维码进入团队，与成员一起沟通协作，高效作业。"), APPNAME)
         label2.numberOfLines = 0
         view.addSubview(label2)
         label2.snp.makeConstraints { (m) in
@@ -69,8 +69,8 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
         view.addShadow(ofColor: UIColor.init(hexString: "#24374E", transparency: 0.35)!, radius: 5, offset: .zero, opacity: 1)
         
         let label1 = UILabel.init()
-        let str = "创建团队"
-        let alias = "创建"
+        let str = L("创建团队")
+        let alias = L("创建")
         let attStr = NSMutableAttributedString.init(string: str, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.boldFont(16)])
         attStr.addAttributes([NSAttributedString.Key.foregroundColor: UIColor.init(hexString: "#EB8282")!], range:(str as NSString).range(of: alias as String))
         label1.attributedText = attStr
@@ -82,7 +82,7 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
         
         let label2 = UILabel()
         label2.font = .regularFont(14)
-        label2.text = "通过创建团队，你将直接称为团队或企业负责人，可添加成员，让整个团队一起享受高效的沟通协作吧。"
+        label2.text = L("通过创建团队，你将直接称为团队或企业负责人，可添加成员，让整个团队一起享受高效的沟通协作吧。")
         label2.numberOfLines = 0
         view.addSubview(label2)
         label2.snp.makeConstraints { (m) in
@@ -142,7 +142,7 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
             m.edges.equalToSuperview()
         }
         
-        let labTitle = UILabel.getLab(font: .regularFont(18), textColor: Color_24374E, textAlignment: .center, text: "加入或创建团队")
+        let labTitle = UILabel.getLab(font: .regularFont(18), textColor: Color_24374E, textAlignment: .center, text: L("加入或创建团队"))
         view.addSubview(labTitle)
         labTitle.snp.makeConstraints { make in
             make.top.equalToSuperview().offset(k_SafeTopInset)
@@ -152,7 +152,7 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
         
         let btnLogout = UIButton.init(type: .custom)
         btnLogout.titleLabel?.font = .mediumFont(16)
-        btnLogout.setTitle("退出账号", for: .normal)
+        btnLogout.setTitle(L("退出账号"), for: .normal)
         btnLogout.setTitleColor(Color_Theme, for: .normal)
         btnLogout.addTarget(self, action: #selector(popBack), for: .touchUpInside)
         
@@ -165,7 +165,7 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
         
         let btnRefresh = UIButton.init(type: .custom)
         btnRefresh.titleLabel?.font = .mediumFont(16)
-        btnRefresh.setTitle("刷新", for: .normal)
+        btnRefresh.setTitle(L("刷新"), for: .normal)
         btnRefresh.setTitleColor(Color_Theme, for: .normal)
         btnRefresh.addTarget(self, action: #selector(checkBindTeamRequest), for: .touchUpInside)
         
@@ -207,9 +207,9 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
     }
     
     @objc private func popBack() {
-        let alertController = UIAlertController.init(title: "提示", message: "确定退出登录", preferredStyle: .alert)
-        let cancelAction = UIAlertAction(title: "取消", style: .cancel, handler: nil)
-        let okAction = UIAlertAction.init(title: "确定", style: .destructive, handler: { (_) in
+        let alertController = UIAlertController.init(title: L("提示"), message: L("确定退出登录"), preferredStyle: .alert)
+        let cancelAction = UIAlertAction(title: L("取消"), style: .cancel, handler: nil)
+        let okAction = UIAlertAction.init(title: L("确定"), style: .destructive, handler: { (_) in
             
             LoginUser.shared().logout()
             
@@ -230,7 +230,7 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
                 // 跳转到加入团队网页
                 self.goH5WebVC(.joinTeam(url: qrcodeStr))
             } else {
-                self.showToast("请扫描团队二维码!")
+                self.showToast(L("请扫描团队二维码!"))
             }
         }
         DispatchQueue.main.async {
@@ -272,7 +272,7 @@ class CreateOrJoinTeamVC: UIViewController, ViewControllerProtocol, UIGestureRec
             strongSelf.hideProgress()
             
             // 重新加载页面
-            APP.shared().showToast("团队创建成功")
+            APP.shared().showToast(L("团队创建成功"))
         } failureBlock: { [weak self] (errorStr) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()

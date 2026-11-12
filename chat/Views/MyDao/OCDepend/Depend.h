@@ -38,14 +38,13 @@
 #import <AFNetworking/AFNetworking.h>
 #import "SGNetWork.h"
 #import "NSString+CommonUseTool.h"
-#import "YZAuthID.h"
 #import "PWNetworkingTool.h"
 #import "BlueButton.h"
 #import "NoRecordView.h"
 #import "PWNFTRequest.h"
 #import "SAMKeychain.h"
-
-
+#import "PWAppsettings.h"
+#import <ReactiveObjC/ReactiveObjC.h>
 
 typedef NS_ENUM(NSUInteger, ParentViewControllerFrom) {
     /**
@@ -100,6 +99,9 @@ typedef NS_ENUM(NSUInteger, TransferFrom) {
 
 #define PlaceHolderColor CMColor(153,153,153)
 #define MainColor (SGColorRGBA(47, 134, 242, 1))
+/// 主题蓝：与 Swift 侧 `Color_Theme`（#32B2F7）完全一致，
+/// 用于钱包相关页面（我的资产 / 币种详情 / 账单详情 / 搜索币 / 二维码收款）的背景色
+#define ThemeBlueColor SGColorFromRGB(0x32B2F7)
 #define SCREENBOUNDS [[UIScreen mainScreen] bounds]
 #define TipRedColor CMColor(220,40,40)
 #define ErrorColor CMColor(220,40,40)
@@ -129,7 +131,8 @@ typedef NS_ENUM(NSUInteger, TransferFrom) {
 #define GoNodeURL  [NSString stringWithFormat:@"%@-%@",@"gonodeurl",kAppName]
 
 #define APPSYMBOL @"open_wallet"
-#define APPKEY    @"0425823a38b591b104ca0c3fcf1f3d9d"
+// Walletapi SDK 的 AppKey（第三方配置，见 README「第三方配置需求」）
+#define APPKEY    @""
 
 //删除钱包通知名
 static NSString *const kDeleteWalletNotification = @"kDeleteWalletNotification";
@@ -145,14 +148,18 @@ static NSString *const kChangeLanguageNotification = @"kChangeLanguaeNotificatio
 #define BgColor CMColor(246,248,250)
 #define ErrorColor CMColor(220,40,40)
 #define CMColorRGBA(r, g, b, a) [UIColor colorWithRed:(r)/255.0 green:(g)/255.0 blue:(b)/255.0 alpha:a]
-#define WalletURL  @""
-#define GoNodeUrl  @""
+// 钱包后端接口域名：币种搜索/资产/交易记录/行情/探索/手续费推荐等
+#define WalletURL @""
+// 区块链 Go 节点地址（Walletapi setNode，签名/广播/查询）
+#define GoNodeUrl @""
+// NFT 服务地址
 #define SLGNFTURL @""
 //获取区块链浏览器地址
 #define TRADEGETBROWER @"/goapi/interface/tokenview/explore?platform="
 //钱包信息（下载地址）
 #define WalletInfo @"/v1/data/download-info"
-#define UPDATEJSON @"https://mydao.s3.ap-northeast-2.amazonaws.com/Mydao/mydaoios.json"
+// App 版本更新 JSON 地址
+#define UPDATEJSON @""
 // 探索
 #define PWallet_Banners @"/interface/banner"
 #define Explore_Apps @"/interface/explore"

@@ -1,0 +1,15 @@
+/*
+ InfoPlist.strings (English)
+ The file name MUST be InfoPlist.strings — that is the only name iOS looks for.
+ Keys must be the Info.plist keys, not the message text itself.
+ The language of a permission alert follows the system / per-app language setting,
+ not the in-app language switch (UserDefaults "AppSelectedLanguage").
+*/
+"NSCameraUsageDescription" = "\"谈信开源\" would like to access your camera so you can use Scan QR, take photos, and send or upload them.";
+"NSMicrophoneUsageDescription" = "\"谈信开源\" would like to access your microphone so you can send voice messages and use voice chat.";
+"NSLocalNetworkUsageDescription" = "\"谈信开源\" would like to access your local network so you can use voice chat and other services on the same network.";
+"NSLocationWhenInUseUsageDescription" = "\"谈信开源\" would like to use your location so you can use location, maps, and related services.";
+"NSPhotoLibraryUsageDescription" = "\"谈信开源\" would like to access your photo library so you can use Scan QR, upload pictures, and save photos, etc.";
+"NSPhotoLibraryAddUsageDescription" = "\"谈信开源\" would like to access your photo library so you can use Scan QR, upload pictures, and save photos, etc.";
+"NSFaceIDUsageDescription" = "\"谈信开源\" needs to use Face ID to verify your identity instead of entering your private chat password (the binding information is stored only on this device).";
+"NSSpeechRecognitionUsageDescription" = "“TanXin” needs speech recognition to turn voice messages into text. Recognition runs on this device; audio is never uploaded.";

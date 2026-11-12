@@ -2,7 +2,7 @@
 //  Blockchain.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/4.
+//  Created by fzm on 2021/1/4.
 //
 
 import Foundation
@@ -41,6 +41,7 @@ enum BlockchainAPI {
         case eth = "chain.ETH"
         case bnb = "chain.BNB"
         case bty = "chain.BTY"
+        case pol = "chain.POL"
     }
     
     enum UpdateUserLevel: String {
@@ -49,12 +50,15 @@ enum BlockchainAPI {
         case `public`  = "public"
     }
     case updateUser(name: UpdateUserInfo, type: Int, value: String, level: UpdateUserLevel)
+    
+    //查询地址余额（BTY 主链，Chain33.GetBalance）
+    case getBalance(addresses: [String])
 }
 
 extension BlockchainAPI: XLSTargetType {
     
     var baseURL: URL {
-        return URL.init(string: BlockchainServerInUse?.value)  ?? URL.init(string: "http://57.180.61.19:8058")!
+        return URL.init(string: BlockchainServerInUse?.value) ?? UNCONFIGURED_SERVER_URL
     }
     
     var path: String {
@@ -86,11 +90,11 @@ extension BlockchainAPI: XLSTargetType {
             var errorInfo = ""
             switch error.errorCode {
             case NSURLErrorNotConnectedToInternet:
-                errorInfo = "无网络，请检查网络连接"
+                errorInfo = L("无网络，请检查网络连接")
             case NSURLErrorTimedOut:
-                errorInfo = "请求超时，请检查网络连接"
+                errorInfo = L("请求超时，请检查网络连接")
             default:
-                errorInfo = "网络连接错误，请稍后再试"
+                errorInfo = L("网络连接错误，请稍后再试")
             }
             let error = NSError.init(domain: "", code: error.errorCode, userInfo: [NSLocalizedDescriptionKey: errorInfo])
             return Result<JSON, Error>.failure(error)
@@ -199,6 +203,14 @@ extension BlockchainAPI: XLSTargetType {
                     "id":1,
                     "method": "chat.CreateRawUpdateUserTx",
                     "params":[fields]]
+        case .getBalance(let addresses):
+            return ["jsonrpc": "2.0",
+                    "id":1,
+                    "method": "Chain33.GetBalance",
+                    "params":[["addresses": addresses,
+                               "execer": "coins",
+                               "assetExec": "",
+                               "assetSymbol": ""]]]
         }
     }
     

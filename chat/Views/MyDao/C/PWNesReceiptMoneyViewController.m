@@ -3,13 +3,15 @@
 //  PWallet
 //
 //  Created by 郑晨 on 2019/12/3.
-//  Copyright © 2019 陈健. All rights reserved.
+//  Copyright © 2019 fzm. All rights reserved.
 //
 
 #import "PWNesReceiptMoneyViewController.h"
 #import "PWAlertController.h"
 #import "Depend.h"
 #import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 
 @interface PWNesReceiptMoneyViewController ()
 
@@ -49,7 +51,8 @@
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
-    self.navigationController.navigationBar.hidden = true;
+    // 同 ScanViewController：必须用 setNavigationBarHidden，退回去时才能被上一页正确恢复
+    [self.navigationController setNavigationBarHidden:YES animated:NO];
     self.showMaskLine= NO;
 //    [self openGCDBalance];
 //    if (@available(iOS 13.0, *)) {
@@ -72,8 +75,8 @@
 
 - (void)createView{
     
-    //背景
-    UIImageView *bgView = [[UIImageView alloc]initWithImage:[CommonFunction createImageWithColor:SGColorFromRGB(0xEBAE44)]];
+    //背景（主题蓝，与钱包其它页面统一）
+    UIImageView *bgView = [[UIImageView alloc]initWithImage:[CommonFunction createImageWithColor:ThemeBlueColor]];
     [self.view addSubview:bgView];
     [bgView mas_makeConstraints:^(MASConstraintMaker *make) {
         make.edges.equalTo(self.view);
@@ -97,7 +100,7 @@
     titleLabel.textColor = SGColorFromRGB(0x333649);
     titleLabel.font = [UIFont boldSystemFontOfSize:18];
     titleLabel.textAlignment = NSTextAlignmentCenter;
-    titleLabel.text = @"二维码收款";
+    titleLabel.text = L(@"二维码收款");
     
     [titleLabel mas_makeConstraints:^(MASConstraintMaker *make) {
         make.top.equalTo(backBtn);
@@ -117,12 +120,13 @@
     UILabel *moneyLab = [UILabel getLabWithFont:[UIFont systemFontOfSize:22]
                                       textColor:SGColorFromRGB(0x333649)
                                   textAlignment:NSTextAlignmentCenter
-                                           text:@"扫二维码向我转账"];
+                                           text:L(@"扫二维码向我转账")];
+    moneyLab.numberOfLines = 0;
     [self.view addSubview:moneyLab];
     self.moneyLab = moneyLab;
     
     UIButton *moneyBtn = [[UIButton alloc] init];
-    [moneyBtn setTitle:@"指定金额" forState:UIControlStateNormal];
+    [moneyBtn setTitle:L(@"指定金额") forState:UIControlStateNormal];
     [moneyBtn addTarget:self action:@selector(inputMoney:) forControlEvents:UIControlEventTouchUpInside];
     [moneyBtn setTitleColor:SGColorFromRGB(0x7190ff) forState:UIControlStateNormal];
     [moneyBtn.titleLabel setFont:[UIFont systemFontOfSize:12.f]];
@@ -146,7 +150,7 @@
     
     NSString *balanceStr = [CommonFunction removeZeroFromMoney:[NSString stringWithFormat:@"%f",_coin.coin_balance]];
     UILabel *balanceLab = [[UILabel alloc] init];
-    balanceLab.text = [NSString stringWithFormat:@"%@：%@%@",@"余额",balanceStr,_coin.optional_name];
+    balanceLab.text = [NSString stringWithFormat:@"%@：%@%@", L(@"余额"), balanceStr, _coin.optional_name];
     balanceLab.textColor = SGColorRGBA(142, 146, 163, 1);
     balanceLab.font = CMTextFont14;
     balanceLab.textAlignment = NSTextAlignmentCenter;
@@ -180,7 +184,7 @@
         platform = @"bty";
     }
     
-    NSString *qrcodeStr = [NSString stringWithFormat:@"%@?transfer_target=%@&address=%@&chain=%@&platform=%@",@"https://3syxin.com/",targetStr,_coin.coin_address,coinType,platform];
+    NSString *qrcodeStr = _coin.coin_address;
 
     [qrcodeImg setImage:[CommonFunction createImgQRCodeWithString:qrcodeStr centerImage:[UIImage imageNamed:@"avatar_persion"]]];
     
@@ -328,7 +332,7 @@
         case 100:
         {
             _receiptQrcodeType = ReceiptQrcodeTypeUniseral;
-            self.tipLab.text = @"适用于所有钱包收款";
+            self.tipLab.text = L(@"适用于所有钱包收款");
             [self.tipLab mas_remakeConstraints:^(MASConstraintMaker *make) {
                 make.left.equalTo(self.view).offset(87);
                 make.width.mas_equalTo(115);
@@ -350,8 +354,8 @@
         case 200:
         {
              _receiptQrcodeType = ReceiptQrcodeTypeExclusive;
-            CGSize size = [[NSString stringWithFormat:@"仅适用于%@收款",@""] sizeWithAttributes:[NSDictionary dictionaryWithObjectsAndKeys:[UIFont systemFontOfSize:12.f],NSFontAttributeName,nil]];
-            self.tipLab.text = [NSString stringWithFormat:@"仅适用于%@收款",@""];
+            CGSize size = [[NSString stringWithFormat:L(@"仅适用于%@收款"), @""] sizeWithAttributes:[NSDictionary dictionaryWithObjectsAndKeys:[UIFont systemFontOfSize:12.f],NSFontAttributeName,nil]];
+            self.tipLab.text = [NSString stringWithFormat:L(@"仅适用于%@收款"), @""];
             [self.tipLab mas_remakeConstraints:^(MASConstraintMaker *make) {
 
                 make.width.mas_equalTo(size.width+15);
@@ -377,14 +381,14 @@
 - (void)inputMoney:(UIButton *)sender
 {
     WEAKSELF
-    PWAlertController *alertVC = [[PWAlertController alloc] initWithTitle:@"请输入转币数量" withTextValue:@""  leftButtonName:nil rightButtonName:@"确定"   handler:^(ButtonType type, NSString *text) {
+    PWAlertController *alertVC = [[PWAlertController alloc] initWithTitle:L(@"请输入转币数量") withTextValue:@"" leftButtonName:nil rightButtonName:L(@"确定") handler:^(ButtonType type, NSString *text) {
         if (type == ButtonTypeRight) {
             weakSelf.moneyStr = text;
             if ([weakSelf.coin.coin_chain isEqualToString:@"NEO"]) {
                 weakSelf.moneyStr = [text stringByReplacingOccurrencesOfString:@"." withString:@""];
             }
             
-            weakSelf.moneyLab.text = [NSString stringWithFormat:@"%@ %@ %@",@"指定收款",weakSelf.moneyStr,weakSelf.coin.optional_name];
+            weakSelf.moneyLab.text = [NSString stringWithFormat:@"%@ %@ %@", L(@"指定收款"), weakSelf.moneyStr, weakSelf.coin.optional_name];
 
             CGRect moneyLabRect = [weakSelf.moneyLab.text boundingRectWithSize:CGSizeMake(kScreenWidth - 45 - 24, MAXFLOAT)
                                                                        options:NSStringDrawingUsesLineFragmentOrigin
@@ -399,7 +403,7 @@
             }
             
             
-            [weakSelf.moneyBtn setTitle:@"修改金额"   forState:UIControlStateNormal];
+            [weakSelf.moneyBtn setTitle:L(@"修改金额") forState:UIControlStateNormal];
             
             CoinPrice *coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:weakSelf.coin.coin_type platform:weakSelf.coin.coin_platform andTreaty:weakSelf.coin.treaty];
             UIImageView *tempImageView = [[UIImageView alloc]init];
@@ -448,7 +452,7 @@
     }
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
     pasteboard.string = _coin.coin_address;
-    [self showCustomMessage:@"复制成功"   hideAfterDelay:2.0];
+    [self showCustomMessage:L(@"复制成功") hideAfterDelay:2.0];
 }
 
 - (void)backAction
@@ -462,11 +466,11 @@
     {
         NSString *balanceStr = [CommonFunction removeZeroFromMoney:[NSString stringWithFormat:@"%f",_coin.coin_balance]];
         [sender setSelected:NO];
-        self.balanceLab.text = [NSString stringWithFormat:@"%@：%@%@",@"余额"  ,balanceStr,_coin.optional_name];
+        self.balanceLab.text = [NSString stringWithFormat:@"%@：%@%@", L(@"余额"), balanceStr, _coin.optional_name];
     }else{
         [sender setSelected:YES];
-        self.balanceLab.text = [NSString stringWithFormat:@"%@：****%@",@"余额"  ,_coin.optional_name];
-        self.balanceLab.text = [NSString stringWithFormat:@"%@：****%@",@"余额"  ,_coin.optional_name];
+        self.balanceLab.text = [NSString stringWithFormat:@"%@：****%@", L(@"余额"), _coin.optional_name];
+        self.balanceLab.text = [NSString stringWithFormat:@"%@：****%@", L(@"余额"), _coin.optional_name];
         
     }
     CGSize size = [self.balanceLab.text sizeWithAttributes:[NSDictionary dictionaryWithObjectsAndKeys:self.balanceLab.font,NSFontAttributeName,nil]];
@@ -494,7 +498,7 @@
                 if (balance != -1)
                 {
                     NSString *balanceStr = [CommonFunction removeZeroFromMoney:[NSString stringWithFormat:@"%f",balance]];
-                    weakSelf.balanceLab.text = [NSString stringWithFormat:@"%@：%@%@",@"余额"  ,balanceStr,weakSelf.coin.optional_name];
+                    weakSelf.balanceLab.text = [NSString stringWithFormat:@"%@：%@%@", L(@"余额"), balanceStr, weakSelf.coin.optional_name];
                 }
             }
             

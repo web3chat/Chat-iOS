@@ -42,7 +42,7 @@ class FZMGroupChooseMemberSourceVC: UIViewController, ViewControllerProtocol {
             make.size.equalTo(CGSize.init(width: 35, height: 35))
         }
         
-        let lab = UILabel.getLab(font: .mediumFont(16), textColor: Color_24374E, textAlignment: .left, text: "从好友列表选择成员")
+        let lab = UILabel.getLab(font: .mediumFont(16), textColor: Color_24374E, textAlignment: .left, text: L("从好友列表选择成员"))
         view.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalTo(imageView.snp.right).offset(5)
@@ -99,7 +99,7 @@ class FZMGroupChooseMemberSourceVC: UIViewController, ViewControllerProtocol {
             make.size.equalTo(CGSize.init(width: 35, height: 35))
         }
         
-        let lab = UILabel.getLab(font: .mediumFont(16), textColor: Color_24374E, textAlignment: .left, text: "从组织架构选择成员")
+        let lab = UILabel.getLab(font: .mediumFont(16), textColor: Color_24374E, textAlignment: .left, text: L("从组织架构选择成员"))
         view.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalTo(imageView.snp.right).offset(5)
@@ -177,9 +177,9 @@ class FZMGroupChooseMemberSourceVC: UIViewController, ViewControllerProtocol {
         var titleStr = ""
         switch chooseType {
         case .addNewMember(_,_):
-            titleStr = "添加新成员"
+            titleStr = L("添加新成员")
         case .createGroup:
-            titleStr = "创建群聊"
+            titleStr = L("创建群聊")
         }
         self.title = titleStr
         
@@ -192,7 +192,7 @@ class FZMGroupChooseMemberSourceVC: UIViewController, ViewControllerProtocol {
         self.view.backgroundColor = Color_F6F7F8
         self.xls_navigationBarBackgroundColor = Color_F6F7F8
         
-        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "选择群聊成员")
+        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("选择群聊成员"))
         self.view.addSubview(lab)
         lab.snp.makeConstraints { make in
             make.left.equalToSuperview().offset(15)
@@ -226,7 +226,7 @@ class FZMGroupChooseMemberSourceVC: UIViewController, ViewControllerProtocol {
         if let nickname = LoginUser.shared().nickName?.value, !nickname.isBlank {
             groupName = nickname
         }
-        groupName = groupName + "创建的群聊"
+        groupName = groupName + L("创建的群聊")
         
         // 创建群聊请求
         GroupManager.shared().createGroup(serverUrl: server.value, name: groupName, introduce: "", avatarUrl: "", memberIds: userIds) { [weak self] (group) in
@@ -236,7 +236,7 @@ class FZMGroupChooseMemberSourceVC: UIViewController, ViewControllerProtocol {
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("创建群失败")
+            strongSelf.showToast(L("创建群失败"))
         }
     }
     

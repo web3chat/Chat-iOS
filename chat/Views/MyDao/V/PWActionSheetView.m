@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 郑晨 on 2019/12/10.
-//  Copyright © 2019 陈健. All rights reserved.
+//  Copyright © 2019 fzm. All rights reserved.
 //
 
 #import "PWActionSheetView.h"
@@ -11,7 +11,9 @@
 #import "PWActionCell.h"
 #import "PWDataBaseManager.h"
 #import "Depend.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWActionSheetView()
 <UITableViewDelegate, UITableViewDataSource>
 
@@ -92,7 +94,7 @@
     
     _cancelBtn = [[UIButton alloc] initWithFrame:CGRectMake(16, 0, 40, 50)];
     [_cancelBtn addTarget:self action:@selector(dismiss) forControlEvents:UIControlEventTouchUpInside];
-    [_cancelBtn setTitle:@"取消" forState:UIControlStateNormal];
+    [_cancelBtn setTitle:L(@"取消") forState:UIControlStateNormal];
     
     [_cancelBtn.titleLabel setFont:[UIFont systemFontOfSize:16.f]];
     [_cancelBtn setTitleColor:SGColorFromRGB(0x8e92a3) forState:UIControlStateNormal];

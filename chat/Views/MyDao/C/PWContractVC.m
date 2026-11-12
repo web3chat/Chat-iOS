@@ -11,7 +11,9 @@
 #import "Depend.h"
 #import "PWActionSheetView.h"
 #import "PWContractRequest.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWContractVC ()
 <UITextFieldDelegate>
 
@@ -35,7 +37,7 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     // Do any additional setup after loading the view.
-    self.title = @"添加代币";
+    self.title = L(@"添加代币");
     self.view.backgroundColor = UIColor.whiteColor;
     [self initView];
 }
@@ -47,7 +49,16 @@
     if (@available(iOS 15, *))
     {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        appearance.backgroundColor = SGColorFromRGB(0xEBAE44);
+        // iOS 26/27：不显式 opaque 会被画成「液态玻璃」，backgroundColor 只作用于状态栏区域
+        [appearance configureWithOpaqueBackground];
+        // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+        appearance.buttonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.buttonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backgroundColor = SGColorFromRGB(0xffffff);
         appearance.backgroundEffect = nil;
         appearance.shadowColor = UIColor.clearColor;
         appearance.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : SGColorFromRGB(0x333649)};
@@ -57,7 +68,7 @@
     else
     {
         self.navigationController.navigationBar.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : SGColorFromRGB(0x333649)};
-        [self.navigationController.navigationBar setBackgroundImage:[CommonFunction createImageWithColor:SGColorFromRGB(0xEBAE44)] forBarMetrics:UIBarMetricsDefault];
+        [self.navigationController.navigationBar setBackgroundImage:[CommonFunction createImageWithColor:SGColorFromRGB(0xffffff)] forBarMetrics:UIBarMetricsDefault];
 
     }
     UIBarButtonItem *backItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"nav_back"]
@@ -75,27 +86,14 @@
 - (void)viewWillDisappear:(BOOL)animated
 {
     [super viewWillDisappear:animated];
-    if (@available(iOS 15, *))
-    {
-        UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        appearance.backgroundColor = SGColorFromRGB(0xffffff);
-        appearance.backgroundEffect = nil;
-        appearance.shadowColor = UIColor.clearColor;
-        appearance.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : [UIColor whiteColor]};
-        self.navigationController.navigationBar.standardAppearance = appearance;
-        self.navigationController.navigationBar.scrollEdgeAppearance = appearance;
-    }
-    else
-    {
-        self.navigationController.navigationBar.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : [UIColor whiteColor]};
-        [self.navigationController.navigationBar setBackgroundImage:[CommonFunction createImageWithColor:SGColorFromRGB(0xffffff)] forBarMetrics:UIBarMetricsDefault];
-
-    }
+    // ⚠️ 这里原来会把导航栏置成「白底 + **白色标题**」——不但白底白字看不见，
+    // 而且这份 appearance 会被下一个页面继承（按钮落回默认黑色，就是搜索页「返回/取消变黑」的根因）。
+    // 退场时**什么都不用做**：上一个页面（分栏页）在自己的 viewWillAppear 里会重新设好蓝色外观。
 }
 - (void)initView
 {
     _selectedChainBtn = [[UIButton alloc] init];
-    [_selectedChainBtn setTitle:@"选择主链" forState:UIControlStateNormal];
+    [_selectedChainBtn setTitle:L(@"选择主链") forState:UIControlStateNormal];
     [_selectedChainBtn setTitleColor:SGColorFromRGB(0x7190ff) forState:UIControlStateNormal];
     [_selectedChainBtn.layer setCornerRadius:6.f];
     [_selectedChainBtn.layer setBorderColor:SGColorFromRGB(0x7190ff).CGColor];
@@ -108,7 +106,7 @@
     [self.view addSubview:_selectedChainBtn];
     
     _contractLab = [[UILabel alloc] init];
-    _contractLab.text = @"代币合约";
+    _contractLab.text = L(@"代币合约");
     _contractLab.textColor = SGColorFromRGB(0x8e92a3);
     _contractLab.textAlignment = NSTextAlignmentLeft;
     _contractLab.font = [UIFont systemFontOfSize:14.f];
@@ -118,7 +116,7 @@
  
     CommonTextField *contractAddTextField = [[CommonTextField alloc] init];
     contractAddTextField.textColor = CMColorFromRGB(0x333649);
-    contractAddTextField.placeholder = @"请输入合约地址";
+    contractAddTextField.placeholder = L(@"请输入合约地址");
     [contractAddTextField setValue:CMColorFromRGB(0x8E92A3) forKeyPath:@"placeholderLabel.textColor"];
     contractAddTextField.delegate = self;
     contractAddTextField.tag = 101;
@@ -129,7 +127,7 @@
     [contractAddTextField addTarget:self action:@selector(textFieldViewChanged:) forControlEvents:UIControlEventEditingChanged];
     
     _nameLab = [[UILabel alloc] init];
-    _nameLab.text = @"代币符号";
+    _nameLab.text = L(@"代币符号");
     _nameLab.textColor = SGColorFromRGB(0x8e92a3);
     _nameLab.textAlignment = NSTextAlignmentLeft;
     _nameLab.font = [UIFont systemFontOfSize:14.f];
@@ -138,7 +136,7 @@
       //设置钱包名称
     CommonTextField *nameTextField = [[CommonTextField alloc] init];
     nameTextField.textColor = CMColorFromRGB(0x333649);
-    nameTextField.placeholder = @"请输入代币符号";
+    nameTextField.placeholder = L(@"请输入代币符号");
     [nameTextField setValue:CMColorFromRGB(0x8E92A3) forKeyPath:@"placeholderLabel.textColor"];
     nameTextField.delegate = self;
     [self.view addSubview:nameTextField];
@@ -146,7 +144,7 @@
     [nameTextField setAttributedPlaceholderDefault];
     
     _accuracyLab = [[UILabel alloc] init];
-    _accuracyLab.text = @"代币精度";
+    _accuracyLab.text = L(@"代币精度");
     _accuracyLab.textColor = SGColorFromRGB(0x8e92a3);
     _accuracyLab.textAlignment = NSTextAlignmentLeft;
     _accuracyLab.font = [UIFont systemFontOfSize:14.f];
@@ -163,7 +161,7 @@
     [accuracyTextField setAttributedPlaceholderDefault];
     
     UIButton *confirBtn = [UIButton buttonWithType:UIButtonTypeCustom];
-    [confirBtn setTitle:@"确定" forState:UIControlStateNormal];
+    [confirBtn setTitle:L(@"确定") forState:UIControlStateNormal];
     confirBtn.backgroundColor = CMColorFromRGB(0x7190FF);
     [confirBtn setTitleColor:CMColorFromRGB(0xFFFFFF) forState:UIControlStateNormal];
     confirBtn.titleLabel.font = [UIFont systemFontOfSize:17];
@@ -250,12 +248,12 @@
         }
     }
    PWActionSheetView *actionSheetView = [[PWActionSheetView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight)
-                                                                      Title:@"请选择主链"
+                                                                      Title:L(@"请选择主链")
                                                                        dataArray:coinArr
                                                                        type:ActionViewTypePrikey];
     actionSheetView.actionSheetViewBlock = ^(LocalCoin * _Nonnull coin, CoinPrice * _Nonnull coinprice) {
         self.chainStr = coin.coin_chain;
-        [self.selectedChainBtn setTitle:[NSString stringWithFormat:@"主链:%@",coin.coin_chain] forState:UIControlStateNormal];
+        [self.selectedChainBtn setTitle:[NSString stringWithFormat:@"%@:%@",L(@"主链"),coin.coin_chain] forState:UIControlStateNormal];
         
     };
     
@@ -273,33 +271,33 @@
 - (void)confirWalletAction:(id)sender
 {
     if (self.chainStr == nil || self.chainStr.length == 0) {
-        [self showCustomMessage:@"请先选择主链" hideAfterDelay:2.f];
+        [self showCustomMessage:L(@"请先选择主链") hideAfterDelay:2.f];
         return;
     }
     
     if (self.nameTextField.text == nil || self.nameTextField.text.length == 0) {
-        [self showCustomMessage:@"请输入代币符号" hideAfterDelay:2.f];
+        [self showCustomMessage:L(@"请输入代币符号") hideAfterDelay:2.f];
+        return;
+    }
+    // 先收键盘再转圈/加币：「确定」同时挂在键盘上方的 inputAccessoryView 上，
+    // 不收键盘的话进度 HUD 画在键盘下面，看起来就是「点了确定没反应」
+    [self.view endEditing:YES];
+    // ⚠️ 先判重、再弹转圈：`showProgressWithMessage` 是「1 秒后才显示」，
+    // 先弹再判重的话，提示「该币种已添加」之后那个菊花还会自己冒出来
+    if ([self existCoin]) {
+        [self showCustomMessage:L(@"该币种已添加") hideAfterDelay:2.f];
         return;
     }
     [self showProgressWithMessage:@""];
-    if ([self existCoin]) {
-        [self showCustomMessage:@"该币种已添加" hideAfterDelay:2.f];
-        return;
-    }else{
-        [self addcoinToWallet];
-        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-            [self hideProgress];
-            if (self.contractBlock) {
-                self.contractBlock();
-            }
-            [self showCustomMessage:@"添加成功" hideAfterDelay:1.f];
-            [self.navigationController popViewControllerAnimated:true];
-        });
-    }
-   
-       
-    
-    
+    [self addcoinToWallet];
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3.f * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+        [self hideProgress];
+        if (self.contractBlock) {
+            self.contractBlock();
+        }
+        [self showCustomMessage:L(@"添加成功") hideAfterDelay:1.f];
+        [self.navigationController popViewControllerAnimated:true];
+    });
 }
 
 - (BOOL)existCoin{
@@ -325,16 +323,22 @@
 {
     NSString *coinStr = self.nameTextField.text;
     NSString *chains = self.chainStr;
-    NSString *platStr = self.nameTextField.text;
+    NSString *platStr = [self.nameTextField.text lowercaseString];
     
     NSInteger treaty = 1;
     NSString *address = @"";
     NSArray *coinArray = [[PWDataBaseManager shared] queryCoinArrayBasedOnSelectedWalletID];
     for (LocalCoin *coin in coinArray) {
-        if ([coin.coin_chain isEqualToString:self.chainStr]) {
+        if ([self.chainStr isEqualToString:@"BTY"]){
+            if ([coin.coin_type isEqualToString:self.chainStr] && [coin.coin_chain isEqualToString:@"ETH"]) {
+                address = coin.coin_address;
+            }
+        }else if ([coin.coin_chain isEqualToString:self.chainStr]) {
             address = coin.coin_address;
         }
     }
+    NSInteger coinId = [self getRandomNumberFrom:0 to:10000];
+    
     //                CGFloat balance = [GoFunction goGetBalance:coinStr platform:platStr address:address andTreaty:treaty];
     LocalCoin *coin = [[LocalCoin alloc] init];
     LocalWallet *localWallet = [[PWDataBaseManager shared] queryWalletIsSelected];
@@ -346,13 +350,35 @@
     coin.icon = @"";
     coin.coin_show = 1;
     coin.coin_platform = platStr;
-    coin.coin_coinid = 0;
+    coin.coin_coinid = coinId;
     coin.treaty = treaty;
     coin.coin_chain = chains;
     coin.coin_type_nft = 10;
     
     
     return [[PWDataBaseManager shared] addCoin:coin];
+}
+
+- (NSInteger)getRandomNumberFrom:(NSInteger)min to:(NSInteger)max{
+    if (min > max) {
+        return 0;
+    }
+    NSInteger coinId = (NSInteger)arc4random_uniform((uint32_t)(max - min + 1)) + min;
+    NSArray *coinIdArr = [self getCoinIdArr];
+    if ([coinIdArr containsObject:[NSString stringWithFormat:@"%li",coinId]]) {
+        coinId = [self getRandomNumberFrom:0 to:10000];
+    }
+    return coinId;
+}
+
+- (NSArray *)getCoinIdArr{
+    
+    NSMutableArray *marry = [[NSMutableArray alloc] init];
+    NSArray *coinArray = [[PWDataBaseManager shared] queryCoinArrayBasedOnSelectedWalletID];
+    for (LocalCoin *coin in coinArray) {
+        [marry addObject:[NSString stringWithFormat:@"%li",coin.coin_id]];
+    }
+    return [NSArray arrayWithArray:marry];
 }
 
 #pragma mark - UITextField Delegate
@@ -381,7 +407,7 @@
         NSString *tokenAddr = self.contractAddTextField.text;
         NSString *chain = self.chainStr;
         if ([chain isEqualToString:@""] || chain == nil) {
-            [self showCustomMessage:@"请先选择主链" hideAfterDelay:2.f];
+            [self showCustomMessage:L(@"请先选择主链") hideAfterDelay:2.f];
             return;
         }
         

@@ -2,8 +2,8 @@
 //  UIViewController+Extentsion.swift
 //  xls
 //
-//  Created by 陈健 on 2020/9/30.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/9/30.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import Foundation
@@ -40,6 +40,16 @@ extension UIViewController {
         DispatchQueue.main.async {
             self.view.showToast(text)
         }
+    }
+
+    /// 与多处业务代码 `showToast(with:)` 命名一致；可选字符串避免传入无效文案。
+    func showToast(with text: String) {
+        showToast(text)
+    }
+
+    func showToast(with text: String?) {
+        guard let text = text, !text.isEmpty else { return }
+        showToast(text)
     }
 }
 

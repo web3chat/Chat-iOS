@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- 未接入广告跟踪，也没有第三方跟踪域名 -->
+	<key>NSPrivacyTracking</key>
+	<false/>
+	<key>NSPrivacyTrackingDomains</key>
+	<array/>
+
+	<!--
+		说明：本文件是「App 自身」的隐私清单，放在 App bundle 根目录，随 Copy Bundle Resources 一起打包；
+		收集的数据类型以 App Store Connect「App 隐私」问卷为准，故此处留空（Apple 仅对 Required Reason API 做自动校验）。
+	-->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array/>
+
+	<!--
+		Required Reason API 声明依据（对 chat.app 主可执行文件的导入符号实测得出，不重不漏）：
+		  * FileTimestamp : _stat / _fstat / _lstat / _NSFileCreationDate / _NSFileModificationDate / _NSURLCreationDateKey
+		  * SystemBootTime: _mach_absolute_time
+		  * DiskSpace     : _NSFileSystemFreeSize / _NSFileSystemSize
+		  * UserDefaults  : _OBJC_CLASS_$_NSUserDefaults（chat/ 内业务代码 89 处调用）
+		注意：chat/ThirdParty/OBS.framework 与 chat/ThirdParty/Walletapi.framework 是「静态链接」进主二进制的
+		（不会出现在 chat.app/Frameworks/ 里），它们的 API 引用必须由本清单覆盖；ActiveKeyboards 未使用，故不声明。
+		修改此文件后请勿再用 app_privacy_manifest_fixer 的 -f 强制覆盖（那会用通用模板替换本文件）。
+	-->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryFileTimestamp</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>C617.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategorySystemBootTime</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>35F9.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryDiskSpace</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>E174.1</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

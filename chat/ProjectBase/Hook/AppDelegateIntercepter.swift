@@ -2,8 +2,8 @@
 //  AppDelegateIntercepter.swift
 //  xls
 //
-//  Created by 陈健 on 2020/8/18.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/8/18.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import UIKit
@@ -95,11 +95,13 @@ extension AppDelegateIntercepter {
 
 //MARK: - IQKeyboardManager
 extension AppDelegateIntercepter {
-    private func loadIQKeyboard() {
+     func loadIQKeyboard() {
         IQKeyboardManager.shared.enable = true
         IQKeyboardManager.shared.shouldResignOnTouchOutside = true
         IQKeyboardManager.shared.keyboardDistanceFromTextField = 20
-        IQKeyboardManager.shared.disabledDistanceHandlingClasses = [MessageVC.self]
+        // 广场的详情页 / 发帖页自己把输入条（含发送按钮）顶到键盘上方，不走 IQ
+        // （IQ 会把整屏上移，还会带出键盘图层里那条系统细线）
+        IQKeyboardManager.shared.disabledDistanceHandlingClasses = [MessageVC.self, DAppBrowserViewController.self, SquarePostDetailVC.self, SquareCreatePostVC.self]
         IQKeyboardManager.shared.enableAutoToolbar = false
     }
 }

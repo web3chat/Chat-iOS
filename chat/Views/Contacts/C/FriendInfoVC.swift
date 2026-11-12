@@ -2,7 +2,7 @@
 //  FriendInfoVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/3/5.
+//  Created by fzm on 2021/3/5.
 //  用户详情页
 //
 
@@ -93,7 +93,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
     }
     
     private lazy var avatarImageView: UIImageView = {
-        let v = UIImageView.init(image: #imageLiteral(resourceName: "friend_chat_avatar"))
+        let v = UIImageView.init(image: #imageLiteral(resourceName: "avatar_persion"))
         v.layer.cornerRadius = 5
         v.layer.masksToBounds = true
         v.isUserInteractionEnabled = true
@@ -138,7 +138,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             guard let self = self, ges.state == .ended else { return }
             guard !self.address.isEmpty else { return }
             UIPasteboard.general.string = self.address
-            self.showToast("地址已复制")
+            self.showToast(L("地址已复制"))
         }).disposed(by: self.disposeBag)
         return lab
     }()
@@ -213,7 +213,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             case 1:
                 strongSelf.transfer()
             case 2:
-                strongSelf.showToast("视频通话")
+                strongSelf.showToast(L("视频通话"))
             case 3:
                 // 发消息
                 strongSelf.sendMsg()
@@ -269,6 +269,28 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         return model
     }()
     
+    // 自动删除聊天记录数据源
+    private lazy var autoDeleteModel: FriendInfoTextCellModel = {
+        let model = FriendInfoTextCellModel.init()
+        model.leftString = L("自动删除聊天记录")
+        model.rightString = self.autoDeleteOptionString()
+        model.selectedBlock = { [weak self] in
+            self?.showAutoDeleteActionSheet()
+        }
+        return model
+    }()
+    
+    // 手动删除聊天记录数据源
+    private lazy var deleteChatRecordModel: FriendInfoTextCellModel = {
+        let model = FriendInfoTextCellModel.init()
+        model.leftString = L("删除聊天记录")
+        model.rightString = ""
+        model.selectedBlock = { [weak self] in
+            self?.showDeleteChatRecordActionSheet()
+        }
+        return model
+    }()
+    
     // 服务器数据源
     private lazy var serverModel: FriendInfoServerCellModel = {
         let server = FriendInfoServerCellModel.init()
@@ -281,11 +303,11 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
     // 黑名单数据源
     private lazy var blackListModel: FriendInfoTextCellModel = {
         let model = FriendInfoTextCellModel.init()
-        var title = "加入黑名单"
+        var title = L("加入黑名单")
         var conStr = ""
         if userType == .shieldUser {
-            title = "移出黑名单"
-            conStr = "已不再接受对方消息"
+            title = L("移出黑名单")
+            conStr = L("已不再接受对方消息")
         }
         model.leftString = title
         model.rightString = conStr
@@ -299,8 +321,8 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
     //禁言数据源
     private lazy var bannedListModel: FriendInfoTextCellModel = {
         let model = FriendInfoTextCellModel.init()
-        var title = "禁言"
-        var conStr = self.groupDetailInfo?.muteType == 1 ? "全员禁言" : "可发言"
+        var title = L("禁言")
+        var conStr = self.groupDetailInfo?.muteType == 1 ? L("全员禁言") : L("可发言")
         model.leftString = title
         model.rightString = conStr
         model.selectedBlock = {[weak self] in
@@ -350,6 +372,13 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         if #available(iOS 15.0, *) {   ///  standardAppearance 这个api其实是 13以上就可以使用的 ，这里写 15 其实主要是iOS15上出现的这个死样子
             let naba = UINavigationBarAppearance.init()
             naba.configureWithOpaqueBackground()
+            // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+            naba.buttonAppearance.normal.backgroundImage = UIImage()
+            naba.buttonAppearance.highlighted.backgroundImage = UIImage()
+            naba.doneButtonAppearance.normal.backgroundImage = UIImage()
+            naba.doneButtonAppearance.highlighted.backgroundImage = UIImage()
+            naba.backButtonAppearance.normal.backgroundImage = UIImage()
+            naba.backButtonAppearance.highlighted.backgroundImage = UIImage()
             naba.backgroundColor = Color_F6F7F8
             naba.shadowColor = UIColor.lightGray
             self.navigationController?.navigationBar.standardAppearance = naba
@@ -360,7 +389,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.title = "详细资料"
+        self.title = L("详细资料")
         
         self.setBgColor()
         
@@ -472,11 +501,11 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             
             // 账号Lab文字显示
             let auAttText : NSMutableAttributedString =  NSMutableAttributedString.init()
-            var nickStr = "账号：" + self.address
+            var nickStr = L("账号：") + self.address
             
             let nStr = "\n"
             if let membername = groupDetailInfo?.person?.memberName, !membername.isBlank {
-                nickStr = nickStr + nStr + "群昵称：" + membername
+                nickStr = nickStr + nStr + L("群昵称：") + membername
             }
             
 //            if let staffname = staffname, contactname != staffname {
@@ -506,12 +535,12 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         // 账号Lab文字显示
         let auAttText : NSMutableAttributedString =  NSMutableAttributedString.init()
         
-        var nickStr = "账号：" + self.address
+        var nickStr = L("账号：") + self.address
         
         let nStr = "\n"
         if let _ = self.user?.alias {
             if let nickname = self.user?.nickname, !nickname.isBlank, aliasName != nickname {
-                nickStr = nickStr + nStr + "昵称：" + nickname
+                nickStr = nickStr + nStr + L("昵称：") + nickname
             }
         }
         
@@ -520,7 +549,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
 //        }
         
         if let membername = self.groupMember?.memberName, !membername.isBlank {// 从群进入，有群昵称则显示
-            nickStr = nickStr + nStr + "群昵称：" + membername
+            nickStr = nickStr + nStr + L("群昵称：") + membername
         }
         
         auAttText.append(NSAttributedString.init(string: nickStr))
@@ -593,8 +622,8 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             self.footView.isHidden = true
             self.bottomView.isHidden = true
             
-            self.blackListModel.leftString = "移出黑名单"
-            self.blackListModel.rightString = "已不再接受对方消息"
+            self.blackListModel.leftString = L("移出黑名单")
+            self.blackListModel.rightString = L("已不再接受对方消息")
             
             // 列表数据
             if let _ = self.staffInfo {
@@ -624,7 +653,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
                 self.bottomView.itemAddFriendView.isHidden = false
             }
             
-            self.blackListModel.leftString = "加入黑名单"
+            self.blackListModel.leftString = L("加入黑名单")
             self.blackListModel.rightString = ""
             
             // 接收聊天服务器 如果没有设置默认服务器则配置一个
@@ -695,7 +724,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             if let _ = self.staffInfo ,let name = self.staffInfo?.name, !name.isBlank {
                 self.dataSource = [
                     [teamInfoModel],
-                    [muteAndOnTopModel],
+                    FZM_EnableChatDeleteFeature ? [muteAndOnTopModel, autoDeleteModel, deleteChatRecordModel] : [muteAndOnTopModel],
                     [serverModel],
                     [],
                     [blackListModel]
@@ -703,7 +732,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             } else {
                 self.dataSource = [
                     [],
-                    [muteAndOnTopModel],
+                    FZM_EnableChatDeleteFeature ? [muteAndOnTopModel, autoDeleteModel, deleteChatRecordModel] : [muteAndOnTopModel],
                     [serverModel],
                     [],
                     [blackListModel]
@@ -719,12 +748,18 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             
             // 置顶
             muteAndOnTopModel.isOnTop = isOnTop
+            
+            // 自动删除当前值回显
+            autoDeleteModel.rightString = self.autoDeleteOptionString()
+            // 以服务端为准刷新自动删除设置
+            self.refreshAutoDeleteFromServer()
         }
         
         if case .group = self.source {
             //如果是从群过来的 显示禁言按钮
                 
             self.dataSource[3] = [bannedListModel]
+            // 从群进入的成员/好友详情：保留红包按钮（点击进「发专属红包」页面，见 sendRed()）
         }else {
             self.bottomView.hideRed()
         }
@@ -752,6 +787,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
     //MARK: - 接口请求与
     // 获取用户员工信息
     private func getStaffInfoRequest() {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭，不发员工信息请求
         self.showProgress()
         TeamManager.shared().getStaffInfo(address: self.address) { [weak self] (info) in
             guard let strongSelf = self else { return }
@@ -789,6 +825,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
     
     // 获取用户企业信息
     private func getTeamInfoRequest() {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭，不发企业信息请求
         guard let staffInfo = staffInfo else {
             return
         }
@@ -797,7 +834,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             strongSelf.staffInfo?.company = teamInfo
         }, failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
-            strongSelf.showToast("获取企业信息失败")
+            strongSelf.showToast(L("获取企业信息失败"))
         })
     }
     
@@ -818,7 +855,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
-            strongSelf.showToast("获取用户详情失败")
+            strongSelf.showToast(L("获取用户详情失败"))
             strongSelf.isRefreshUserSuccess = false
             strongSelf.isRefreshingUser = false
         }
@@ -854,7 +891,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         UserManager.shared().addShieldUser(by: self.address) { [weak self] (shieldUser) in
             guard let strongSelf = self else { return }
             strongSelf.view.hideActivity()
-            APP.shared().showToast("将对方加入黑名单成功，请耐心等待，稍后查看结果...")
+            APP.shared().showToast(L("将对方加入黑名单成功，请耐心等待，稍后查看结果..."))
             
             strongSelf.userType = .shieldUser
             
@@ -878,7 +915,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         UserManager.shared().addFriend(by: self.address) { [weak self] (friend) in
             guard let strongSelf = self else { return }
             strongSelf.view.hideActivity()
-            strongSelf.showToast("添加好友成功，请耐心等待，稍后查看结果...")
+            strongSelf.showToast(L("添加好友成功，请耐心等待，稍后查看结果..."))
             strongSelf.user = friend
             strongSelf.userType = .friend
             strongSelf.reloadData()
@@ -895,14 +932,14 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             // 添加好友
             self.addFriend()
         } else {
-            let alertController = UIAlertController.init(title: "提示", message: "确定删除该好友", preferredStyle: .alert)
-            let cancelAction = UIAlertAction(title: "取消", style: .cancel, handler: nil)
-            let okAction = UIAlertAction.init(title: "确定", style: .destructive, handler: { (_) in
+            let alertController = UIAlertController.init(title: L("提示"), message: L("确定删除该好友"), preferredStyle: .alert)
+            let cancelAction = UIAlertAction(title: L("取消"), style: .cancel, handler: nil)
+            let okAction = UIAlertAction.init(title: L("确定"), style: .destructive, handler: { (_) in
                 self.view.showActivity()
                 UserManager.shared().deleteFriend(by: self.address) { [weak self] in
                     guard let strongSelf = self else { return }
                     strongSelf.view.hideActivity()
-                    strongSelf.showToast("删除好友成功，请耐心等待，稍后查看结果...")
+                    strongSelf.showToast(L("删除好友成功，请耐心等待，稍后查看结果..."))
                     // 删除会话
                     SessionManager.shared().deleteSession(id: SessionID.person(strongSelf.address))
                     // 删除聊天记录
@@ -957,6 +994,137 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         UserManager.shared().updateUserIsOnTop(address: self.address, isOnTop: isOnTop)
     }
     
+    // 自动删除：当前值的显示文案
+    private func autoDeleteOptionString() -> String {
+        let option = SessionManager.shared().getSingleLocalSession(by: SessionID.person(self.address))?.autoDeleteOption ?? 0
+        return (ChatAutoDeleteOption(rawValue: option) ?? .off).title
+    }
+    
+    // 自动删除：弹出选项（选项与对接文档 option 枚举一致）
+    private func showAutoDeleteActionSheet() {
+        let alert = UIAlertController(title: L("自动删除聊天记录"), message: L("开启后，超过所选时间的聊天记录将被自动删除"), preferredStyle: .actionSheet)
+        let currentOption = SessionManager.shared().getSingleLocalSession(by: SessionID.person(self.address))?.autoDeleteOption ?? 0
+        for option in ChatAutoDeleteOption.allCasesInOrder {
+            let title = option.rawValue == currentOption ? option.title + " ✓" : option.title
+            alert.addAction(UIAlertAction(title: title, style: .default, handler: { [weak self] (_) in
+                guard let self = self else { return }
+                // 本地缓存 + 服务端同步（失败也保留本地，下次进入以服务端为准）
+                SessionManager.shared().updateAutoDeleteOption(session: SessionID.person(self.address), option: option.rawValue)
+                self.autoDeleteModel.rightString = self.autoDeleteOptionString()
+                self.baseTableView.reloadData()
+                ChatRecordAPI.autoDeleteSet(targetId: self.address, option: option, successBlock: { (_) in
+                    FZMLog("设置自动删除成功 option: \(option.rawValue)")
+                }, failureBlock: { (error) in
+                    FZMLog("设置自动删除失败: \(error.localizedDescription)")
+                })
+            }))
+        }
+        alert.addAction(UIAlertAction(title: L("取消"), style: .cancel, handler: nil))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = self.view
+            popover.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 0, height: 0)
+        }
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    // 从服务端拉取自动删除设置并回写本地
+    private func refreshAutoDeleteFromServer() {
+        ChatRecordAPI.autoDeleteGet(targetId: self.address, successBlock: { [weak self] (json) in
+            guard let self = self else { return }
+            let option = json["option"].intValue
+            SessionManager.shared().updateAutoDeleteOption(session: SessionID.person(self.address), option: option)
+            self.autoDeleteModel.rightString = self.autoDeleteOptionString()
+            self.baseTableView.reloadData()
+        }, failureBlock: { (error) in
+            FZMLog("获取自动删除设置失败: \(error.localizedDescription)")
+        })
+    }
+    
+    // 手动删除聊天记录：弹出时间范围选项
+    private func showDeleteChatRecordActionSheet() {
+        let alert = UIAlertController(title: L("删除聊天记录"), message: L("删除后，双方该时间段内的聊天记录都将被删除"), preferredStyle: .actionSheet)
+        let options: [ChatRecordDateOption] = [.last1Day, .last3Days, .last7Days, .last30Days, .last90Days, .last180Days, .last365Days, .all, .custom]
+        for option in options {
+            alert.addAction(UIAlertAction(title: option.title, style: .destructive, handler: { [weak self] (_) in
+                guard let self = self else { return }
+                if option == .custom {
+                    self.showCustomDateRangePicker()
+                } else {
+                    self.performCleanPrivate(option: option, startTime: nil, endTime: nil)
+                }
+            }))
+        }
+        alert.addAction(UIAlertAction(title: L("取消"), style: .cancel, handler: nil))
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = self.view
+            popover.sourceRect = CGRect(x: self.view.bounds.midX, y: self.view.bounds.midY, width: 0, height: 0)
+        }
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    // 自定义时间范围：依次选开始 / 结束时间
+    private func showCustomDateRangePicker() {
+        self.presentDatePicker(title: L("选择开始时间")) { [weak self] startDate in
+            guard let self = self else { return }
+            self.presentDatePicker(title: L("选择结束时间")) { [weak self] endDate in
+                guard let self = self else { return }
+                let start = Int(startDate.timeIntervalSince1970 * 1000)
+                let end = Int(endDate.timeIntervalSince1970 * 1000)
+                self.performCleanPrivate(option: .custom, startTime: min(start, end), endTime: max(start, end))
+            }
+        }
+    }
+    
+    // 通用日期时间选择弹框
+    private func presentDatePicker(title: String, completion: @escaping (Date) -> Void) {
+        let alert = UIAlertController(title: title, message: "\n\n\n\n\n\n\n\n", preferredStyle: .alert)
+        let picker = UIDatePicker()
+        picker.datePickerMode = .dateAndTime
+        picker.frame = CGRect(x: 0, y: 40, width: 270, height: 200)
+        if #available(iOS 13.4, *) { picker.preferredDatePickerStyle = .wheels }
+        alert.view.addSubview(picker)
+        alert.addAction(UIAlertAction(title: L("取消"), style: .cancel, handler: nil))
+        alert.addAction(UIAlertAction(title: L("确定"), style: .default, handler: { (_) in completion(picker.date) }))
+        self.present(alert, animated: true, completion: nil)
+    }
+    
+    // 调服务端删除 + 本地同步删除
+    private func performCleanPrivate(option: ChatRecordDateOption, startTime: Int?, endTime: Int?) {
+        // ⚠️ 服务端要求「有效区间」：`startTime == endTime`（或跨度过小）会被判
+        //    `请求参数错误:custom date range invalid`（2026-10-10 实测）。
+        //    自定义选择器的 DatePicker 精确到**分钟**，两次选到同一分钟就会撞上 ⇒ 此处兜底补齐到 1 分钟。
+        var startTime = startTime
+        var endTime = endTime
+        if option == .custom, let start = startTime, let end = endTime, end - start < 60_000 {
+            endTime = start + 60_000
+            FZMLog("【删除记录】自定义时间范围过小，已兜底为 1 分钟：start=\(start) end=\(start + 60_000)")
+        }
+        FZMLog("【删除记录】调接口 clean-private targetId=\(self.address) dateOpt=\(option.rawValue) start=\(startTime.map { String($0) } ?? "-") end=\(endTime.map { String($0) } ?? "-")")
+        ChatRecordAPI.cleanPrivate(targetId: self.address, dateOpt: option, startTime: startTime, endTime: endTime, successBlock: { [weak self] (_) in
+            guard let self = self else { return }
+            FZMLog("【删除记录】接口成功，开始删本地 targetId=\(self.address)")
+            self.deleteLocalMsgs(option: option, startTime: startTime, endTime: endTime)
+            self.showToast(L("删除成功"))
+        }, failureBlock: { [weak self] (error) in
+            FZMLog("【删除记录】接口失败（本地不删）：\(error.localizedDescription)")
+            self?.showToast(error.localizedDescription)
+        })
+    }
+    
+    // 本地同步删除对应时间范围的消息
+    private func deleteLocalMsgs(option: ChatRecordDateOption, startTime: Int?, endTime: Int?) {
+        guard let session = SessionManager.shared().getSingleLocalSession(by: SessionID.person(self.address)) else { return }
+        if option == .all {
+            ChatManager.shared().deleteLocalMsgs(session: session, startTime: nil, endTime: nil, clearAll: true)
+        } else if option == .custom {
+            ChatManager.shared().deleteLocalMsgs(session: session, startTime: startTime, endTime: endTime, clearAll: false)
+        } else {
+            let now = Date.timestamp
+            let start = now - (option.days ?? 0) * 86400000
+            ChatManager.shared().deleteLocalMsgs(session: session, startTime: start, endTime: now, clearAll: false)
+        }
+    }
+    
     // 编辑备注名称
     @objc private func editFriendAlias() {
         guard let user = self.user else {
@@ -991,11 +1159,11 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         let servers = chatServerGroups.compactMap {
             Server.init(name: $0.name, value: $0.value, id: $0.id)
         }
-        let serverDataSource = [("接收聊天消息的服务器", servers)]
+        let serverDataSource = [(L("接收聊天消息的服务器"), servers)]
         let vc = ServerListVC.init()
         vc.listType = .chatServer
         vc.showManageBtnFlg = true
-        vc.title = "选择服务器"
+        vc.title = L("选择服务器")
         vc.isHiddenSelectedImgView = true
         vc.dataSource = serverDataSource
         
@@ -1014,14 +1182,17 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
     // 黑名单项点击处理
     private func blacklistTapHandle() {
         if userType == .friend || userType == .user {
-            let alias = self.user?.contactsName
+            // `user` 未加载时 contactsName 为 nil；强解包会闪退，空串时只是提示语里不带昵称
+            let alias = self.user?.contactsName ?? ""
             let alert = TwoBtnInfoAlertView.init()
-            alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
-            alert.leftBtnTitle = "取消"
-            alert.rightBtnTitle = "确定"
-            let str = "加入黑名单后，你将不再接收到对方的消息，确定将 \(alias!) 移至黑名单吗?"
+            alert.attributedTitle = NSAttributedString.init(string: L("提示"), attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
+            alert.leftBtnTitle = L("取消")
+            alert.rightBtnTitle = L("确定")
+            let str = L("加入黑名单后，你将不再接收到对方的消息，确定将") + "\(alias)" + L("移至黑名单吗?")
             let attStr = NSMutableAttributedString.init(string: str, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)])
-            attStr.addAttributes([NSAttributedString.Key.foregroundColor: Color_Theme], range:(str as NSString).range(of: alias! as String))
+            if !alias.isEmpty {
+                attStr.addAttributes([NSAttributedString.Key.foregroundColor: Color_Theme], range:(str as NSString).range(of: alias))
+            }
             alert.attributedInfo = attStr
             alert.leftBtnTouchBlock = {}
             alert.rightBtnTouchBlock = {
@@ -1034,7 +1205,7 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             UserManager.shared().deleteShieldUser(by: self.address) { [weak self] in
                 guard let strongSelf = self else { return }
                 strongSelf.view.hideActivity()
-                strongSelf.showToast("移出黑名单成功，请耐心等待，稍后查看结果...")
+                strongSelf.showToast(L("移出黑名单成功，请耐心等待，稍后查看结果..."))
                 strongSelf.userType = .shieldUser
                 
                 strongSelf.reloadData()// 刷新页面
@@ -1058,11 +1229,11 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
             }
             view.cancelBlock = {
                 FZMAnimationTool.removeCountdown(with: self.bannedTimeLbl!)
-                self.bannedTimeLbl!.text = self.groupDetailInfo?.muteType == 1 ? "全员禁言" : "可发言"
+                self.bannedTimeLbl!.text = self.groupDetailInfo?.muteType == 1 ? L("全员禁言") : L("可发言")
             }
             view.show()
         } else {
-            FZMLog("普通群成员不能修改其他群成员禁言类型...")
+            FZMLog(L("普通群成员不能修改其他群成员禁言类型..."))
         }
     }
     
@@ -1081,10 +1252,14 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         let vc =  TransferViewController.init()
         let avatarUrl = user?.avatarURLStr
         let address = user?.aliasName
-        let sessionId = user?.sessionID.idValue
+        // 会话 id 兜底用当前用户地址，避免下面强解包
+        let sessionId = user?.sessionID.idValue ?? self.address
         var toAddre = ""
-        let coinArray = PWDataBaseManager.shared().queryCoinArrayBasedOnSelectedWalletID()
-        let coin = coinArray?.first as! LocalCoin
+        // 默认优先选 0x 开头的 BTY（与发红包页一致）；取不到币种就不进转账页
+        guard let coin = PWDataBaseManager.shared().preferredTransferCoin() else {
+            self.showToast(L("暂无可用币种"))
+            return
+        }
         User.getUser(targetAddress: user!.address, count: 100, index: "", successBlock: {[weak self] (json) in
             guard let strongSelf = self else { return }
             let fields = json["fields"].arrayValue.compactMap { UserInfoField.init(json: $0) }
@@ -1095,15 +1270,25 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
                 }
             }
             if toAddre.count == 0{
-                strongSelf.showToast("未获取到对方地址")
+                strongSelf.showToast(L("未获取到对方地址"))
                 return
             }
             
-            vc.contactDict = ["avatarUrl":avatarUrl! as NSString,"address":address! as NSString,"toAddr":toAddre as NSString,"sessionId":sessionId! as NSString]
+            vc.contactDict = ["avatarUrl":avatarUrl! as NSString,"address":address! as NSString,"toAddr":toAddre as NSString,"sessionId":sessionId as NSString]
             vc.coin = coin
-            vc.transferBlock =  { [] (coinName,txHash,amount) in
-                let sessionID = SessionID.person(sessionId!)
-                FZMUIMediator.shared().pushVC(.goChatVCToTransfer(sessionID: sessionID, coinName: coinName, txHash: txHash!))
+            // 成功后不要先 pop 回本详情页：走 FromTagChat（成功后直接 pop 回聊天页；
+            // 栈里没有聊天页时本页不 pop，由下面 transferBlock 的 .goChatVC 切页，本页随之销毁）
+            vc.fromTag = FromTagChat
+            vc.transferBlock = { (coinName, txHash, _) in
+                // 转账成功后：暂存转账消息，切到该好友的会话，由 ChatVC 把转账消息发出去
+                // （与「专属红包」同一条链路，不再依赖 goChatVCToTransfer 的延迟发送+强解包）
+                guard let coinName = coinName, !coinName.isEmpty,
+                    let txHash = txHash, !txHash.isEmpty
+                else { return }
+                let sessionID = SessionID.person(sessionId)
+                ChatManager.shared().setPendingTransfer(
+                    coinName: coinName, txHash: txHash, for: sessionID)
+                FZMUIMediator.shared().pushVC(.goChatVC(sessionID: sessionID))
             }
             strongSelf.navigationController?.pushViewController(vc, animated: true)
             // 未设置过IM服务器 连接默认IM服务器 并上传保存到服务端
@@ -1111,65 +1296,50 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
         }, failureBlock: nil)
     }
     
+    /// 从群进入的成员/好友详情：红包 = 给这个人发「专属红包」
+    /// （进「发专属红包」页面：白名单 1 人、1 份；链上发完后回到群里把红包消息发出去）
     @objc private func sendRed(){
-        let vc =  TransferViewController.init()
-        vc.fromTag = FromTagChat
-        let avatarUrl = self.groupMember!.avatarURLStr
-        let address = self.groupMember!.memberId
-        let memberName = self.groupMember?.memberName
-        let selfaddr = LoginUser.shared().address
-        if selfaddr == address{
-            self.showToast("不能给自己发专属红包")
+        let memberId = self.groupMember?.memberId ?? self.address
+        guard !memberId.isEmpty, let group = self.groupDetailInfo else { return }
+        guard memberId != LoginUser.shared().address else {
+            self.showToast(L("不能给自己发专属红包"))
             return
         }
-        let coinArray = PWDataBaseManager.shared().queryCoinArrayBasedOnSelectedWalletID()
-        let coin = coinArray?.first as! LocalCoin
-       
-        var toAddr = ""
-        User.getUser(targetAddress: self.groupMember!.memberId, count: 100, index: "", successBlock: {[weak self] (json) in
-            guard let strongSelf = self else { return }
-            let fields = json["fields"].arrayValue.compactMap { UserInfoField.init(json: $0) }
-            
-            for field in fields {
-                if case .ETH = field.name {
-                    toAddr = field.value
+        // 群里展示的名字：群昵称 > 备注/昵称 > 短地址
+        var name = self.groupMember?.memberName ?? ""
+        if name.isBlank { name = self.user?.aliasName ?? "" }
+        if name.isBlank { name = memberId.shortAddress }
+        let groupSessionID = group.sessionID
+
+        self.showProgress(with: nil)
+        // ⚠️ 必须走网络取 ethAddr：本地 user 表没有 ethAddr 列，`getUser(by:)` 命中本地缓存会返回 nil
+        // （「好友详情 → 转账」就是直连网络读 `.ETH` 字段的，这里与它保持一致）
+        UserManager.shared().getEthAddressForUser(memberId) { [weak self] ethAddress in
+            // 网络回调线程不保证在主线程，统一回到主线程更新 UI
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                self.hideProgress()
+                let address = ethAddress
+                guard address.isValidEthereumAddressString else {
+                    self.showToast(L("未获取到对方地址"))
+                    return
                 }
-            }
-            if toAddr.count == 0{
-                strongSelf.showToast("未获取到对方地址")
-                return
-            }
-            vc.contactDict = ["avatarUrl":avatarUrl as NSString,"address":memberName! as NSString,"toAddr":toAddr as NSString]
-            
-            vc.coin = coin
-            //获取当前时间
-            let currentDate = Date()
-            
-            // 创建一个DateFormatter实例
-            let dateFormatter = DateFormatter()
-            
-            // 设置日期格式
-            dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss" // 例如：2023-04-01 12:34:56
-            
-            // 将当前时间转换为字符串
-            let dateString = dateFormatter.string(from: currentDate)
-            
-            vc.transferBlock =  { [] (coinName,txHash,amount) in
-                
-                let toAdddr = self!.user?.aliasName ?? self!.address
-             // 接收者地址或昵称 币种+数量 时间
-//                    let detail = toAdddr! + "," + amount + " " + coinName + "," + dateString
-                let detail = "\(toAdddr),\(amount!) \(coinName!),\(dateString)"
-                
-                if ((self?.sendredBlock) != nil) {
-                    self?.sendredBlock!(detail)
+                let vc = FZMCreateLuckyBagVC(to: groupSessionID.idValue, isGroup: true,
+                                             exclusiveAddresses: [address], exclusiveNames: [name])
+                vc.sendCompleteBlock = { [weak self] (_, coinName, packetType, packetId, packetUrl, remark, _) in
+                    guard let self = self else { return }
+                    let txHash = packetId.isEmpty ? packetUrl : packetId
+                    guard !coinName.isEmpty, !txHash.isEmpty else { return }
+                    // 红包消息交给 ChatVC 发（和群聊里发红包同一条链路）：先暂存，进群会话后自动发出
+                    ChatManager.shared().setPendingRedPacket(coinName: coinName, txHash: txHash,
+                                                             remark: remark, packetType: packetType,
+                                                             for: groupSessionID)
+                    FZMUIMediator.shared().pushVC(.goChatVC(sessionID: groupSessionID))
                 }
-                
+                vc.hidesBottomBarWhenPushed = true
+                self.navigationController?.pushViewController(vc, animated: true)
             }
-            strongSelf.navigationController?.pushViewController(vc, animated: true)
-            // 未设置过IM服务器 连接默认IM服务器 并上传保存到服务端
-           
-        }, failureBlock: nil)
+        }
     }
     
     private func showPopAnimatiom(time: Double) {
@@ -1182,13 +1352,13 @@ class FriendInfoVC: UIViewController, ViewControllerProtocol {
                 guard let strongSelf = self else { return }
                 let time = useTime - 8 * 3600
                 let date = Date.init(timeIntervalSince1970: TimeInterval(time))
-                strongSelf.bannedTimeLbl!.text = "禁言 " + formatter.string(from: date)
+                strongSelf.bannedTimeLbl!.text = L("禁言 ") + formatter.string(from: date)
             },finishBlock: {[weak self] in
                 guard let strongSelf = self else { return }
                 strongSelf.bannedTimeLbl!.text = ""
             })
         }else{
-            self.bannedTimeLbl!.text = "永久禁言"
+            self.bannedTimeLbl!.text = L("永久禁言")
         }
     }
 }
@@ -1226,7 +1396,11 @@ extension FriendInfoVC: UITableViewDelegate, UITableViewDataSource {
             }
             return CGFloat(height)
         } else if indexPath.section == 1 {
-            return 200
+            // ⚠️ section 1 是**多行**：合集 cell（查找聊天记录/聊天文件/消息免打扰/置顶聊天，自然高 200）
+            // + 自动删除聊天记录 + 删除聊天记录（文字行，各 50，与 section 3 一致）。
+            // 以前这里给整段返回 250（且按行生效）⇒ 每行都被撑到 250，出现大片空白。
+            let model = self.dataSource[indexPath.section][indexPath.row]
+            return (model is FriendInfoSwitchCellModel) ? 200 : 50
         } else if indexPath.section == 2 {
             return 70
         } else {

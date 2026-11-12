@@ -52,7 +52,8 @@ func in_cksum(_ buffer:UnsafeRawPointer, _ bufferLen:size_t) -> UInt16
      * carry bits from the top 16 bits into the lower 16 bits.
      */
     while bytesLeft > 1 {
-        sum += UInt32(cursor.pointee)
+        
+        sum += try! UInt32(cursor.pointee)
         cursor += 1
         bytesLeft -= 2;
     }
@@ -72,7 +73,7 @@ func in_cksum(_ buffer:UnsafeRawPointer, _ bufferLen:size_t) -> UInt16
         
         let us = uc.withUnsafeBytes{$0.baseAddress}.unsafelyUnwrapped.bindMemory(to: UInt16.self, capacity: MemoryLayout<UInt16>.size).pointee
         
-        sum += UInt32(us)
+        sum += try! UInt32(us)
     }
     
     /* add back carry outs from top 16 bits to low 16 bits */

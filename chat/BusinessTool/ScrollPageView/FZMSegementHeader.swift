@@ -2,8 +2,8 @@
 //  FZMSegementHeader.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/9/25.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/9/25.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -62,6 +62,9 @@ class FZMSegementHeader: UIView {
     }
     
     func setSelectIndex(with index: Int) {
+        // 同一项重复设置直接返回：调用方（FZMScrollPageView）在滚动回调里每帧都会调，
+        // 每次都 reloadData 会平白拖慢滑动
+        guard index != self.selectedIndex else { return }
         self.selectedIndex = index
         self.collectionView.reloadData()
     }

@@ -3,11 +3,14 @@
 //  PWallet
 //
 //  Created by 郑晨 on 2021/7/13.
-//  Copyright © 2021 陈健. All rights reserved.
+//  Copyright © 2021 fzm. All rights reserved.
 //
 
 #import "PWTransTipAlertView.h"
 #import "Depend.h"
+#import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWTransTipAlertView()
 {
     NSTimer *_timer;
@@ -56,7 +59,7 @@
     [self.contentsView addSubview:self.knowBtn];
     
     self.knowBtn.enabled = NO;
-    [self.knowBtn setTitle:@"已知晓 (3s)" forState:UIControlStateNormal];
+    [self.knowBtn setTitle:L(@"已知晓 (3s)") forState:UIControlStateNormal];
     self.knowBtn.backgroundColor = CMColorFromRGB(0xc3c9d1);
     _secondsCountDown = 3;
     _timer = [NSTimer scheduledTimerWithTimeInterval:1
@@ -109,11 +112,11 @@
 {
     _secondsCountDown-- ;
     self.knowBtn.enabled = NO;
-    [self.knowBtn setTitle:[NSString stringWithFormat:@"已知晓 (%lis)",_secondsCountDown] forState:UIControlStateNormal];
+    [self.knowBtn setTitle:[NSString stringWithFormat:L(@"已知晓 (%lis)"),_secondsCountDown] forState:UIControlStateNormal];
     self.knowBtn.backgroundColor = CMColorFromRGB(0xc3c9d1);
     if (_secondsCountDown <= 0) {
         self.knowBtn.enabled = YES;
-        [self.knowBtn setTitle:[NSString stringWithFormat:@"已知晓"] forState:UIControlStateNormal];
+        [self.knowBtn setTitle:[NSString stringWithFormat:L(@"已知晓")] forState:UIControlStateNormal];
         self.knowBtn.backgroundColor = CMColorFromRGB(0x333649);
         [_timer invalidate];
         _timer = nil;
@@ -180,7 +183,7 @@
         _titleLab = [UILabel getLabWithFont:[UIFont fontWithName:@"PingFang-Medium" size:17]
                                   textColor:CMColorFromRGB(0x333649)
                               textAlignment:NSTextAlignmentLeft
-                                       text:@"转账"];
+                                       text:L(@"转账")];
     }
     
     return _titleLab;

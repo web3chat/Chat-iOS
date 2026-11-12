@@ -2,7 +2,7 @@
 //  SessionManager.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/13.
+//  Created by fzm on 2021/1/13.
 //
 
 import Foundation
@@ -13,7 +13,7 @@ import RxSwift
 class SessionManager {
     
     /// 固定文本：[有人@我]
-    private let atMe = "[有人@我]"
+    private let atMe = L("[有人@我]")
     
     private static let sharedInstance = SessionManager.init()
     
@@ -33,26 +33,89 @@ class SessionManager {
     let privateUnReadCountSubject = BehaviorSubject<Int>(value: 0)
     let groupUnReadCountSubject = BehaviorSubject<Int>(value: 0)
     
-    private(set) var privateSessions = [Session]() {
-        didSet {
-            self.allSessions = self.privateSessions + self.groupSessions
-//            FZMLog("privateSessions ---- \(self.privateSessions) \n allSessions ---- \(self.allSessions)")
-            DispatchQueue.main.async {
-                self.privateSessionsSubject.onNext(self.privateSessions)
-            }
+    /// 会话数组会被多个线程读写（收消息 / 拉历史都在后台线程改），而直接读一个 `[Session]` 存储
+    /// 属性时，数组头（指针 + 数量）可能被另一个线程改写一半 ⇒ 读到的数组是坏的，接着 filter / memcpy 就崩。
+    /// 另外做会话列表的人要的是「列表变了」这个信号，不需要每次变更都通知一遍。
+    /// 所以：底层存储加锁，通知按 runloop 合并。
+    private let cacheLock = NSLock()
+    private var privateSessionsStorage = [Session]()
+    private var groupSessionsStorage = [Session]()
+    private var allSessionsStorage = [Session]()
+    private var privateSessionsEmitScheduled = false
+    private var groupSessionsEmitScheduled = false
+    
+    private(set) var privateSessions: [Session] {
+        get {
+            cacheLock.lock(); defer { cacheLock.unlock() }
+            return privateSessionsStorage
+        }
+        set {
+            cacheLock.lock()
+            privateSessionsStorage = newValue
+            allSessionsStorage = newValue + groupSessionsStorage
+            cacheLock.unlock()
+            schedulePrivateSessionsEmit()
         }
     }
     
-    private(set) var groupSessions = [Session]() {
-        didSet {
-            self.allSessions = self.privateSessions + self.groupSessions
-            DispatchQueue.main.async {
-                self.groupSessionsSubject.onNext(self.groupSessions)
-            }
+    private(set) var groupSessions: [Session] {
+        get {
+            cacheLock.lock(); defer { cacheLock.unlock() }
+            return groupSessionsStorage
+        }
+        set {
+            cacheLock.lock()
+            groupSessionsStorage = newValue
+            allSessionsStorage = privateSessionsStorage + newValue
+            cacheLock.unlock()
+            scheduleGroupSessionsEmit()
         }
     }
     
-    private(set) var allSessions = [Session]()
+    private(set) var allSessions: [Session] {
+        get {
+            cacheLock.lock(); defer { cacheLock.unlock() }
+            return allSessionsStorage
+        }
+        set {
+            cacheLock.lock()
+            allSessionsStorage = newValue
+            cacheLock.unlock()
+        }
+    }
+    
+    /// 同一轮内最多通知一次（收消息 / 拉历史会连续改会话数组，每次变更都通知 = 列表反复重排 + reload）
+    private func schedulePrivateSessionsEmit() {
+        cacheLock.lock()
+        let needSchedule = !privateSessionsEmitScheduled
+        privateSessionsEmitScheduled = true
+        cacheLock.unlock()
+        guard needSchedule else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.cacheLock.lock()
+            let snapshot = self.privateSessionsStorage
+            self.privateSessionsEmitScheduled = false
+            self.cacheLock.unlock()
+            self.privateSessionsSubject.onNext(snapshot)
+        }
+    }
+    
+    private func scheduleGroupSessionsEmit() {
+        cacheLock.lock()
+        let needSchedule = !groupSessionsEmitScheduled
+        groupSessionsEmitScheduled = true
+        cacheLock.unlock()
+        guard needSchedule else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.cacheLock.lock()
+            let snapshot = self.groupSessionsStorage
+            self.groupSessionsEmitScheduled = false
+            self.cacheLock.unlock()
+            self.groupSessionsSubject.onNext(snapshot)
+        }
+    }
     
     var currentChatSession: Session? = nil
     
@@ -64,20 +127,22 @@ class SessionManager {
     
     private func setRX() {
         // 发消息订阅
-        ChatManager.shared().sendMsgSubject.subscribe(onNext: {[unowned self] (msg) in
+        ChatManager.shared().sendMsgSubject.subscribe(onNext: {[weak self] (msg) in
+            guard let self = self else { return }
             self.updateLstestInfo(msg: msg)
         }).disposed(by: self.bag)
         // 收消息订阅
-        MultipleSocketManager.shared().receiveMsgsSubject.subscribe(onNext: {[unowned self] (msgs) in
+        MultipleSocketManager.shared().receiveMsgsSubject.subscribe(onNext: {[weak self] (msgs) in
+            guard let self = self else { return }
             self.handleReceive(msgs: msgs)
         }).disposed(by: self.bag)
     }
     
     // 清除缓存会话数据
     private func clearSessions() {
-        self.allSessions.removeAll()
-        self.privateSessions.removeAll()
-        self.groupSessions.removeAll()
+        self.allSessions = []
+        self.privateSessions = []
+        self.groupSessions = []
     }
     
     // 重置单个会话的未读数
@@ -169,11 +234,31 @@ class SessionManager {
     // 更新会话记录显示的消息内容（聊天页面删除消息时需更新会话记录）
     func updateLastMsgInfo(session: Session, msgId: String) {
         if let latestMsg = ChatManager.shared().getLatestMsg(sessionId: session.id.idValue, exceptMsgId: msgId) {
-            // 还有消息则更新会话消息内容
-            self.updateLstestInfo(msg: latestMsg)
+            // 还有消息则更新会话消息内容（这是从 DB 查出来的「最新一条」，必须照它更新）
+            self.updateLstestInfo(msg: latestMsg, force: true)
         } else {
             // 没有消息记录则删除会话
             self.deleteSession(id: session.id)
+        }
+    }
+    
+    // 撤回消息后刷新会话预览（不排除任何消息，取 DB 中最新的）
+    func refreshLastMsgInfo(session: Session) {
+        if let latestMsg = ChatManager.shared().getLatestMsg(sessionId: session.id.idValue, exceptMsgId: "") {
+            self.updateLstestInfo(msg: latestMsg, force: true)
+        } else {
+            self.deleteSession(id: session.id)
+        }
+    }
+    
+    /// 离开聊天页时用：按 DB 重算一次会话预览。
+    /// 会话列表与聊天详情（`orderBy datetime desc, logId desc`）都取 DB 里最新的一条，
+    /// 这样就不会出现「列表页看到的不是详情里最后一条」。
+    /// ⚠️ 取不到消息时**保持原样**（不删会话），避免一次查询异常 / 消息还没落库就把会话从列表里抹掉。
+    func syncLastMsgInfoWhenLeaveChat(session: Session) {
+        guard self.getSingleLocalSession(by: session.id) != nil else { return }
+        if let latestMsg = ChatManager.shared().getLatestMsg(sessionId: session.id.idValue, exceptMsgId: "") {
+            self.updateLstestInfo(msg: latestMsg, force: true)
         }
     }
     
@@ -185,6 +270,11 @@ class SessionManager {
         if sessionInDB != nil {
             sessionInDB!.isSendFailed = !sendSuccess
             self.update(session: sessionInDB!)
+            
+            // 发送回执会把 DB 里这条消息的 datetime 改写成**服务端时间**（发送时用的是本机时间），
+            // 这里按 DB 重算一次会话预览：否则会话列表的「最后一条」（本机时间 / 旧内容）
+            // 会与聊天详情（按 datetime 排序查库）里的最后一条错位（用户报的「聊天信息会乱」）。
+            self.refreshLastMsgInfo(session: sessionInDB!)
             
             // 更新数据源
             if sessionInDB!.isPrivateChat {// 私聊
@@ -229,21 +319,47 @@ class SessionManager {
                     UserManager.shared().getNetUser(targetAddress: lastMsg.fromId)
                 }
                 if dbUser?.isShield == true {
-                    return
+                    // ⚠️ 必须是 continue 而不是 return：一批里只要有一个会话命中拉黑，
+                    //    用 return 会把**后面同批所有会话**的消息全部跳过（漏未读、漏更新预览）。
+                    continue
                 }
             }
             self.updateLstestInfo(msg: lastMsg, plusUnreadCount: msgArr.count)
+            // 未读数排查日志：同一批 msgId 如果出现两次，就是重复投递没被挡住
+            FZMLog("【未读累加】session=\(lastMsg.sessionId.idValue) 本批=\(msgArr.count) 条 lastMsgId=\(lastMsg.msgId)")
         }
     }
     
     // 更新消息列表
-    private func updateLstestInfo(msg: Message, plusUnreadCount count: Int? = nil, isSendFailed: Bool? = false) {
+    /// - Parameter force: 调用方已经把「DB 里最新的一条」查出来了（删除 / 撤回 / 回执刷新），
+    ///   传 true 表示必须照着更新，不做新旧比较。
+    private func updateLstestInfo(msg: Message, plusUnreadCount count: Int? = nil, isSendFailed: Bool? = false, force: Bool = false) {
         var session = self.getOrCreateSession(id: msg.sessionId)
         
         // 有新会话记录，获取已存本地会话记录，不存在则保存临时会话记录到本地
-        if self.getSingleLocalSession(by: msg.sessionId) == nil {
+        let existingSession = self.getSingleLocalSession(by: msg.sessionId)
+        if existingSession == nil {
             self.insert(session: session)
             self.save(session: session)
+        }
+        
+        // ⚠️ 乱序 / 延迟到达的**旧消息不能把会话预览改旧**。
+        // 以前这里无条件 `session.timestamp = msg.datetime`：只要来一条旧消息（重推、乱序、
+        // 或自己刚发完还没收到回执），列表页显示的最后一条就不再是聊天详情里的最后一条 —— 即用户报的「聊天信息会乱」。
+        // 判据：只在「已经有预览」且「这条消息更旧」时跳过预览更新；未读数 / 发送失败标记照常更新。
+        let hasPreview = existingSession != nil && (!session.msgId.isEmpty || session.latestInfo.length > 0)
+        // 自己刚发出的消息一定是最新的：本机时钟可能比服务端慢（消息时间戳会被 ack 改成服务端时间），
+        // 不能拿时间戳把自己的消息挡掉
+        let isMyOwnMessage = msg.fromId == LoginUser.shared().address
+        if !force, hasPreview, !isMyOwnMessage, msg.datetime < session.timestamp {
+            if let count = count, self.currentChatSession?.id != msg.sessionId {
+                session.unreadCount = session.unreadCount + count
+            }
+            if let isSendFailed = isSendFailed {
+                session.isSendFailed = isSendFailed
+            }
+            self.update(session: session)
+            return
         }
                 
         session.timestamp = msg.datetime
@@ -374,6 +490,13 @@ extension SessionManager {
         self.update(session: session)
     }
     
+    // 更新会话自动删除选项（0=关闭 1=1天 2=3天 3=7天 4=30天 5=180天）
+    func updateAutoDeleteOption(session sessionId: SessionID, option: Int) {
+        guard var session = self.getSingleLocalSession(by: sessionId) else { return }
+        session.autoDeleteOption = option
+        self.update(session: session)
+    }
+    
     // 获取单个会话
     func getSingleLocalSession(by id: SessionID) -> Session? {
         guard let session = self.allSessions.filter({ $0.id == id }).first else { return nil }
@@ -392,6 +515,11 @@ extension SessionManager {
     
     // 删除会话记录
     func deleteSession(id: SessionID) {
+        // ★ 「小Y」（AI 客服）是会话列表渲染层的**虚拟行**：不写库、不进会话数据源，因此**不允许删除**。
+        //   目前它本来就不在 `privateSessions` 里（下面的 guard 也会拦住），这里再显式拦一道，
+        //   避免以后新增删除入口时不小心误删。
+        guard id.idValue != AICustomerStore.entrySessionID else { return }
+        
         if !id.isPersonChat {
             // 如不存在会话
             guard self.groupSessions.filter({ $0.id == id }).first != nil else { return }
@@ -443,18 +571,110 @@ extension SessionManager {
             constraint.condition = SessionDB.CodingKeys.isPrivateChat.is(false)
         }).compactMap { Session.init(with: $0) }
         
-        self.groupSessions = sessions
+        // ★ 「群聊消息」列表里只放**真的有消息、而且自己还在群里**的群会话：
+        //   - 没有任何消息的空会话（历史版本自动补出来的那种）不显示；
+        //   - 已退群 / 被踢 / 群已解散（本地 grouplist 的 isInGroup == false）不显示。
+        //   ⚠️ 只从内存数据源里过滤，**不删 DB 行**：该群来新消息时会走
+        //      `updateLstestInfo` → `insert + save` 正常复活，不影响后续功能。
+        let groupDBs: [GroupDB] = DBManager.shared().getObjects(fromTable: .grouplist, constraintBlock: nil)
+        let leftGroupIds = Set(groupDBs.filter { !$0.isInGroup }.map { $0.id })
+        let displayable = sessions.filter { (session) -> Bool in
+            let hasMessage = !session.msgId.isEmpty || session.latestInfo.length > 0
+            guard hasMessage else { return false }
+            return !leftGroupIds.contains(session.id.idValue.intEncoded)
+        }
+        if displayable.count != sessions.count {
+            FZMLog("群聊列表过滤：本地群会话 \(sessions.count) 条，隐藏 \(sessions.count - displayable.count) 条（无消息 / 已不在群）")
+        }
+        self.groupSessions = displayable
+        
+        // 清理「本地没有任何群信息」的残留群会话（跨账号串号），确认不在群里才删
+        self.verifySessionsWithoutGroupInfo()
         
         self.refreshGroupUnreadCount()
     }
     
+    // ⚠️ 曾经在这里有个 `restoreMissingGroupSessions()`：把「本地 grouplist 里还在、但没有会话行」
+    //    的群无条件补回一条会话。它有两个副作用，用户 2026-10-27 明确报过：
+    //    1. 用户长按「删除聊天」删掉的群会话，重启 App 就被它补回来；
+    //    2. 补出来的会话没有任何消息预览（`Session(id:)` 的 latestInfo 为空）⇒ 列表里一条空白群聊。
+    //    ⇒ 已移除。会话行真的丢了也不需要它：从通讯录进群会建会话，群里来新消息也会
+    //      `updateLstestInfo` → `insert + save` 重建。**不要再加回来。**
+    
+    /// 校验「本地根本没有群信息」的群会话：向服务器确认一次，**服务器明确说不在群里（10015）**
+    /// 才删掉会话。用于清理跨账号残留（切账号后另一个账号的群会话还留在列表里）。
+    /// ⚠️ 网络失败 / 其它错误一律不动，避免像 2026-10-26 那次误删用户的群。
+    private func verifySessionsWithoutGroupInfo() {
+        guard LoginUser.shared().isLogin else { return }
+        let groupDBs: [GroupDB] = DBManager.shared().getObjects(fromTable: .grouplist, constraintBlock: nil)
+        let knownIds = Set(groupDBs.map { $0.id })
+        let orphans = self.groupSessions.filter { !knownIds.contains($0.id.idValue.intEncoded) }
+        guard !orphans.isEmpty else { return }
+        for session in orphans {
+            let groupId = session.id.idValue.intEncoded
+            var serverUrl = session.chatServerUrl
+            if serverUrl.isEmpty {
+                serverUrl = LoginUser.shared().chatServerGroups.first?.value ?? ""
+            }
+            guard !serverUrl.isEmpty else { continue }
+            GroupManager.shared().getGroupInfo(serverUrl: serverUrl, groupId: groupId, successBlock: { _ in
+                // 确认在群里：群信息已落库，会话保留
+                FZMLog("群会话校验通过（在群里）：groupId=\(groupId)")
+            }, failureBlock: { error in
+                if abs((error as NSError).code) == 10015 {
+                    FZMLog("清理跨账号残留群会话：groupId=\(groupId)")
+                    SessionManager.shared().deleteSession(id: session.id)
+                }
+            })
+        }
+    }
+    
     /// 加载本地所有会话数据
     private func loadDBSessions() {
+        // 清理历史版本遗留的 AI 客服数据（该功能已下线）
+        self.cleanupLegacyAISessionData()
+        
         // 加载本地所有私聊会话
         self.loadDBPrivateSessions()
         
         // 加载本地所有群聊会话
         self.loadDBGroupSessions()
+        
+        // 登录后异步预取私聊聊天记录（不阻塞主线程；详见 ChatManager+RecordPull.swift）
+        // ⚠️ 必须延后到下一个 runloop：loadDBSessions() 会在 SessionManager.init() 里被调用，
+        //    此处若同步访问 SessionManager.shared()（prefetchPrivateRecords 内部会读 allSessions）
+        //    会重入正在初始化的 static ⇒ EXC_BREAKPOINT 崩溃。
+        // ⚠️ 再延后 5s：等首屏（会话列表）渲染完、用户这波点击过去，再开始预取，
+        //    避免预取的网络/落库和用户刚进 App 的操作抢资源。
+        //    实测 1.5s 太早：用户在这几秒里点顶部「私聊 / 群聊」分段会卡住几秒
+        //    （预取串行拉会话 + 回主线程写库，把主线程 / DB 一起占住）。
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+            // 重装 / 换机后本地会话表是空的 ⇒ 预取没有 targetId 可用，先按好友列表从服务端恢复
+            // （内部会判断「本机是否真的没有私聊会话」，只会跑一次；详见 ChatManager+RecordPull.swift）
+            ChatManager.shared().autoRecoverPrivateRecordsIfFreshInstall()
+            ChatManager.shared().prefetchPrivateRecords()
+        }
+    }
+    
+    /// 清理老版本遗留的 AI 客服数据：会话记录、聊天记录与本地 AI 配置
+    private func cleanupLegacyAISessionData() {
+        let legacyAIAddress = "ai_assistant"
+        
+        // 该会话的聊天记录
+        DBManager.shared().delete(fromTable: .message) { (constraint) in
+            constraint.condition = MessageDB.Properties.sessionId.is(legacyAIAddress)
+        }
+        
+        // 会话本身
+        DBManager.shared().delete(fromTable: .session) { (constraint) in
+            constraint.condition = SessionDB.Properties.id.is(legacyAIAddress)
+        }
+        
+        // 老版本 AI 配置（API Key / 模型 / 地址 / 思考模式等）
+        ["kAIAPIKey", "kAIAPIURL", "kAIModelName", "kAIVisionModelName",
+         "kAIReasoningModelName", "kAIUseReasoningMode"].forEach {
+            UserDefaults.standard.removeObject(forKey: $0)
+        }
     }
     
     /// 从数据库获取单条会话记录
@@ -515,6 +735,9 @@ extension SessionManager {
         }
         if oldSession.chatServerUrl != session.chatServerUrl {
             updatePropertys.append(SessionDB.Properties.chatServerUrl)
+        }
+        if oldSession.autoDeleteOption != session.autoDeleteOption {
+            updatePropertys.append(SessionDB.Properties.autoDeleteOption)
         }
         guard !updatePropertys.isEmpty else { return }
         

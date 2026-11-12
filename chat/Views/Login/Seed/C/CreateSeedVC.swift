@@ -3,7 +3,7 @@
 //  CreateSeedVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/5.
+//  Created by fzm on 2021/1/5.
 //
 
 import UIKit
@@ -11,19 +11,20 @@ import UIKit
 @objc class CreateSeedVC: UIViewController, ViewControllerProtocol {
     private let bag = DisposeBag.init()
     var topLab: UILabel = {
-        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 30), textColor:UIColor.white, textAlignment: .left, text: "备份助记词")
+        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 18), textColor:Color_24374E, textAlignment: .center, text: L("生成助记词"))
         return lab
     }()
     
     var tipTopLab:UILabel = {
-        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor:UIColor.init(hexString: "#8E92A3"), textAlignment: .left, text: "请务必妥善保存助记词，确定之后将进行校验")
+        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor:UIColor.init(hexString: "#8E92A3"), textAlignment: .center, text: L("请务必妥善保存助记词，确定之后将进行校验"))
+        lab.numberOfLines = 0
         return lab
     }()
     
     var midView:UIView = {
         let view = UIView.init()
-        view.backgroundColor = UIColor.init(hexString: "#333649")
-        view.layer.borderColor = UIColor.init(hexString: "#ffffff")?.cgColor
+        view.backgroundColor = UIColor.init(hexString: "#ffffff")
+        view.layer.borderColor = UIColor.init(hexString: "#8e92a3")?.cgColor
         view.layer.borderWidth = 0.5
         view.layer.cornerRadius = 3
         view.clipsToBounds = true
@@ -31,7 +32,7 @@ import UIKit
     }()
     
     var seedLab:UILabel = {
-        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 18), textColor: .white, textAlignment: .center, text: "床前明 月光疑 是地上 霜举头 望明月")
+        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 18), textColor: Color_24374E, textAlignment: .center, text: L("床前明 月光疑 是地上 霜举头 望明月"))
         lab.numberOfLines = 0
         
         return lab
@@ -40,12 +41,12 @@ import UIKit
     
     var bottomView: UIView = {
         let view = UIView.init()
-        view.backgroundColor = UIColor.init(hexString: "#2b292f")
+        view.backgroundColor = UIColor.init(hexString: "#ffffff")
         return view
     }()
     
     var bottomTipLab:UILabel = {
-        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 13), textColor: .white, textAlignment: .left, text: "提示：请勿截图！如果有人获取你的助记词将直接获取你的资产！请抄写下助记词并存放在安全的地方，我们会再下一屏进行校验。")
+        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 13), textColor: Color_24374E, textAlignment: .left, text: L("提示：请勿截图！如果有人获取你的助记词将直接获取你的资产！请抄写下助记词并存放在安全的地方，我们会再下一屏进行校验。"))
         lab.numberOfLines = 0
         
         return lab
@@ -53,7 +54,7 @@ import UIKit
     
     lazy var changeBtn:UIButton = {
         let btn = UIButton.init()
-        btn.setTitle("更换助记词", for: .normal)
+        btn.setTitle(L("更换助记词"), for: .normal)
         btn.setTitleColor(.white, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 17)
         btn.layer.borderColor = UIColor.init(hexString: "#ffffff")?.cgColor
@@ -67,10 +68,10 @@ import UIKit
     
     lazy var backupBtn:UIButton = {
         let btn = UIButton.init()
-        btn.setTitle("开始备份", for: .normal)
+        btn.setTitle(L("确定"), for: .normal)
         btn.setTitleColor(.white, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 17)
-        btn.backgroundColor = UIColor.init(hexString: "#7a90ff")
+        btn.backgroundColor = Color_Theme
         btn.layer.cornerRadius = 6
         btn.clipsToBounds = true
         btn.addTarget(self, action: #selector(backupBtnToucn), for: .touchUpInside)
@@ -85,7 +86,7 @@ import UIKit
     private lazy var backBtn: UIButton = {
         let btn = UIButton.init()
         btn.setImage(UIImage.init(named: "nav_back")?.withRenderingMode(.alwaysTemplate), for: .normal)
-        btn.tintColor = .white
+        btn.tintColor = Color_24374E
         btn.enlargeClickEdge(UIEdgeInsets.init(top: 10, left: 10, bottom: 10, right: 10))
         btn.rx.controlEvent(.touchUpInside).subscribe(onNext: {[weak self] (_) in
             self?.navigationController?.popViewController(animated: true)
@@ -100,6 +101,7 @@ import UIKit
 //    }()
     
     private lazy var seed: String? = nil { didSet { self.seedLab.text = seed } }
+    @objc var pwd : String? = "123"
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -113,7 +115,7 @@ import UIKit
     }
     
     func setupViews(){
-        self.view.backgroundColor = UIColor.init(hexString: "#333649")
+        self.view.backgroundColor = UIColor.init(hexString: "#ffffff")
         
         self.view.addSubview(self.backBtn)
         self.backBtn.snp.makeConstraints { (m) in
@@ -123,12 +125,13 @@ import UIKit
         }
         
         self.view.addSubviews(self.topLab,self.tipTopLab,self.midView,self.seedLab,self.bottomView)
+        self.view.addSubview(self.topLab)
         topLab.snp.makeConstraints { make in
             make.left.equalToSuperview().offset(15)
-            make.top.equalTo(backBtn).offset(20)
+            make.top.equalTo(backBtn)
             make.right.equalToSuperview().offset(-15)
-            make.height.equalTo(110)
         }
+        
         tipTopLab.snp.makeConstraints { make in
             make.left.equalToSuperview().offset(15)
             make.right.equalToSuperview().offset(-15)
@@ -171,10 +174,10 @@ import UIKit
             make.height.equalTo(44)
             make.bottom.equalToSuperview().offset(bottomSpace);
         }
-       
+        changeBtn.isHidden = true
         backupBtn.snp.makeConstraints { make in
+            make.left.equalToSuperview().offset(15)
             make.right.equalToSuperview().offset(-15)
-            make.width.equalTo(width)
             make.height.equalTo(44)
             make.bottom.equalToSuperview().offset(bottomSpace);
         }
@@ -206,7 +209,7 @@ import UIKit
     
     @objc private func backupBtnToucn() {
         guard let seed = self.seed else { return }
-        let vc = BackupSeedVC.init(seed: seed, isChinese: false)
+        let vc = BackupSeedVC.init(seed: seed, isChinese: false,pwd: self.pwd!)
         self.navigationController?.pushViewController(vc)
     }
 
@@ -271,7 +274,7 @@ import UIKit
 //              !keys.priKey.isEmpty,
 //              !keys.pubKey.isEmpty,
 //              !EncryptManager.publicKeyToAddress(publicKey: keys.pubKey).isEmpty else {
-//            self.showToast("助记词解析错误, 请更换助记词")
+//            self.showToast(L("助记词解析错误, 请更换助记词"))
 //            return
 //        }
 //        let address = EncryptManager.publicKeyToAddress(publicKey: keys.pubKey)
@@ -286,29 +289,29 @@ import UIKit
 //        }
 //    }
     
-    private func showBindAlert() {
-        let alert = TwoBtnInfoAlertView.init()
-        alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
-        alert.leftBtnTitle = "绑定手机号"
-        alert.rightBtnTitle = "绑定邮箱"
-        let att1 = NSAttributedString.init(string: "\n您没有备份助记词，可通过绑定手机/邮箱和密聊密码加密上传至官方服务器，提供助记词找回服务。 为了您的账户安全，请务必自行备份或加密上传助记词，也可前往【安全管理】进行操作。\n\n", attributes: [.font : UIFont.systemFont(ofSize: 16), .foregroundColor : Color_24374E])
-        alert.attributedInfo = att1
-        alert.leftBtnTouchBlock = {
-            let vc = SecurityVC.init()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                vc.phoneBtnTouch(UIButton())
-            }
-            vc.hidesBottomBarWhenPushed = true
-            UIViewController.current()?.navigationController?.pushViewController(vc)
-        }
-        alert.rightBtnTouchBlock = {
-            let vc = SecurityVC.init()
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-                vc.emialBtnTouch(UIButton())
-            }
-            vc.hidesBottomBarWhenPushed = true
-            UIViewController.current()?.navigationController?.pushViewController(vc)
-        }
-        alert.show()
-    }
+//    private func showBindAlert() {
+//        let alert = TwoBtnInfoAlertView.init()
+//        alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
+//        alert.leftBtnTitle = "绑定手机号"
+//        alert.rightBtnTitle = "绑定邮箱"
+//        let att1 = NSAttributedString.init(string: "\n您没有备份助记词，可通过绑定手机/邮箱和密聊密码加密上传至官方服务器，提供助记词找回服务。 为了您的账户安全，请务必自行备份或加密上传助记词，也可前往【安全管理】进行操作。\n\n", attributes: [.font : UIFont.systemFont(ofSize: 16), .foregroundColor : Color_24374E])
+//        alert.attributedInfo = att1
+//        alert.leftBtnTouchBlock = {
+//            let vc = SecurityVC.init()
+//            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+//                vc.phoneBtnTouch(UIButton())
+//            }
+//            vc.hidesBottomBarWhenPushed = true
+//            UIViewController.current()?.navigationController?.pushViewController(vc)
+//        }
+//        alert.rightBtnTouchBlock = {
+//            let vc = SecurityVC.init()
+//            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+//                vc.emialBtnTouch(UIButton())
+//            }
+//            vc.hidesBottomBarWhenPushed = true
+//            UIViewController.current()?.navigationController?.pushViewController(vc)
+//        }
+//        alert.show()
+//    }
 }

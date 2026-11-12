@@ -68,6 +68,7 @@ protocol NotifyItem {
     var members: [String]? { get }//成员列表        1 3 6
     var mutetype: Int? { get }//禁言类型            5
     var newOwner: String? { get }//新群主           7
+    var revokedContent: String? { get }//撤回消息保留的原文内容（用于"重新编辑"） 8
 }
 
 // 通话
@@ -81,4 +82,13 @@ protocol RTCCallItem {
 protocol TransferItem {
     var coinName:String? {get} // 币种名称
     var txHash:String? {get}
+}
+
+protocol RedpacketItem {
+    var redtxHash: String? {get}           // 交易哈希
+    var redcoinName: String? {get}         // 币种名称
+    var exec: String? {get}              // 执行器名称
+    var packetType: Int? {get}         // 红包类型: 0=随机, 1=固定
+    var remark: String? {get}          // 祝福语
+    var expire: UInt64? {get}          // 到期时间戳(ms)
 }

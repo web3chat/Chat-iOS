@@ -2,8 +2,8 @@
 //  TargetType+Base.swift
 //  xls
 //
-//  Created by 陈健 on 2020/8/21.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/8/21.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import Foundation
@@ -19,7 +19,7 @@ public protocol XLSTargetType: TargetType {
 extension XLSTargetType {
     /// The target's base `URL`.
     var baseURL: URL {
-        return URL.init(string: IMChatServerInUse?.value) ?? URL.init(string: "https://api.unknow-error.com")!
+        return URL.init(string: IMChatServerInUse?.value) ?? UNCONFIGURED_SERVER_URL
     }
 
     /// The HTTP method used in the request.
@@ -46,7 +46,9 @@ extension XLSTargetType {
                 "FZM-VERSION": version,
                 "FZM-UUID": String.uuid(),
                 "FZM-DEVICE": "iOS",
-                "FZM-DEVICE-NAME": k_DeviceName
+                "FZM-DEVICE-NAME": k_DeviceName,
+                "X-App-Id":"ios_txchatapp",
+                "X-App-Token":"6514b255dd0234ec4ec919b75defa633"
         ]
     }
     /// The type of validation to perform on the request. Default is `.none`.
@@ -88,11 +90,11 @@ extension XLSTargetType {
             var errorInfo = ""
             switch error.errorCode {
             case NSURLErrorNotConnectedToInternet:
-                errorInfo = "无网络，请检查网络连接"
+                errorInfo = L("无网络，请检查网络连接")
             case NSURLErrorTimedOut:
-                errorInfo = "请求超时，请检查网络连接"
+                errorInfo = L("请求超时，请检查网络连接")
             default:
-                errorInfo = "网络连接错误，请稍后再试"
+                errorInfo = L("网络连接错误，请稍后再试")
             }
             let error = NSError.init(domain: "", code: error.errorCode, userInfo: [NSLocalizedDescriptionKey: errorInfo])
             return Result<JSON, Error>.failure(error)

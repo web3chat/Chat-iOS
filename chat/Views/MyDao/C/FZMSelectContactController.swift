@@ -29,6 +29,13 @@ import UIKit
         if #available(iOS 15.0, *) {   ///  standardAppearance 这个api其实是 13以上就可以使用的 ，这里写 15 其实主要是iOS15上出现的这个死样子
             let naba = UINavigationBarAppearance.init()
             naba.configureWithOpaqueBackground()
+            // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+            naba.buttonAppearance.normal.backgroundImage = UIImage()
+            naba.buttonAppearance.highlighted.backgroundImage = UIImage()
+            naba.doneButtonAppearance.normal.backgroundImage = UIImage()
+            naba.doneButtonAppearance.highlighted.backgroundImage = UIImage()
+            naba.backButtonAppearance.normal.backgroundImage = UIImage()
+            naba.backButtonAppearance.highlighted.backgroundImage = UIImage()
             naba.backgroundColor =  UIColor(hex: 0xFAFBFC)
             naba.shadowColor = UIColor.lightGray
             
@@ -36,8 +43,8 @@ import UIKit
             self.navigationController?.navigationBar.standardAppearance = naba
             self.navigationController?.navigationBar.scrollEdgeAppearance = naba
         }
-        self.navigationItem.title = "选择好友"
-        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: "取消", style: .plain, target: self, action: #selector(dismissPage))
+        self.navigationItem.title = L("选择好友")
+        self.navigationItem.leftBarButtonItem = UIBarButtonItem(title: L("取消"), style: .plain, target: self, action: #selector(dismissPage))
         self.createUI()
     }
     
@@ -51,7 +58,7 @@ import UIKit
     
     private func createUI() {
         
-        let view1 = FZMFriendContactListView(with: "选择好友", .no)
+        let view1 = FZMFriendContactListView(with: L("选择好友"), .no)
         
         view1.selectBlock = {[weak self] (model) in
             self?.deal(contact: model)
@@ -88,7 +95,7 @@ import UIKit
                     }
                 }
                 if toAddre.count == 0{
-                    strongSelf.showToast("未获取到对方地址")
+                    strongSelf.showToast(L("未获取到对方地址"))
                     return
                 }
                 if self!.selectedBlock != nil {

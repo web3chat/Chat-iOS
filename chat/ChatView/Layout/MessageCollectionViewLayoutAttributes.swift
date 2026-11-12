@@ -2,7 +2,7 @@
 //  MessageColletionViewLayoutAttributes.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/21.
+//  Created by fzm on 2020/12/21.
 //
 
 import UIKit
@@ -28,6 +28,17 @@ class MessageCollectionViewLayoutAttributes: UICollectionViewLayoutAttributes {
     var messageContainerPadding: UIEdgeInsets = .zero
     var messageLabelFont = UIFont.preferredFont(forTextStyle: .body)
     var messageLabelInsets: UIEdgeInsets = .zero
+
+    // 引用消息（气泡下方那条引用条）。nil = 不显示；高度已加进 `messageContainerSize`
+    var quotePreview: QuotePreview?
+    var quoteHeight: CGFloat = 0
+    /// 引用条宽度：只跟引用文字走，和气泡宽度无关
+    var quoteWidth: CGFloat = 0
+
+    // 气泡下方的「译文 / 转写」卡片。nil = 不显示；高度已加进行高（不挤压气泡）
+    var extraBlock: MessageExtraBlock?
+    var extraBlockHeight: CGFloat = 0
+    var extraBlockWidth: CGFloat = 0
     
     // 语音消息
     var audioPosition = AudioPosition.init(horizontal: .cellLeading)
@@ -81,6 +92,12 @@ class MessageCollectionViewLayoutAttributes: UICollectionViewLayoutAttributes {
         copy.redDotViewPadding = redDotViewPadding
         copy.messageLabelFont = messageLabelFont
         copy.messageLabelInsets = messageLabelInsets
+        copy.quotePreview = quotePreview
+        copy.quoteHeight = quoteHeight
+        copy.quoteWidth = quoteWidth
+        copy.extraBlock = extraBlock
+        copy.extraBlockHeight = extraBlockHeight
+        copy.extraBlockWidth = extraBlockWidth
         copy.cellTopLabelAlignment = cellTopLabelAlignment
         copy.cellTopLabelSize = cellTopLabelSize
         copy.cellBottomLabelAlignment = cellBottomLabelAlignment
@@ -119,6 +136,14 @@ class MessageCollectionViewLayoutAttributes: UICollectionViewLayoutAttributes {
         && attributes.redDotViewPadding == redDotViewPadding
         && attributes.messageLabelFont == messageLabelFont
         && attributes.messageLabelInsets == messageLabelInsets
+        && attributes.quoteHeight == quoteHeight
+        && attributes.quoteWidth == quoteWidth
+        && attributes.quotePreview?.displayText == quotePreview?.displayText
+        && attributes.quotePreview?.refLogId == quotePreview?.refLogId
+        && attributes.extraBlockHeight == extraBlockHeight
+        && attributes.extraBlockWidth == extraBlockWidth
+        && attributes.extraBlock?.text == extraBlock?.text
+        && attributes.extraBlock?.kind == extraBlock?.kind
         && attributes.cellTopLabelAlignment == cellTopLabelAlignment
         && attributes.cellTopLabelSize == cellTopLabelSize
         && attributes.cellBottomLabelAlignment == cellBottomLabelAlignment

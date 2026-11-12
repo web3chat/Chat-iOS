@@ -2,14 +2,14 @@
 //  Message.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/22.
+//  Created by fzm on 2020/12/22.
 //
 
 import Foundation
 import SwiftyJSON
 import Kingfisher
 
-let UnSupportedMsgType = "不支持的消息类型"
+let UnSupportedMsgType = L("不支持的消息类型")
 
 enum SocketLuckyPacketStatus : Int {
     case normal = 1 //正常状态
@@ -32,6 +32,8 @@ struct Message {
     var isRead = false//是否已读，暂用于语音和系统消息
     var showTime = false//是否显示消息时间
     
+    var isBurn = false//阅后即焚（发送时打标，收到时从 Source.burn 解析）
+    
     var mentionIds: [String]?// 群内@的id数组
     
     var reference: Reference?// 引用的消息
@@ -48,6 +50,15 @@ struct Message {
     
     var packetType:IMRedPacketType?
     var coinname:String?
+
+    // MARK: - 气泡下方的附属文本（本地生成，只存本地库，不进消息体、不上链）
+    /// 文本消息的译文（系统翻译面板「替换」后写入）
+    var translation: String? = nil
+    /// 译文对应的目标语言 code（`LanguageManager.currentLanguageCode`）
+    var translationLang: String? = nil
+    /// 语音消息的转写文本（`SFSpeechRecognizer` 离线识别）
+    var transcript: String? = nil
+
     private init(fromId: String, targetId: String, channelType: ChannelType, msgType: MsgType) {
         self.msgId = String.uuid()
         self.fromId = fromId
@@ -76,6 +87,11 @@ extension Message {
     
     // 会话列表显示的最新消息
     var mesPreview: NSAttributedString {
+        // 阅后即焚：不外泄正文，未焚显示占位、已焚显示焚毁
+        if isBurn {
+            if isBurned { return NSAttributedString(string: L("[已阅后焚毁]")) }
+            return NSAttributedString(string: L("[阅后即焚消息]"))
+        }
         return self.msgType.preview
     }
 }

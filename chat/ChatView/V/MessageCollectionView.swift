@@ -2,7 +2,7 @@
 //  MessageCollectionView.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/21.
+//  Created by fzm on 2020/12/21.
 //
 
 import UIKit
@@ -32,7 +32,7 @@ class MessageCollectionView: UICollectionView {
     private func registerCells() {
         self.register(viewClass: MessageCollectionReusableView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader)
         self.register(viewClass: MessageCollectionReusableView.self, forSupplementaryViewOfKind: UICollectionView.elementKindSectionFooter)
-        
+
         self.register(TextMessageCell.self)
         self.register(MediaMessageCell.self)
         self.register(AudioMessageCell.self)
@@ -40,6 +40,8 @@ class MessageCollectionView: UICollectionView {
         self.register(TransferMessageCell.self)
         self.register(ContactCardMessageCell.self)
         self.register(SystemMessageCell.self)
+        self.register(RedPacketMessageCell.self)
+        self.register(ForwardMessageCell.self)
     }
     
     private func setupGestureRecognizers() {

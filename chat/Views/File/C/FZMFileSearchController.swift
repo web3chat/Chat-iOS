@@ -35,7 +35,7 @@ class FZMFileSearchController: FZMFileViewController {
         input.textAlignment = .left
         input.font = UIFont.regularFont(16)
         input.textColor = Color_24374E
-        input.attributedPlaceholder = NSAttributedString(string: "文件名", attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])// 文件名/上传者
+        input.attributedPlaceholder = NSAttributedString(string: L("文件名"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])// 文件名/上传者
         input.returnKeyType = .search
         input.delegate = self
         return input
@@ -49,7 +49,7 @@ class FZMFileSearchController: FZMFileViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        let selectBtn = UIBarButtonItem.init(title: "选择", style: .done, target: self, action: #selector(selectFileOrCancel))
+        let selectBtn = UIBarButtonItem.init(title: L("选择"), style: .done, target: self, action: #selector(selectFileOrCancel))
         self.navigationItem.rightBarButtonItems = [selectBtn]
     }
     

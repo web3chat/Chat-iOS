@@ -34,9 +34,9 @@ class BannedListVC: UIViewController, ViewControllerProtocol {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        self.navigationItem.title = "禁言名单"
+        self.navigationItem.title = L("禁言名单")
         
-        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: "全部解禁", style: .plain, target: self, action: #selector(rightBtnAction))
+        self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: L("全部解禁"), style: .plain, target: self, action: #selector(rightBtnAction))
         self.navigationItem.rightBarButtonItem?.tintColor = Color_Theme
         
         self.createUI()

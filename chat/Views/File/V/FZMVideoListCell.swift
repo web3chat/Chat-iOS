@@ -175,7 +175,8 @@ class FZMVideoListCell: UICollectionViewCell {
                 self.playOrDownloadImageView.image = #imageLiteral(resourceName: "icon_video_download")
             }
             
-            mediaItem.imageAsync { (image) in
+            // 缩略图按 1280 安全取图（降采样 + 立即解码）
+            ChatMediaCache.safeRetrieveImage(forKey: mediaItem.mediaCachekey ?? "", maxPixelSize: 1280) { (image) in
                 if let image = image {
                     self.curImage = image
                     self.contentImageView.image = image
@@ -202,7 +203,7 @@ class FZMVideoListCell: UICollectionViewCell {
             playOrDownloadImageView.isHidden = true
             downloadProgressView.isHidden = true
             videoTimeLab.isHidden = true
-            mediaItem.imageAsync { (image) in
+            ChatMediaCache.safeRetrieveImage(forKey: mediaItem.mediaCachekey ?? "", maxPixelSize: 1280) { (image) in
                 if let image = image {// 本地已有缓存则显示缓存图片
                     
                     // 判断是否为gif图
@@ -228,11 +229,8 @@ class FZMVideoListCell: UICollectionViewCell {
         DispatchQueue.main.async {
             self.playOrDownloadImageView.image = UIImage.init(named: "icon_video_play")
             
-            ImageCache.default.retrieveImage(forKey: self.vm?.message.msgType.cachekey ?? "") { (result) in
-                guard case .success(let cache) = result,
-                      let image = cache.image else {
-                    return
-                }
+            ChatMediaCache.safeRetrieveImage(forKey: self.vm?.message.msgType.cachekey ?? "") { image in
+                guard let image = image else { return }
                 self.curImage = image
                 self.contentImageView.image = image
             }

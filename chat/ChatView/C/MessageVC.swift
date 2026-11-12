@@ -2,7 +2,7 @@
 //  MessageVC.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/21.
+//  Created by fzm on 2020/12/21.
 //
 
 import UIKit
@@ -209,7 +209,7 @@ extension MessageVC {
     }
     
     //显示回输入框
-    private func showTextView(isClickMoreBtn:Bool = false) {
+    func showTextView(isClickMoreBtn:Bool = false) {
         self.inputBarView.voiceBtn.setImage(#imageLiteral(resourceName: "inputBar_voice").withRenderingMode(.alwaysTemplate), for: .normal)
         self.inputBarView.textContenView.isHidden = false
         self.inputBarView.recordVoiceBtn.isHidden = true
@@ -234,6 +234,18 @@ extension MessageVC {
         self.setCollectionViewBottom(space)
         
         self.inputBarView.inputTextView.textView.becomeFirstResponder()
+    }
+    
+    // 撤回消息后重新编辑：将原文填充到输入框并弹出键盘
+    func showReEditInput(with text: String) {
+        // 切回文字输入模式
+        self.inputBarView.showVoice = false
+        self.inputBarView.showMore = false
+        self.showTextView()
+        self.inputBarView.inputTextView.textView.text = text
+        // 光标定位到文本末尾
+        let endLocation = (text as NSString).length
+        self.inputBarView.inputTextView.textView.selectedRange = NSRange(location: endLocation, length: 0)
     }
     
     // 键盘收回隐藏事件处理（点击更多按钮/滚动消息列表触发）
@@ -338,12 +350,12 @@ extension MessageVC: UIGestureRecognizerDelegate {
 extension MessageVC: UICollectionViewDataSource {
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
-        let collectionView = collectionView as! MessageCollectionView
+        guard let collectionView = collectionView as? MessageCollectionView else { return 0 }
         return collectionView.messageDataSource?.numberOfSections(in: collectionView) ?? 0
     }
     
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        let collectionView = collectionView as! MessageCollectionView
+        guard let collectionView = collectionView as? MessageCollectionView else { return 0 }
         return collectionView.messageDataSource?.messageCollectionView(collectionView, numberOfItemsInSection: section) ?? 0
     }
     
@@ -397,7 +409,7 @@ extension MessageVC: UICollectionViewDataSource {
             cell.configure(with: message, at: indexPath, and: collectionView)
             return cell
         case .forward(_):
-            let cell = collectionView.dequeueReusableCell(TextMessageCell.self, for: indexPath)
+            let cell = collectionView.dequeueReusableCell(ForwardMessageCell.self, for: indexPath)
             cell.configure(with: message, at: indexPath, and: collectionView)
             return cell
         case .transfer:
@@ -413,10 +425,20 @@ extension MessageVC: UICollectionViewDataSource {
             cell.configure(with: message, at: indexPath, and: collectionView)
             return cell
         case .redPacket(_):
-            let cell = collectionView.dequeueReusableCell(TextMessageCell.self, for: indexPath)
+            let cell = collectionView.dequeueReusableCell(RedPacketMessageCell.self, for: indexPath)
             cell.configure(with: message, at: indexPath, and: collectionView)
             return cell
         case .contactCard(_):
+            // 安卓端的「专属红包」走的是名片消息兼容通道（type == -1）：
+            // 复用我们自己的红包气泡渲染，保证两端观感一致。
+            // 外观由 `RedPacketMessageCell.configure` 内部按 contactType 决定，这里只负责选 cell；
+            // ⚠️ 尺寸必须配套，否则气泡会变成 0×0（见 `RedPacketMessageSizeCalculator`）
+            if message.msgType.contactType == -1 {
+                let cell = collectionView.dequeueReusableCell(
+                    RedPacketMessageCell.self, for: indexPath)
+                cell.configure(with: message, at: indexPath, and: collectionView)
+                return cell
+            }
             let cell = collectionView.dequeueReusableCell(ContactCardMessageCell.self, for: indexPath)
             cell.configure(with: message, at: indexPath, and: collectionView)
             return cell
@@ -428,8 +450,10 @@ extension MessageVC: UICollectionViewDataSource {
     }
     
     func collectionView(_ collectionView: UICollectionView, viewForSupplementaryElementOfKind kind: String, at indexPath: IndexPath) -> UICollectionReusableView {
-        let collectionView = collectionView as! MessageCollectionView
-        let messagesDisplayDelegate = collectionView.messagesDisplayDelegate!
+        guard let collectionView = collectionView as? MessageCollectionView,
+              let messagesDisplayDelegate = collectionView.messagesDisplayDelegate else {
+            return UICollectionReusableView()
+        }
         return messagesDisplayDelegate.collectionView(collectionView, viewForSupplementaryElementOfKind: kind, at: indexPath)
     }
 }
@@ -442,20 +466,20 @@ extension MessageVC: UICollectionViewDelegate, UICollectionViewDelegateFlowLayou
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, insetForSectionAt section: Int) -> UIEdgeInsets {
-        let collectionView = collectionView as! MessageCollectionView
-        guard let layoutDataSource = collectionView.messageLayoutDataSource else { return .zero}
+        guard let collectionView = collectionView as? MessageCollectionView,
+              let layoutDataSource = collectionView.messageLayoutDataSource else { return .zero}
         return layoutDataSource.collectionView(collectionView, insetForSectionAt: section)
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForHeaderInSection section: Int) -> CGSize {
-        let collectionView = collectionView as! MessageCollectionView
-        guard let layoutDataSource = collectionView.messageLayoutDataSource else { return .zero}
+        guard let collectionView = collectionView as? MessageCollectionView,
+              let layoutDataSource = collectionView.messageLayoutDataSource else { return .zero}
         return layoutDataSource.headerViewSize(for: section, in: collectionView)
     }
     
     func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, referenceSizeForFooterInSection section: Int) -> CGSize {
-        let collectionView = collectionView as! MessageCollectionView
-        guard let layoutDataSource = collectionView.messageLayoutDataSource else { return .zero}
+        guard let collectionView = collectionView as? MessageCollectionView,
+              let layoutDataSource = collectionView.messageLayoutDataSource else { return .zero}
         return layoutDataSource.footerViewSize(for: section, in: collectionView)
     }
     

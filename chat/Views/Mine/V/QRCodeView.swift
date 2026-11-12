@@ -96,7 +96,7 @@ class QRCodeView: UIView {
             make.top.equalTo(addressLab.snp.bottom).offset(45)
         }
         
-        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_8A97A5, textAlignment: .center, text: "扫描二维码加入群聊")
+        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_8A97A5, textAlignment: .center, text: L("扫描二维码加入群聊"))
         self.addSubview(lab)
         lab.snp.makeConstraints { make in
             make.top.equalTo(qrImageView.snp.bottom).offset(10)
@@ -135,9 +135,9 @@ class QRCodeView: UIView {
         
         // 群号
         if let markId = groupInfo.markId {
-            self.addressLab.text = "群号：\(markId)"
+            self.addressLab.text = L("群号：") + "\(markId)"
         } else {
-            self.addressLab.text = "群ID：\(groupInfo.id)"
+            self.addressLab.text = L("群ID：") + "\(groupInfo.id)"
         }
         
         // 生成二维码视图

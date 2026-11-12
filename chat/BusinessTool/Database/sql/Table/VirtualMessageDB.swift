@@ -32,29 +32,15 @@ final class VirtualMessageDB: TableCodable {
     }
     
     init?(with messageDb: MessageDB) {
-        let type = Message.init(with: messageDb).kind
-        
-        var msgConten = ""
-        
-        switch type {
-        case .text, .file:
-            msgConten = messageDb.msg
-            //wjhTODO
-//        case .forward://转发消息
-//            msgConten = messageDb.msg
-        default: break
-            
-        }
-        
-//        if type == .text {
-//            msgConten = dbMessage.contentForSearch
-//        } else if type == .forward {
-//            msgConten = SocketMessageBody(with: dbMessage.jsonData, type: type).forwardMsgs.compactMap { $0.msgType == .text ? $0.body.content : nil }.joined()
-//        }
+        // 只收「文字(1) / 文件(5)」两类消息（等价于原来 `Message.init(with:).kind == .text/.file` 的判断），
+        // 但**不再构造整个 Message**：构造它要解析 msg 里的 JSON，还会走 `kind`（内部会创建
+        // NSAttributedString 这类 UI 对象）—— 在数据库队列上批量跑既慢，又把一堆无关代码
+        //（含强解包、attributedString 拼接）拉进了「写虚表」这条路径，属崩溃高危区。
+        guard messageDb.msgType == 1 || messageDb.msgType == 5 else { return nil }
+
+        let msgConten = messageDb.msg
         guard !msgConten.isEmpty else { return nil }
-        /**
-         msgConten.substring(with: msgConten.index(msgConten.startIndex, offsetBy: 17) ..< msgConten.index(msgConten.endIndex, offsetBy: -3))
-         */
+
         content = msgConten
         let logId = messageDb.logId?.string ?? ""// 服务端返回的消息id
         msgId = !messageDb.msgId.isEmpty ? messageDb.msgId : logId

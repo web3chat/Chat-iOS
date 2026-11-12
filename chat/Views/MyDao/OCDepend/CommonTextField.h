@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/23.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import <UIKit/UIKit.h>

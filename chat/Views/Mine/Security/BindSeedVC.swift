@@ -2,7 +2,7 @@
 //  BindSeedVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/29.
+//  Created by fzm on 2021/1/29.
 //
 
 import UIKit
@@ -38,6 +38,8 @@ class BindSeedVC: UIViewController,ViewControllerProtocol {
     
     let kind: Kind
     
+    private var languageObserver: NSObjectProtocol?
+    
     init(kind: Kind) {
         self.kind = kind
         super.init(nibName: nil, bundle: nil)
@@ -47,36 +49,49 @@ class BindSeedVC: UIViewController,ViewControllerProtocol {
         fatalError("init(coder:) has not been implemented")
     }
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        self.setupViews()
-        self.bindData()
+    deinit {
+        if let o = languageObserver { NotificationCenter.default.removeObserver(o) }
     }
     
-    private func setupViews() {
-        
-        self.title = self.kind == .phone ? "绑定手机" : "绑定邮箱"
-        self.infoLab.text = self.kind == .phone ? "绑定手机后可用手机登录" : "绑定邮箱后可用邮箱登录"
-        let placeholder = self.kind == .phone ? "请输入手机号" : "请输入邮箱"
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        self.applyLocalizedStaticStrings()
+        self.bindData()
+        languageObserver = NotificationCenter.default.addObserver(forName: LanguageManager.LanguageChangedNotification, object: nil, queue: .main) { [weak self] _ in
+            guard let self = self else { return }
+            self.applyLocalizedStaticStrings()
+            let t = self.countDown == 0 ? L("获取验证码") : String(format: L("已发送(%d)S"), self.countDown)
+            self.sendCodeBtn.setTitle(t, for: .disabled)
+        }
+    }
+    
+    private func applyLocalizedStaticStrings() {
+        self.title = self.kind == .phone ? L("绑定手机") : L("绑定邮箱")
+        self.infoLab.text = self.kind == .phone ? L("绑定手机后可用手机登录") : L("绑定邮箱后可用邮箱登录")
+        let placeholder = self.kind == .phone ? L("请输入手机号") : L("请输入邮箱")
         self.accountTextField.attributedPlaceholder = NSAttributedString.init(string: placeholder, attributes: [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16), NSAttributedString.Key.foregroundColor: Color_8A97A5])
-        self.codeTextField.attributedPlaceholder = NSAttributedString.init(string: "请输入验证码", attributes: [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16), NSAttributedString.Key.foregroundColor: Color_8A97A5])
+        self.codeTextField.attributedPlaceholder = NSAttributedString.init(string: L("请输入验证码"), attributes: [NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16), NSAttributedString.Key.foregroundColor: Color_8A97A5])
+        self.okBtn.setTitle(L("确定"), for: .normal)
+        self.sendCodeBtn.setTitle(L("获取验证码"), for: .normal)
     }
     
     private func bindData() {
-        let accountTextFieldOkBtn = self.accountTextField.addToolBar(with: "确定", target: self, sel: #selector(okBtnTouch(_:)))
-        let codeTextFieldOkBtn = self.codeTextField.addToolBar(with: "确定", target: self, sel: #selector(okBtnTouch(_:)))
+        let accountTextFieldOkBtn = self.accountTextField.addToolBar(with: L("确定"), target: self, sel: #selector(okBtnTouch(_:)))
+        let codeTextFieldOkBtn = self.codeTextField.addToolBar(with: L("确定"), target: self, sel: #selector(okBtnTouch(_:)))
         
         
         let phoneLength = 11
-        let codeLength = 5
+        let codeLength = 6
         
-        accountTextField.rx.text.orEmpty.subscribe(onNext: { [unowned self] str in
+        accountTextField.rx.text.orEmpty.subscribe(onNext: { [weak self] str in
+            guard let self = self else { return }
             if self.kind == .phone {
                 self.accountTextField.text = String(str.prefix(phoneLength))
             }
         }).disposed(by: bag)
         
-        codeTextField.rx.text.orEmpty.subscribe(onNext: { [unowned self] str in
+        codeTextField.rx.text.orEmpty.subscribe(onNext: { [weak self] str in
+            guard let self = self else { return }
             self.codeTextField.text = String(str.prefix(codeLength))
         }).disposed(by: bag)
         
@@ -91,8 +106,9 @@ class BindSeedVC: UIViewController,ViewControllerProtocol {
             codeTextFieldOkBtn.backgroundColor = isValid ? Color_Theme : Color_CCD1E0
         }).disposed(by: bag)
         
-        self.countDownSubject.asObservable().observeOn(MainScheduler.instance).subscribe(onNext: {[unowned self] (countDown) in
-            let title = countDown == 0 ? "获取验证码" : "已发送(\(countDown)S)"
+        self.countDownSubject.asObservable().observeOn(MainScheduler.instance).subscribe(onNext: {[weak self] (countDown) in
+            guard let self = self else { return }
+            let title = countDown == 0 ? L("获取验证码") : String(format: L("已发送(%d)S"), countDown)
             self.sendCodeBtn.setTitle(title, for: .disabled)
         }).disposed(by: bag)
         
@@ -129,11 +145,11 @@ class BindSeedVC: UIViewController,ViewControllerProtocol {
     
     private func showAlert() {
         let alert = TwoBtnInfoAlertView.init()
-        alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.regularFont(14), .foregroundColor : Color_8A97A5])
-        alert.leftBtnTitle = "取消"
-        alert.rightBtnTitle = "解除并绑定"
-        let prefix = "手机号/邮箱已绑定过其他助记词账户，是否解除原绑定并重新绑定本地助记词账户？\n"
-        let suffix = "若原账号有资产，将无法通过手机号找回，有丢失的风险，请谨慎解绑！"
+        alert.attributedTitle = NSAttributedString.init(string: L("提示"), attributes: [.font : UIFont.regularFont(14), .foregroundColor : Color_8A97A5])
+        alert.leftBtnTitle = L("取消")
+        alert.rightBtnTitle = L("解除并绑定")
+        let prefix = L("手机号/邮箱已绑定过其他助记词账户，是否解除原绑定并重新绑定本地助记词账户？\n")
+        let suffix = L("若原账号有资产，将无法通过手机号找回，有丢失的风险，请谨慎解绑！")
         let prefixAttr = [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.regularFont(16)]
         let suffixAttr = [NSAttributedString.Key.foregroundColor: Color_DD5F5F, NSAttributedString.Key.font: UIFont.boldFont(16)]
         let attString = NSMutableAttributedString(string: prefix + suffix)
@@ -166,7 +182,7 @@ class BindSeedVC: UIViewController,ViewControllerProtocol {
         let api = self.kind == .phone ? BackupAPI.phoneBinding(area: "+86", phone: account, code: code, mnemonic: encryptedSeed) : BackupAPI.emailBinding(email: account, code: code, mnemonic: encryptedSeed)
         Provider.request(api) { (_) in
             self.view.hideActivity()
-            APP.shared().showToast("绑定成功")
+            APP.shared().showToast(L("绑定成功"))
             self.kind == .phone ?
             (LoginUser.shared().bindSeedPhone = account)
             :

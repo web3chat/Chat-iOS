@@ -10,6 +10,7 @@
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="SetChatPwdVC" customModule="chat" customModuleProvider="target">
             <connections>
+                <outlet property="hintLabel" destination="JYL-RL-D27" id="set-hint-lab"/>
                 <outlet property="okBtn" destination="mdc-Zp-jiM" id="Ebb-PK-a4u"/>
                 <outlet property="pwdAgainBgView" destination="sNE-Fb-b16" id="wNK-kr-rWl"/>
                 <outlet property="pwdAgainTextField" destination="bia-oc-xVg" id="PUe-Oe-4OE"/>

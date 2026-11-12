@@ -17,7 +17,15 @@ class TeamManager {
     
     private init() {
         self.addLoginObserver()
-        
+
+        // 企业号功能关闭时：不加载本地员工数据、不发任何网络请求；
+        // 并把可能残留的登录态清掉，否则团队/员工相关入口还会显示出来
+        guard FZM_EnableEnterpriseFeature else {
+            LoginUser.shared().myStaffInfo = nil
+            LoginUser.shared().isInTeam = false
+            return
+        }
+
         // 加载本地我的团队信息数据和网络请求
         self.loadMyStaffInfoInDBAndNet()
     }
@@ -27,6 +35,7 @@ class TeamManager {
 extension TeamManager {
     /// 加载本地我的员工信息数据和网络请求我的员工信息
     func loadMyStaffInfoInDBAndNet() {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭：本地与网络都不碰
         if LoginUser.shared().isLogin {
             let myStaffInfo = self.getDBStaffInfo(address: LoginUser.shared().address)
             if myStaffInfo != nil {
@@ -42,6 +51,7 @@ extension TeamManager {
     
     // 获取我的员工信息和企业信息网络请求 (顶部导航栏更多视图中点击创建团队调用)
     func getMyStaffInfoAndTeamInfoRequest(successBlock: NormalBlock? = nil, failureBlock: StringBlock? = nil) {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭，不发请求
         // 获取员工信息
         self.getStaffInfo(address: LoginUser.shared().address, successBlock: { (info) in
             // 获取企业信息
@@ -49,18 +59,19 @@ extension TeamManager {
                 successBlock?()
             }, failureBlock: { (error) in
                 FZMLog("获取企业信息 :\(error)")
-                failureBlock?("获取企业信息失败 \(error.localizedDescription)")
+                failureBlock?(String(format: L("获取企业信息失败 %@"), error.localizedDescription))
             })
         }, failureBlock: { (error) in
             FZMLog("获取用户员工信息 :\(error)")
-            failureBlock?("您当前还未加入或创建团队，请先加入或创建团队")
+            failureBlock?(L("您当前还未加入或创建团队，请先加入或创建团队"))
         })
     }
     
     // 获取用户员工信息
     func getStaffInfo(address: String, successBlock: ((StaffInfo)->())? = nil, failureBlock: StringBlock? = nil) {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭，不发请求
         guard !TeamOAServerUrl.isBlank else {
-            failureBlock?("获取团队信息失败")
+            failureBlock?(L("获取团队信息失败"))
             FZMLog("企业服务器地址为空!!!!!")
             
             // 获取模块启用状态
@@ -76,7 +87,7 @@ extension TeamManager {
                     // 解散/退出团队
                     LoginUser.shared().quitTeam()
                 }
-                failureBlock?("员工不存在")
+                failureBlock?(L("员工不存在"))
             } else {
                 let info = StaffInfo.init(json: json)
                 
@@ -214,6 +225,8 @@ extension TeamManager {
     private func addLoginObserver() {
         FZM_NotificationCenter.addObserver(self, selector: #selector(userLogin), name: FZM_Notify_UserLogin, object: LoginUser.shared())
     }
+    
+    
     
     @objc private func userLogin() {
         self.loadMyStaffInfoInDBAndNet()

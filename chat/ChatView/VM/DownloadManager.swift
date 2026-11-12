@@ -37,13 +37,17 @@ class DownloadManager: NSObject {
         }
         // 文件url地址
         guard let fileUrl = msgVM.message.msgType.fileUrl, !fileUrl.isBlank else {
-            APP.shared().showToast("数据加载失败")
+            APP.shared().showToast(L("数据加载失败"))
             return
         }
         let downloadTask: URLSessionDownloadTask
         let urlString: String = fileUrl
         let session = URLSession.init(configuration: URLSessionConfiguration.default, delegate: self, delegateQueue: OperationQueue.main)
-        downloadTask = session.downloadTask(with: urlString.url!)
+        guard let url = urlString.url else {
+            FZMLog("下载失败，无效的URL: \(urlString)")
+            return
+        }
+        downloadTask = session.downloadTask(with: url)
         downloadTask.resume()
     }
 }
@@ -121,12 +125,12 @@ extension DownloadManager: URLSessionDelegate, URLSessionDownloadDelegate {
         
         UIImage.getVideoCropPicture(url) { (image) in
             guard let image = image else {
-                APP.shared().showToast("视频封面获取失败")
+                // 封面拿不到就不打扰用户了（只是列表里少个缩略图），仅留日志
                 FZMLog("视频封面获取出错")
                 return
             }
             // 缓存封面图片
-            ImageCache.default.store(image, forKey: fileName)
+            ChatMediaCache.store(image, forKey: fileName)
         }
     }
     

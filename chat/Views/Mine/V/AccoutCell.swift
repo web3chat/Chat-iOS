@@ -2,8 +2,8 @@
 //  AccoutCell.swift
 //  xls
 //
-//  Created by 陈健 on 2020/8/12.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/8/12.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import UIKit

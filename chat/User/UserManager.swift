@@ -2,7 +2,7 @@
 //  UserManager.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/14.
+//  Created by fzm on 2021/1/14.
 //
 
 import Foundation
@@ -13,27 +13,87 @@ class UserManager {
     private static let sharedInstance = UserManager.init()
     static func shared() -> UserManager { return sharedInstance }
     
+    /// `users` / `friends` 会被**多个线程**读写（`getUser` / `getDBUser` 会在后台线程往缓存里 append、
+    /// 也可能直接给整个数组重新赋值）。直接读写一个 `[User]` 存储属性时，数组头（缓冲区指针 + 数量）
+    /// 可能被另一个线程改写一半 ⇒ 读到的数组是坏的，紧接着 `filter` / `memcpy` 就崩在
+    /// `__swift_memcpy196_8`（196 = User 结构体大小，线上真实堆栈）。
+    /// 因此底层存储用一把锁保护，对外仍然叫 `users` / `friends`（读到的永远是一致快照）。
+    private let cacheLock = NSLock()
+    private var usersStorage = [User]()
+    private var friendsStorage = [User]()
+    
     // 所有用户
     private(set) lazy var allusersSubject = BehaviorSubject<[User]>.init(value: [])
-    private(set) var users = [User]() {
-        didSet {
-            DispatchQueue.main.async {
-                self.allusersSubject.onNext(self.users)
-            }
+    private(set) var users: [User] {
+        get {
+            cacheLock.lock(); defer { cacheLock.unlock() }
+            return usersStorage
+        }
+        set {
+            cacheLock.lock()
+            usersStorage = newValue
+            cacheLock.unlock()
+            scheduleUsersEmit()
         }
     }
     
     // 好友用户
     private(set) lazy var friendsSubject = BehaviorSubject<[User]>.init(value: [])
-    private(set) var friends = [User]() {
-        didSet {
-            DispatchQueue.main.async {
-                self.friendsSubject.onNext(self.friends)
-            }
+    private(set) var friends: [User] {
+        get {
+            cacheLock.lock(); defer { cacheLock.unlock() }
+            return friendsStorage
+        }
+        set {
+            cacheLock.lock()
+            friendsStorage = newValue
+            cacheLock.unlock()
+            scheduleFriendsEmit()
         }
     }
     
     private let disposeBag = DisposeBag.init()
+
+    // MARK: - 变更通知（同一轮合并成一次）
+    //
+    // 原来每个 didSet 都 `main.async { onNext(...) }`：好友列表批量加载时（getNetFriends 会逐个用户
+    // updateDBUser ⇒ addUsersInCache）会一口气排上千个主线程 block，每个都要在会话页做一次
+    // 「全量扫好友 + 重排会话 + reloadData」——列表肉眼可见地卡。
+    // 现在同一个 runloop 内最多通知一次，回调里从锁保护的存储重新取一次快照。
+    private var usersEmitScheduled = false
+    private var friendsEmitScheduled = false
+    
+    private func scheduleUsersEmit() {
+        cacheLock.lock()
+        let needSchedule = !usersEmitScheduled
+        usersEmitScheduled = true
+        cacheLock.unlock()
+        guard needSchedule else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.cacheLock.lock()
+            let snapshot = self.usersStorage
+            self.usersEmitScheduled = false
+            self.cacheLock.unlock()
+            self.allusersSubject.onNext(snapshot)
+        }
+    }
+    
+    private func scheduleFriendsEmit() {
+        cacheLock.lock()
+        let needSchedule = !friendsEmitScheduled
+        friendsEmitScheduled = true
+        cacheLock.unlock()
+        guard needSchedule else { return }
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self else { return }
+            self.cacheLock.lock()
+            let snapshot = self.friendsStorage
+            self.friendsEmitScheduled = false
+            self.cacheLock.unlock()
+            self.friendsSubject.onNext(snapshot)
+        }
+    }
     
     private init() {
         self.addLoginObserver()
@@ -133,6 +193,26 @@ extension UserManager {
         }, failureBlock: failureBlock)
     }
     
+    /// 取对方的**链上 ETH 地址**（0x…）。
+    ///
+    /// ⚠️ 必须走网络：本地 `user` 表（`UserDB`）**没有 ethAddr 列**，
+    /// 而 `getUser(by:)` 是「内存缓存 → 本地 DB → 都没有才联网」，命中本地就直接返回 `ethAddr = nil`
+    /// ⇒ 红包会弹「未获取到对方地址」。转账链路一直是直连网络读 `.ETH` 字段的，这里与它保持一致。
+    /// - Note: 回调线程不固定，调用方自行切主线程。
+    func getEthAddressForUser(_ address: String, completion: @escaping (String) -> Void) {
+        let target = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 自己：本地就有链上地址（登录后拿到的 `LoginUser.ethAddr`），不用绕网络
+        if target == LoginUser.shared().address {
+            completion(LoginUser.shared().ethAddr.trimmingCharacters(in: .whitespacesAndNewlines))
+            return
+        }
+        getNetUser(targetAddress: target, successBlock: { (user) in
+            completion(user.ethAddr?.trimmingCharacters(in: .whitespacesAndNewlines) ?? "")
+        }, failureBlock: { _ in
+            completion("")
+        })
+    }
+
     // 获取好友信息
     func getNetFriends(successBlock: Provider.SuccessBlock? = nil, failureBlock: Provider.FailureBlock? = nil) {
         BlockchainHelper.getFriends(count: 100000, index: "") { (json) in
@@ -223,8 +303,10 @@ extension UserManager {
             }
             
             // 自己连接的chatServer好友连接的chatServer没有一个相同时，分配给好友一个默认的接收地址
-            if groups.isEmpty {
-                groups = [chatServerGroups.first!.id]
+            if groups.isEmpty, let defaultServer = chatServerGroups.first {
+                groups = [defaultServer.id]
+            } else if groups.isEmpty {
+                FZMLog("添加好友分配默认服务器失败：chatServerGroups 为空 address=\(address)")
             }
         }
         
@@ -356,20 +438,40 @@ extension UserManager {
     private func addUsersInCacheWithOutRepeat(users : [User]) {
         guard !users.isEmpty else { return }
         
-        var allFriends = self.friends
+        // ⚠️ 原来是每来一个 item 就对整个数组 filter 两次再拼数组（O(数据量 × 缓存量) + 反复重分配），
+        // 而 getDBUser / updateDBUser 会逐个用户调用它（加载好友时上千次）—— 是列表卡顿的来源之一。
+        // 改成先建「地址 → 下标」索引，一趟原地替换。
+        var newUsers = self.users
+        var userIndex = [String: Int](minimumCapacity: newUsers.count + users.count)
+        for (index, item) in newUsers.enumerated() {
+            userIndex[item.address] = index
+        }
+        
+        var newFriends = self.friends
+        var friendIndex = [String: Int](minimumCapacity: newFriends.count)
+        for (index, item) in newFriends.enumerated() {
+            friendIndex[item.address] = index
+        }
         var isFriendsDataChanged = false
         
-        users.forEach { item in
-            self.users = self.users.filter({ $0.address != item.address }) + [item]
+        for item in users {
+            if let index = userIndex[item.address] {
+                newUsers[index] = item
+            } else {
+                userIndex[item.address] = newUsers.count
+                newUsers.append(item)
+            }
             
-            if let _ = allFriends.filter({ $0.address == item.address }).first {
-                allFriends = allFriends.filter({ $0.address != item.address }) + [item]
+            // 只有已经是好友的才同步更新（和原来的判断一致）
+            if let index = friendIndex[item.address] {
+                newFriends[index] = item
                 isFriendsDataChanged = true
             }
         }
         
+        self.users = newUsers
         if isFriendsDataChanged {
-            self.friends = allFriends
+            self.friends = newFriends
         }
     }
     

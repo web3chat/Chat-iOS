@@ -8,7 +8,9 @@
 #import "ChoiceCoinView.h"
 #import "ChoiceCoinCell.h"
 #import "Depend.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface ChoiceCoinView()<UITableViewDelegate,UITableViewDataSource>
 
 @property (nonatomic, strong) UITableView *tableView;
@@ -125,7 +127,7 @@
     UILabel *titleLab = [UILabel getLabWithFont:[UIFont boldSystemFontOfSize:20]
                                       textColor:SGColorFromRGB(0x333649)
                                   textAlignment:NSTextAlignmentLeft
-                                           text:@"选择资产"];
+                                           text:L(@"选择资产")];
     [view addSubview:titleLab];
     [titleLab mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(view).offset(13);

@@ -94,7 +94,8 @@ class ContactCardMessageCell: MessageContentCell {
         super.configure(with: message, at: indexPath, and: messageCollectionView)
 
         guard let displayDelegate = messageCollectionView.messagesDisplayDelegate else {
-            fatalError("nilMessageDisplayDelegate")
+            FZMLog("ContactCardMessageCell：messagesDisplayDelegate 为空，跳过配置")
+            return
         }
         switch message.kind {
         case .contactCard(let contactCardItem):
@@ -105,8 +106,8 @@ class ContactCardMessageCell: MessageContentCell {
             
             switch contactType {
             case -1:
-                detailLab.text = "专属红包已领取"
-                nameLab.text = "恭喜发财，大吉大利"
+                detailLab.text = L("专属红包已领取")
+                nameLab.text = L("恭喜发财，大吉大利")
                 nameLab.textColor = Color_FFFFFF
                 detailLab.textColor = Color_FFFFFF
                 self.contentImageView.image =  #imageLiteral(resourceName: "open_bag_bg")
@@ -121,7 +122,7 @@ class ContactCardMessageCell: MessageContentCell {
                 line.isHidden =  true
                 iconImageView.image =  UIImage(named:"hongbao")
             case 1:
-                detailLab.text = "个人名片"
+                detailLab.text = L("个人名片")
                 nameLab.text = contactAvatar
                 nameLab.textColor = Color_24374E
                 detailLab.textColor = Color_8A97A5
@@ -131,7 +132,7 @@ class ContactCardMessageCell: MessageContentCell {
                 line.isHidden =  false
                 iconImageView.sd_setImage(with: URL(string: contactAvatar), placeholderImage:  UIImage(named: "avatar_persion"))
             case 2:
-                detailLab.text = "群聊名片"
+                detailLab.text = L("群聊名片")
                 nameLab.text = contactAvatar
                 nameLab.textColor = Color_24374E
                 detailLab.textColor = Color_8A97A5

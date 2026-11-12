@@ -41,17 +41,11 @@ extension ChatManager {
     ///   - isEncryptPersionChatData: 加密私聊发送/群消息发送flg
     /// - Returns: 返回加密后的数据（加密失败返回原数据）
     class func encryptUploadData(_ data: Data, publickey: String, isEncryptPersionChatData: Bool) -> Data {
-
-//        guard let keyData = EncryptManager.generateDHSessionKeyData(privateKey: LoginUser.shared().privateKey, publicKey: publickey) else {return data}
-        let keyData = isEncryptPersionChatData ? EncryptManager.generateDHSessionKeyData(privateKey: LoginUser.shared().privateKey, publicKey: publickey) : WalletapiHexTobyte(publickey)
-        
-        if isEncryptPersionChatData {
-            return data.aesEncrypt(keyData: keyData!)
-        } else {
-            return data.aesEncrypt(keyData: keyData!)
-        }
+        let keyData = isEncryptPersionChatData ? EncryptManager.generateDHSessionKeyData(privateKey: LoginUser.shared().privateKey, publicKey: publickey.finalKey) : WalletapiHexTobyte(publickey.finalKey)
+        guard let keyData = keyData else { return data }
+        return data.aesEncrypt(keyData: keyData)
     }
-    
+
     /// 解密收到的文件数据
     /// - Parameters:
     ///   - data: 需解密的源数据（图片、文件、视频、音频等需上传的文件数据）
@@ -59,18 +53,9 @@ extension ChatManager {
     ///   - isEncryptPersionChatData: 解密接收私聊/群消息文件flg
     /// - Returns: 返回解密后的数据（解密失败返回原数据）
     class func decryptUploadData(_ data: Data, publickey: String, isEncryptPersionChatData: Bool) -> Data {
-       
-//        guard let keyData = EncryptManager.generateDHSessionKeyData(privateKey: LoginUser.shared().privateKey, publicKey: publickey) else {return data}
-        let keyData = isEncryptPersionChatData ? EncryptManager.generateDHSessionKeyData(privateKey: LoginUser.shared().privateKey, publicKey: publickey) : WalletapiHexTobyte(publickey)
-        
-        if isEncryptPersionChatData {
-            return data.aesDecrypt(keyData: keyData!)
-
-        } else {
-            return data.aesDecrypt(keyData: keyData!
-            )
-
-        }
+        let keyData = isEncryptPersionChatData ? EncryptManager.generateDHSessionKeyData(privateKey: LoginUser.shared().privateKey, publicKey: publickey.finalKey) : WalletapiHexTobyte(publickey.finalKey)
+        guard let keyData = keyData else { return data }
+        return data.aesDecrypt(keyData: keyData)
     }
     
     /// 加密消息体
@@ -99,5 +84,18 @@ extension ChatManager {
         } else {
             return EncryptManager.decryptGroupData(data, publicKey: publickey)
         }
+    }
+
+    /// 消息体是否**解密失败**。
+    ///
+    /// ⚠️ 不能用 `decrypted.isEmpty` 判断：`EncryptManager.decryptGroupData` /
+    /// `decryptPersionChatMsgData` 失败时是**原样返回入参（密文）**，密文非空时结果也非空。
+    /// 2026-11-09 之前收消息链路就是这么判的 ⇒ 失败被当成成功：
+    /// 密文被交给 protobuf 解析成空正文落库（`{"content":""}`），原始密文也没暂存。
+    ///
+    /// - Note: 密文本身为空（对端发的就是空消息）时返回 `false`，不当作解密失败。
+    class func isMsgDecryptFailed(cipher: Data, decrypted: Data) -> Bool {
+        guard !cipher.isEmpty else { return false }
+        return decrypted.isEmpty || decrypted == cipher
     }
 }

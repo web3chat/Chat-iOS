@@ -2,7 +2,7 @@
 //  UILabel+getLab.m
 //  zhaobi
 //
-//  Created by 吴文拼 on 2018/9/18.
+//  Created by fzm on 2018/9/18.
 //  Copyright © 2018年 33.cn 复杂美科技有限公司. All rights reserved.
 //
 

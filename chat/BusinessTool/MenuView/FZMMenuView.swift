@@ -2,8 +2,8 @@
 //  FZMMenuView.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/15.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/15.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -253,10 +253,12 @@ enum FZMMenuItemType {
     case reply// 回复
     case attention// 关注
     case revoked// 撤回
+    case reedit// 重新编辑（撤回消息后可重新编辑）
     case delete// 删除
     case multselect// 多选
     case collect// 收藏
     case translate// 翻译
+    case cancelTranslate// 取消翻译（已经翻译过的消息）
     case muted// 禁言
     case totext// 转文字（仅限语音消息）
     case loudspeaker// 扬声器播放（仅限语音消息）
@@ -264,31 +266,35 @@ enum FZMMenuItemType {
     var title: String {
         switch self {
         case .copy:
-            return "复制"
+            return L("复制")
         case .forward:
-            return "转发"
+            return L("转发")
         case .reply:
-            return "回复"
+            return L("回复")
         case .attention:
-            return "关注"
+            return L("关注")
         case .revoked:
-            return "撤回"
+            return L("撤回")
+        case .reedit:
+            return L("重新编辑")
         case .delete:
-            return "删除"
+            return L("删除")
         case .multselect:
-            return "多选"
+            return L("多选")
         case .collect:
-            return "收藏"
+            return L("收藏")
         case .translate:
-            return "翻译"
+            return L("翻译")
+        case .cancelTranslate:
+            return L("取消翻译")
         case .muted:
-            return "禁言"
+            return L("禁言")
         case .totext:
-            return "转文字"
+            return L("转文字")
         case .loudspeaker:
-            return "扬声器播放"
+            return L("扬声器播放")
         case .handset:
-            return "听筒播放"
+            return L("听筒播放")
         }
     }
     var image: UIImage {
@@ -303,6 +309,8 @@ enum FZMMenuItemType {
             return #imageLiteral(resourceName: "menu_attention")
         case .revoked:
             return #imageLiteral(resourceName: "menu_revoked")
+        case .reedit:
+            return #imageLiteral(resourceName: "menu_revoked")
         case .delete:
             return #imageLiteral(resourceName: "menu_delete")
         case .multselect:
@@ -310,6 +318,8 @@ enum FZMMenuItemType {
         case .collect:
             return #imageLiteral(resourceName: "menu_collect")
         case .translate:
+            return #imageLiteral(resourceName: "menu_translate")
+        case .cancelTranslate:
             return #imageLiteral(resourceName: "menu_translate")
         case .muted:
             return #imageLiteral(resourceName: "menu_muted")

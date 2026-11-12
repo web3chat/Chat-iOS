@@ -27,7 +27,7 @@ class UpdateAppView: UIView {
     private lazy var titleLab: UILabel = {
         let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 20), textColor: Color_24374E, textAlignment: .center, text: nil)
         lab.numberOfLines = 1
-        lab.text = "发现新版本"
+        lab.text = L("发现新版本")
         return lab
     }()
     
@@ -53,7 +53,7 @@ class UpdateAppView: UIView {
     private lazy var updateBtn: UIButton = {
         let btn = UIButton(type: .custom)
         btn.backgroundColor = Color_Theme
-        btn.setTitle("立即更新", for: .normal)
+        btn.setTitle(L("立即更新"), for: .normal)
         btn.setTitleColor(.white, for: .normal)
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         btn.layer.cornerRadius = 20
@@ -72,7 +72,7 @@ class UpdateAppView: UIView {
     private lazy var updateLaterBtn: UIButton = {
         let btn = UIButton(type: .custom)
         btn.backgroundColor = .white
-        btn.setTitle("稍后更新", for: .normal)
+        btn.setTitle(L("稍后更新"), for: .normal)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         btn.layer.borderWidth = 1

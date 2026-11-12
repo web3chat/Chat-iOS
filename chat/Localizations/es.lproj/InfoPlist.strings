@@ -1,0 +1,12 @@
+/*
+ InfoPlist.strings (Español)
+ 键名必须是 Info.plist 的键；权限弹窗跟随系统语言，与 App 内语言切换无关。
+*/
+"NSCameraUsageDescription" = "«Tanxin» quiere acceder a tu cámara para escanear códigos QR, hacer fotos y enviarlas.";
+"NSMicrophoneUsageDescription" = "«Tanxin» quiere acceder a tu micrófono para enviar mensajes de voz y usar el chat de voz.";
+"NSLocalNetworkUsageDescription" = "«Tanxin» quiere acceder a tu red local para el chat de voz y otros servicios.";
+"NSLocationWhenInUseUsageDescription" = "«Tanxin» quiere usar tu ubicación para la ubicación, los mapas y servicios relacionados.";
+"NSPhotoLibraryUsageDescription" = "«Tanxin» quiere acceder a tus fotos para escanear códigos QR, subir imágenes y guardar fotos.";
+"NSPhotoLibraryAddUsageDescription" = "«Tanxin» quiere acceder a tus fotos para escanear códigos QR, subir imágenes y guardar fotos.";
+"NSFaceIDUsageDescription" = "«Tanxin» usa Face ID para verificar tu identidad en lugar de la contraseña del chat privado (los datos solo se guardan en este dispositivo).";
+"NSSpeechRecognitionUsageDescription" = "«Tanxin» necesita el reconocimiento de voz para convertir los mensajes de voz en texto. El reconocimiento se realiza en este dispositivo; el audio nunca se sube.";

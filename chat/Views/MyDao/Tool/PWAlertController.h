@@ -2,8 +2,8 @@
 //  PWAlertController.h
 //  PWAlert
 //
-//  Created by 陈健 on 2018/6/14.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Created by fzm on 2018/6/14.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 /*

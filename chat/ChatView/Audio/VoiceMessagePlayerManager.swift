@@ -67,7 +67,7 @@ class VoiceMessagePlayerManager: NSObject {
             self.voicePalyStateSubject.onNext((self.isPlayingVoiceMsg?.msgId ?? "",.start))
             UIApplication.shared.isIdleTimerDisabled = true
         } catch let error as NSError {
-            APP.shared().showToast("语音消息播放失败")
+            APP.shared().showToast(L("语音消息播放失败"))
             FZMLog("get AVAudioPlayer is fail \(error)")
         }
     }
@@ -87,11 +87,15 @@ class VoiceMessagePlayerManager: NSObject {
         
         // 修改播放标识为已读
         
-        let filePath = DocumentPath.appendingPathComponent("Voice/WavFile/\(msg.msgType.cachekey ?? "").wav")// 待播放语音的本地路径（传输用amr格式，播放用wav格式）
+        // 待播放语音的本地路径：**必须与下载落盘时的路径一致**
+        // （安卓端可能是 aac / m4a，一律按 `.wav` 取会找不到文件 ⇒ 表现就是「语音消息打不开」）
+        let filePath = FZMMessageBaseVM.getFilePath(with: msg)
         
         if FZMLocalFileClient.shared().isFileExists(atPath: filePath) {
             // 本地有缓存文件
             self.playVoiceAction(filePath)
+        } else {
+            FZMLog("语音播放：本地文件不存在 \(filePath)")
         }
         
 //        let voiceUrl = msg.msgType.url

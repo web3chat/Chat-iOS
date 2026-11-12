@@ -2,8 +2,8 @@
 //  FZMEncryptManager.swift
 //  隐私
 //
-//  Created by 陈健 on 2019/5/21.
-//  Copyright © 2019 陈健. All rights reserved.
+//  Created by fzm on 2019/5/21.
+//  Copyright © 2019 fzm. All rights reserved.
 //
 
 import Foundation
@@ -313,7 +313,7 @@ class EncryptManager: NSObject {
         let keyData = data.subdata(in: Range.init(NSRange(location: 0, length: 8))!)
         let count = data.count
         let encryptData = data.subdata(in: Range.init(NSRange(location: 8, length: count - 8))!)
-        let key : String = String.init(data: keyData, encoding: .utf8)!
+        guard let key = String.init(data: keyData, encoding: .utf8) else { return data }
         
         let keyLength = kCCKeySizeDES + 1
         

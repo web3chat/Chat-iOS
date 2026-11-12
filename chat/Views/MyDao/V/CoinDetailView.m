@@ -3,11 +3,14 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/29.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "CoinDetailView.h"
 #import "Depend.h"
+#import "CommonFunction.h"
+// sd_cancelCurrentImageLoad 声明在 UIView+WebCache.h（SDWebImage 4.0 的 UIImageView+WebCache.h 不引它）
+#import "UIView+WebCache.h"
 #import "chat-Swift.h"
 
 @interface CoinDetailView()
@@ -166,7 +169,22 @@
     
     CGFloat amount = 0.00;
     amount = coin.coin_balance * coinPrice.coinprice_country_rate;
-    [self.coinImage sd_setImageWithURL:[NSURL URLWithString:coinPrice.coinprice_icon]];
+
+    // 展示名先算出来：图标占位要用它取首字母
+    NSString *displayName = IS_BLANK(coinPrice.coinprice_optional_name) ? coin.coin_type : coinPrice.coinprice_optional_name;
+    self.coinNameLab.text = displayName;
+
+    // 图标：服务端没返回图标（或地址无效）时用「币种名首字母 + 色底圆」占位，
+    // 与资产列表（HomeCoinTableViewCell / CoinTableViewCell）保持一致；
+    // 有图标时也用它垫底，避免异步加载期间/加载失败后是空白圆。
+    NSString *iconURL = coinPrice.coinprice_icon;
+    UIImage *placeholderIcon = [CommonFunction coinPlaceholderImageWithName:displayName diameter:26];
+    if ([iconURL isKindOfClass:[NSString class]] && iconURL.length > 0) {
+        [self.coinImage sd_setImageWithURL:[NSURL URLWithString:iconURL] placeholderImage:placeholderIcon];
+    } else {
+        [self.coinImage sd_cancelCurrentImageLoad];
+        self.coinImage.image = placeholderIcon;
+    }
 
     self.cPlatformLab.text = [NSString stringWithFormat:@"%@",coin.coin_platform];
     
@@ -196,7 +214,8 @@
             platform = @"bty";
         }
         
-        NSString *qrcodeStr = [NSString stringWithFormat:@"%@?transfer_target=%@&address=%@&chain=%@&platform=%@",@"http://54.248.215.15:8058",targetStr,coin.coin_address,coinType,platform];
+        NSString *qrcodeStr = coin.coin_address;
+//        [NSString stringWithFormat:@"%@?transfer_target=%@&address=%@&chain=%@&platform=%@",@"http://54.248.215.15:8058",targetStr,coin.coin_address,coinType,platform];
         
         [self.qrCodeBtn setImage:[CommonFunction createImgQRCodeWithString:qrcodeStr centerImage:self.coinImage.image] forState:UIControlStateNormal];
         [self.qrCodeBtn setImage:[CommonFunction createImgQRCodeWithString:qrcodeStr centerImage:self.coinImage.image] forState:UIControlStateHighlighted];
@@ -205,12 +224,8 @@
 
     NSString *balanceStr = [CommonFunction removeZeroFromMoney:[CommonFunction removeZeroFromMoney:coin.coin_balance withMaxLength:6]];
     self.balanceLab.text = [NSString stringWithFormat:@"%@",balanceStr];
-    self.coinNameLab.text = IS_BLANK(coinPrice.coinprice_optional_name) ? coin.coin_type : coinPrice.coinprice_optional_name;
+    // coinNameLab 已在方法开头设置（图标占位需要它），这里不再重复赋值
 }
-
-
-
-
 
 
 //button点击

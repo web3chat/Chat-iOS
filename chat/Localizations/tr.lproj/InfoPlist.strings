@@ -1,0 +1,12 @@
+/*
+ InfoPlist.strings (Türkçe)
+ 键名必须是 Info.plist 的键；权限弹窗跟随系统语言，与 App 内语言切换无关。
+*/
+"NSCameraUsageDescription" = "「Tanxin」QR kodları taramak, fotoğraf çekmek ve göndermek için kameranıza erişmek istiyor.";
+"NSMicrophoneUsageDescription" = "「Tanxin」sesli mesaj göndermek ve sesli sohbet kullanmak için mikrofonunuza erişmek istiyor.";
+"NSLocalNetworkUsageDescription" = "「Tanxin」sesli sohbet ve diğer hizmetler için yerel ağınıza erişmek istiyor.";
+"NSLocationWhenInUseUsageDescription" = "「Tanxin」konum, haritalar ve ilgili hizmetler için konumunuzu kullanmak istiyor.";
+"NSPhotoLibraryUsageDescription" = "「Tanxin」QR kodları taramak, görsel yüklemek ve fotoğraf kaydetmek için fotoğraflarınıza erişmek istiyor.";
+"NSPhotoLibraryAddUsageDescription" = "「Tanxin」QR kodları taramak, görsel yüklemek ve fotoğraf kaydetmek için fotoğraflarınıza erişmek istiyor.";
+"NSFaceIDUsageDescription" = "「Tanxin」özel sohbet şifresi yerine kimliğinizi doğrulamak için Face ID kullanır (veriler yalnızca bu cihazda saklanır).";
+"NSSpeechRecognitionUsageDescription" = "“Tanxin” sesli mesajları metne dönüştürmek için konuşma tanımayı kullanır. Tanıma bu cihazda yapılır; ses hiçbir zaman yüklenmez.";

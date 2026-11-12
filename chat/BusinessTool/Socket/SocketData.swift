@@ -2,7 +2,7 @@
 //  SocketData.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/16.
+//  Created by fzm on 2021/1/16.
 //
 
 import Foundation
@@ -46,7 +46,9 @@ struct SocketData {
         let ack = AckInt(ack).bigEndian
         let body = body
         
-        return pl.data + hl.data + ver.data + op.data + seq.data + ack.data + body
+        let phdata = pl.data + hl.data
+        
+        return  phdata + ver.data + op.data + seq.data + ack.data + body
     }
     
     static func unwrap(data: WrapData) -> UnWrapData? {

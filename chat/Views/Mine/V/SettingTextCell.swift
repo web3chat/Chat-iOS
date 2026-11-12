@@ -22,8 +22,14 @@ class SettingTextCell: UITableViewCell {
         return lab
     }()
     
+    /// 右侧指示箭头。
+    /// 用户 2026-09-28：「设置页里的多语言右边不要三个点，要箭头」——
+    /// 这个 cell 目前只有「多语言」一行在用（SettingVC），所以直接换成 chevron；
+    /// 尺寸/颜色与广场里其它箭头（`SquareReportVC` / `SquareMyPostsVC`）保持一致。
     private lazy var moreImgV: UIImageView = {
-        let moreImgV = UIImageView.init(image: UIImage(named: "cell_right_dot"))
+        let moreImgV = UIImageView.init(image: UIImage.init(systemName: "chevron.right")?.withRenderingMode(.alwaysTemplate))
+        moreImgV.tintColor = Color_C8D3DE
+        moreImgV.contentMode = .scaleAspectFit
         return moreImgV
     }()
     
@@ -33,6 +39,18 @@ class SettingTextCell: UITableViewCell {
         view.isHidden = true
         return view
     }()
+    
+    /// 右侧文案的右边界约束：有箭头时让位给箭头，没箭头时直接贴右边（见 `configure`）
+    /// ⚠️ 本工程内有同名 `Constraint`（数据库层 `chat/BusinessTool/Database/sql/Constraint.swift`），
+    ///    这里必须显式写 `SnapKit.Constraint`，否则报 `Cannot assign value of type 'SnapKit.Constraint' to type 'chat.Constraint'`。
+    private var rightLabelRightConstraint: SnapKit.Constraint?
+
+    /// 右侧给箭头让出的宽度（右边距 15 + 箭头 14 + 间距 5）。
+    /// ⚠️ 必须显式声明为 CGFloat：直接写 `-(15 + 14 + 5)` 会因为 SnapKit 的
+    /// offset 有多套数值重载而报 `ambiguous use of operator '+'`。
+    private static let arrowTrailingInset: CGFloat = 15 + 14 + 5
+    /// 没有箭头时只留右边距 15。
+    private static let plainTrailingInset: CGFloat = 15
     
     private var selectedBlock: (()->())?
     
@@ -66,13 +84,17 @@ class SettingTextCell: UITableViewCell {
         
         self.contentView.addSubview(moreImgV)
         moreImgV.snp.makeConstraints { (m) in
-            m.size.equalTo(CGSize.init(width: 4, height: 20))
+            // 箭头是正方形图标（原来的三个点是 4×20 的竖点）
+            m.size.equalTo(CGSize.init(width: 14, height: 14))
             m.right.equalToSuperview().offset(-15)
+            m.centerY.equalToSuperview()
         }
         
         self.contentView.addSubview(rightLabel)
         rightLabel.snp.makeConstraints { (m) in
-            m.right.equalTo(moreImgV).offset(-5)
+            // 默认让位给箭头（15 + 箭头 14 + 间距 5）；隐藏箭头时由 `configure` 改成只留 15。
+            // 用常量而不引用 `moreImgV.snp.left`，避免两视图互相引用。
+            self.rightLabelRightConstraint = m.right.equalToSuperview().offset(-Self.arrowTrailingInset).constraint
             m.centerY.equalToSuperview()
         }
         
@@ -100,6 +122,11 @@ class SettingTextCell: UITableViewCell {
         } else {
             self.rightLabel.text = model.rightString
         }
+        
+        // 右侧箭头：默认显示；「清理缓存」这类行隐藏箭头，并把右侧文案贴到最右边
+        let showsArrow = model.showsArrow
+        self.moreImgV.isHidden = !showsArrow
+        self.rightLabelRightConstraint?.update(offset: showsArrow ? -Self.arrowTrailingInset : -Self.plainTrailingInset)
         
         self.lineView.isHidden = !(model.isShowLine ?? false)
         

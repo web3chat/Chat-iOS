@@ -20,7 +20,7 @@ class FZMReleaseNotifyVC: UIViewController {
     lazy var desBlockView : UIView = {
         let view = UIView()
         view.makeOriginalShdowShow()
-        let titleLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "公告内容")
+        let titleLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("公告内容"))
         view.addSubview(titleLab)
         titleLab.snp.makeConstraints({ (m) in
             m.left.equalToSuperview().offset(14)
@@ -63,12 +63,12 @@ class FZMReleaseNotifyVC: UIViewController {
     }()
     
     lazy var desPlaceLab : UILabel = {
-        let lab = UILabel.getLab(font: UIFont.regularFont(16), textColor: Color_8A97A5, textAlignment: .left, text: "点击编辑公告内容")
+        let lab = UILabel.getLab(font: UIFont.regularFont(16), textColor: Color_8A97A5, textAlignment: .left, text: L("点击编辑公告内容"))
         return lab
     }()
     
     lazy var confirmBtn : UIButton = {
-        let btn = UIButton.getNormalBtn(with: "确定")
+        let btn = UIButton.getNormalBtn(with: L("确定"))
         return btn
     }()
     
@@ -86,7 +86,7 @@ class FZMReleaseNotifyVC: UIViewController {
         super.viewDidLoad()
 
         // Do any additional setup after loading the view.
-        self.navigationItem.title = "发布公告"
+        self.navigationItem.title = L("发布公告")
         self.view.addSubview(desBlockView)
         desBlockView.snp.makeConstraints { (m) in
             m.top.equalToSuperview().offset(15)
@@ -124,7 +124,7 @@ class FZMReleaseNotifyVC: UIViewController {
             }
         }).disposed(by: disposeBag)
         
-        desInput.addToolBar(with: "确定", target: self, sel: #selector(FZMReleaseNotifyVC.commitInfo))
+        desInput.addToolBar(with: L("确定"), target: self, sel: #selector(FZMReleaseNotifyVC.commitInfo))
     }
     
     @objc private func commitInfo() {

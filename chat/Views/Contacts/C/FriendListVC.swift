@@ -2,7 +2,7 @@
 //  FriendsVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/26.
+//  Created by fzm on 2021/1/26.
 //
 
 import UIKit
@@ -49,7 +49,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
     // 团队管理按钮
     private lazy var managerBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
-        btn.setTitle("管理", for: .normal)
+        btn.setTitle(L("管理"), for: .normal)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.titleLabel?.font = .boldFont(14)
         btn.rx.controlEvent(.touchUpInside).subscribe(onNext: { [weak self] in
@@ -118,7 +118,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
             m.size.equalTo(26)
         }
         
-        let lab = UILabel.getLab(font: .regularFont(16), textColor: Color_24374E, textAlignment: .left, text: "组织架构")
+        let lab = UILabel.getLab(font: .regularFont(16), textColor: Color_24374E, textAlignment: .left, text: L("组织架构"))
         conV.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalTo(smallTeamImageView.snp.right).offset(10)
@@ -155,7 +155,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
     // ****
     
     lazy var friendHeader : ChatHeadSegment = {
-        let view = ChatHeadSegment(with: "好友", showType: .contact)
+        let view = ChatHeadSegment(with: L("好友"), showType: .contact)
         view.show(true)
         
         let friendTap = UITapGestureRecognizer()
@@ -168,7 +168,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
     }()
     
     lazy var groupHeader : ChatHeadSegment = {
-        let view = ChatHeadSegment(with: "群聊", showType: .contact)
+        let view = ChatHeadSegment(with: L("群聊"), showType: .contact)
         
         let groupTap = UITapGestureRecognizer()
         groupTap.rx.event.subscribe { [weak self] (_) in
@@ -181,7 +181,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
     
     private lazy var blackListBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
-        btn.setTitle("黑名单", for: .normal)
+        btn.setTitle(L("黑名单"), for: .normal)
         btn.setTitleColor(Color_8A97A5, for: .normal)
         btn.contentHorizontalAlignment = .right
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
@@ -213,11 +213,20 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
         })
         
         v.addSubview(blackListBtn)
-        blackListBtn.snp.makeConstraints { (m) in
-            m.right.equalToSuperview().offset(-15)
-            m.size.equalTo(CGSize.init(width: 55, height: 50))
-            m.centerY.equalToSuperview()
+        if LanguageManager.shared.isChinese {
+            self.blackListBtn.snp.makeConstraints { (m) in
+                m.right.equalToSuperview().offset(-15)
+                m.size.equalTo(CGSize.init(width: 55, height: 50))
+                m.centerY.equalToSuperview()
+            }
+        }else {
+            self.blackListBtn.snp.makeConstraints { (m) in
+                m.right.equalToSuperview().offset(-15)
+                m.size.equalTo(CGSize.init(width: 80, height: 50))
+                m.centerY.equalToSuperview()
+            }
         }
+        
         return v
     }()
     
@@ -233,7 +242,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
     }()
     
     private lazy var friendListView: FZMFriendContactListView = {
-        let view = FZMFriendContactListView(with: "好友", .no)
+        let view = FZMFriendContactListView(with: L("好友"), .no)
         view.selectBlock = { [weak self] (contact) in
             FZMUIMediator.shared().pushVC(.goUserDetailInfoVC(address: contact.sessionIDStr, source: .normal))
         }
@@ -241,7 +250,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
     }()
     
     private lazy var groupListView: FZMGroupContactListView = {
-        let view = FZMGroupContactListView(with: "群聊", showSelect: false)
+        let view = FZMGroupContactListView(with: L("群聊"), showSelect: false)
         view.selectGroupBlock = { [weak self] (contact) in
             FZMUIMediator.shared().pushVC(.goChatVC(sessionID: SessionID.group(contact.sessionIDStr), locationMsg: nil, backToRootVC: true, selectedRootVCIndex: 1))
         }
@@ -283,16 +292,30 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
         return view
     }()
     
+    private lazy var titleLab:UILabel = {
+        let lab = UILabel.getLab(font: .boldSystemFont(ofSize: 17), textColor: Color_24374E, textAlignment: .left, text: L("通讯录"))
+        return lab
+        
+    }()
+    
     private lazy var navBarView: UIView = {
         let navView = UIView.init(frame: CGRect.init(x: 0, y: 0, width: k_ScreenWidth, height: k_StatusNavigationBarHeight))
         navView.backgroundColor = Color_F6F7F8
         
-        let lab = UILabel.getLab(font: .boldSystemFont(ofSize: 17), textColor: Color_24374E, textAlignment: .left, text: "通讯录")
-        navView.addSubview(lab)
-        lab.snp.makeConstraints { (m) in
-            m.left.equalToSuperview().offset(15)
-            m.bottom.equalToSuperview()
-            m.size.equalTo(CGSize.init(width: 100, height: 44))
+        
+        navView.addSubview(self.titleLab)
+        if LanguageManager.shared.isChinese {
+            self.titleLab.snp.makeConstraints { (m) in
+                m.left.equalToSuperview().offset(15)
+                m.bottom.equalToSuperview()
+                m.size.equalTo(CGSize.init(width: 100, height: 44))
+            }
+        }else {
+            self.titleLab.snp.makeConstraints { (m) in
+                m.left.equalToSuperview().offset(15)
+                m.bottom.equalToSuperview()
+                m.size.equalTo(CGSize.init(width: 200, height: 44))
+            }
         }
         
         let rightView = CustomBarView.init()
@@ -337,6 +360,41 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
         
         // 在/解散/退出团队通知
         FZM_NotificationCenter.addObserver(self, selector: #selector(isInOrDisbandOrQuitTeamAction), name: FZM_Notify_InTeamStatusChanged, object: nil)
+        FZM_NotificationCenter.addObserver(self, selector: #selector(updateLan), name: LanguageManager.LanguageChangedNotification, object: nil)
+    }
+    
+    @objc func updateLan(){
+        self.titleLab.text = L("通讯录")
+        self.groupHeader.text = L("群聊")
+        self.friendHeader.text = L("好友")
+        self.blackListBtn.setTitle(L("黑名单"), for: .normal)
+        self.friendListView.title = L("好友")
+        self.groupListView.title = L("群聊")
+        if LanguageManager.shared.isChinese {
+            self.titleLab.snp.remakeConstraints { (m) in
+                m.left.equalToSuperview().offset(15)
+                m.bottom.equalToSuperview()
+                m.size.equalTo(CGSize.init(width: 100, height: 44))
+            }
+            self.blackListBtn.snp.remakeConstraints { (m) in
+                m.right.equalToSuperview().offset(-15)
+                m.size.equalTo(CGSize.init(width: 55, height: 50))
+                m.centerY.equalToSuperview()
+            }
+        }else {
+            self.titleLab.snp.remakeConstraints { (m) in
+                m.left.equalToSuperview().offset(15)
+                m.bottom.equalToSuperview()
+                m.size.equalTo(CGSize.init(width: 200, height: 44))
+            }
+            self.blackListBtn.snp.remakeConstraints { (m) in
+                m.right.equalToSuperview().offset(-15)
+                m.size.equalTo(CGSize.init(width: 80, height: 50))
+                m.centerY.equalToSuperview()
+            }
+        }
+        
+        
     }
     
     // 加入/退出/解散团队需刷新UI
@@ -484,7 +542,7 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
             guard let strongSelf = self else { return }
             if let info = staffInfo {
                 strongSelf.teamNameLab.text = info.entName// 企业名
-                strongSelf.teamIDLab.text = "团队号 \(info.entId)"
+                strongSelf.teamIDLab.text = L("团队号") + "\(info.entId)"
                 
                 // role 0：团队负责人；1：超级管理员；2:客户管理员；3：普通人员
                 strongSelf.managerBtn.isHidden = info.role == 3
@@ -498,7 +556,10 @@ class FriendListVC: UIViewController, ViewControllerProtocol {
         LoginUser.shared().companyInfoSubject.subscribe(onNext: {[weak self] (companyInfo) in
             guard let strongSelf = self, let info = companyInfo else { return }
             
-            strongSelf.teamImageView.kf.setImage(with: URL.init(string: info.avatar), placeholder: #imageLiteral(resourceName: "icon_team"))
+            strongSelf.teamImageView.loadAvatarSynchronously(cacheKey: "team",
+                                                            urlString: info.avatar,
+                                                            placeholder: #imageLiteral(resourceName: "icon_team"),
+                                                            size: CGSize(width: 50, height: 50))
             
         }).disposed(by: self.bag)
     }

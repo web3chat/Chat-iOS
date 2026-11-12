@@ -2,7 +2,7 @@
 //  MessageDataSource.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/21.
+//  Created by fzm on 2020/12/21.
 //
 
 import Foundation
@@ -23,6 +23,10 @@ protocol MessageDataSource: NSObjectProtocol {
     
     func messageBottomLabelAttributedText(for message: Message, at indexPath: IndexPath) -> NSAttributedString?
     
+    /// 引用消息：这条消息要显示在被引用气泡下方的那条引用条内容。
+    /// 返回 nil = 不显示引用条（普通消息 / 引用的原消息查不到 / 系统通知类）。
+    func quotePreview(for message: Message, at indexPath: IndexPath) -> QuotePreview?
+    
 }
 
 extension MessageDataSource {
@@ -39,6 +43,10 @@ extension MessageDataSource {
     }
     
     func messageBottomLabelAttributedText(for message: Message, at indexPath: IndexPath) -> NSAttributedString? {
+        return nil
+    }
+    
+    func quotePreview(for message: Message, at indexPath: IndexPath) -> QuotePreview? {
         return nil
     }
 }

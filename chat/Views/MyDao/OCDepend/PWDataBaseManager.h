@@ -2,8 +2,8 @@
 //  PWDataBaseManager.h
 //  JTB
 //
-//  Created by 吴文拼 on 2018/1/2.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/1/2.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -11,6 +11,7 @@
 #import "LocalWallet.h"
 #import "LocalCoin.h"
 #import "CoinPrice.h"
+#import "LoginUserInfo.h"
 #import <YYModel/YYModel.h>
 @interface PWDataBaseManager : NSObject
 
@@ -72,6 +73,21 @@
  */
 - (LocalWallet *)queryWalletIsSelected;
 /**
+ * 根据加密后的助记词查询钱包（与 wallet 表 wallet_remembercode 一致）
+ * ⚠️ 助记词加密是 AES-GCM（每次密文都不同），同一助记词重新加密后**查不到**旧钱包，
+ *    需要按地址去重时请用 queryWalletByCoinAddress:
+ */
+- (LocalWallet *)queryWalletByRememberCode:(NSString *)encryptedRememberCode;
+/**
+ * 根据币地址反查所属钱包（取 coin 表里第一行匹配的 coin_walletid）
+ * ETH/BNB 这类 0x 地址按不区分大小写匹配，BTY 等 Base58 地址按原样精确匹配。
+ */
+- (LocalWallet *)queryWalletByCoinAddress:(NSString *)address;
+/**
+ * 取消其他钱包选中，将指定钱包设为当前选中
+ */
+- (BOOL)selectWalletAsCurrent:(LocalWallet *)wallet;
+/**
  *  查询all Wallet
  */
 - (NSArray *)queryAllWallets;
@@ -113,6 +129,18 @@
  * 根据coin的名字s和平台删除对应的coin
  */
 - (BOOL)deleteCoinWithplatform:(NSString *)platform andCoinType:(NSString *)coinType;
+/**
+ * 根据coin的合约地址删除对应的币
+ */
+- (BOOL)deleteCoinWithContractAddr:(NSString *)addr;
+
+/**
+ * 根据主键 coin_id 精确删除一条币记录
+ * @return YES = 确实删掉了（受影响行数 > 0）；NO = 没有删到任何行（币已不存在 / id 无效）
+ * ⚠️ 与 `deleteCoinWithContractAddr:` 不同：这里用主键匹配，且**返回值是真实的**
+ *   （旧的按合约地址删，地址字符串一旦对不上就是「0 行删除但返回成功」⇒ 表现为删了还在）
+ */
+- (BOOL)deleteCoinWithId:(NSInteger)coinId;
 
 /**
  * 根据钱包ID查询货币数组
@@ -167,6 +195,71 @@
  * 根据货币名字查询CoinPrice
  */
 - (CoinPrice *)queryCoinPriceBasedOn:(NSString *)coinName platform:(NSString *)coinPlat andTreaty:(NSInteger)treaty;
+
+#pragma mark - 用户信息UserInfo
+/**
+ * 检查用户信息是否存在
+ */
+- (BOOL)checkuserinfo:(LoginUserInfo *)userInfo;
+
+/**
+ * 添加用户信息
+ */
+- (BOOL)addUserInfo:(LoginUserInfo *)userInfo;
+
+/**
+ * Swift调用的新增用户信息方法
+ */
+- (BOOL)addUserInfoWithPhone:(NSString *)phone
+                     address:(NSString *)address
+                   address0x:(NSString *)address0x
+                   avatarurl:(NSString *)avatarurl
+                        name:(NSString *)name
+       encryptedRemembercode:(NSString *)encryptedRemembercode
+           encryptedPassword:(NSString *)encryptedPassword;
+
+/**
+ * 更新用户信息
+ */
+- (BOOL)updateUserInfo:(LoginUserInfo *)userInfo;
+
+/**
+ * 更新用户密聊密码
+ */
+- (BOOL)updateUserInfoPasswordWithAddress:(NSString *)address
+                        encryptedPassword:(NSString *)encryptedPassword;
+
+/**
+ * 更新用户头像
+ */
+- (BOOL)updateUserInfoAvatarWithAddress:(NSString *)address
+                              avatarurl:(NSString *)avatarurl;
+
+/**
+ * 更新用户名
+ */
+- (BOOL)updateUserInfoNameWithAddress:(NSString *)address
+                                 name:(NSString *)name;
+
+/**
+ * 根据address查询用户信息
+ */
+- (LoginUserInfo *)queryUserInfoWithAddress:(NSString *)address;
+
+/**
+ * 查询全部用户信息
+ */
+- (NSArray<LoginUserInfo *> *)queryAllUserInfo;
+
+/**
+ * Swift调用的用户信息列表查询方法（字典数组）
+ */
+- (NSArray<NSDictionary *> *)queryAllUserInfoData;
+
+/**
+ * 删除用户信息
+ */
+- (BOOL)deleteUserInfoWithAddress:(NSString *)address;
 
 #pragma mark - 游戏Game
 /**

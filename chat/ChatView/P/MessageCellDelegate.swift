@@ -2,7 +2,7 @@
 //  MessageCellDelegate.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/22.
+//  Created by fzm on 2020/12/22.
 //
 
 import Foundation
@@ -12,6 +12,9 @@ protocol MessageCellDelegate: MessageLabelDelegate {
     func didTapBackground(in cell: MessageCollectionViewCell, message: Message)
     
     func didTapMessage(in cell: MessageContentCell, message: Message)
+    
+    /// 点击消息气泡下方的引用条（跳到被引用的原消息）
+    func didTapQuote(in cell: MessageContentCell, message: Message)
     
     func didTapAvatar(in cell: MessageCollectionViewCell, message: Message)
     
@@ -59,6 +62,8 @@ extension MessageCellDelegate {
     func didTapBackground(in cell: MessageCollectionViewCell, message: Message) { }
     
     func didTapMessage(in cell: MessageContentCell, message: Message) { }
+    
+    func didTapQuote(in cell: MessageContentCell, message: Message) { }
     
     func didTapAvatar(in cell: MessageCollectionViewCell, message: Message) { }
     

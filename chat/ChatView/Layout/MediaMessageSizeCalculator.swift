@@ -2,7 +2,7 @@
 //  MediaMessageSizeCalculator.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/23.
+//  Created by fzm on 2020/12/23.
 //
 
 import UIKit
@@ -23,13 +23,32 @@ class MediaMessageSizeCalculator: MessageSizeCalculator {
     
 //    func sizeFor(mediaItem: MediaItem, considering maxWidth: CGFloat) -> CGSize {
     func sizeFor(mediaItem: MediaItem) -> CGSize {
-        var maxValue = max(mediaItem.size.width, mediaItem.size.height)
-        var minValue = min(mediaItem.size.width, mediaItem.size.height)
+        var width = mediaItem.size.width
+        var height = mediaItem.size.height
+
+        // ⚠️ 服务端 / 其它端可能不带 width/height（消息 JSON 里缺失 ⇒ 0），或者给出 1×1 这类脏数据。
+        //    原来会直接算出 0×0 / 1×1 的气泡 —— 用户看到的就是「这条消息什么都没有 / 只有一个点」。
+        //    这里做兜底：无效尺寸给一个默认正方形，过小的按比例放大到最小可见尺寸。
+        if !width.isFinite || !height.isFinite || width <= 0 || height <= 0 {
+            return CGSize(width: 150, height: 150)
+        }
+
+        var maxValue = max(width, height)
+        var minValue = min(width, height)
         if maxValue > 150.0 {
             minValue = minValue / maxValue * 150.0
             maxValue = 150.0
         }
-        let size = mediaItem.size.width > mediaItem.size.height ? CGSize(width: maxValue, height: minValue) : CGSize(width: minValue, height: maxValue)
+        // 最小可见尺寸：短边至少 20pt（极扁的图也能看见），最长边至少 80pt（1×1 这类不会被画成一个点）
+        let minLongSide: CGFloat = 80
+        if maxValue < minLongSide {
+            let scale = minLongSide / maxValue
+            maxValue *= scale
+            minValue *= scale
+        }
+        minValue = max(minValue, 20)
+
+        let size = width > height ? CGSize(width: maxValue, height: minValue) : CGSize(width: minValue, height: maxValue)
         return size
     }
     

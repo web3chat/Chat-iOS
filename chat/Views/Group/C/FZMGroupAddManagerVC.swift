@@ -2,8 +2,8 @@
 //  FZMGroupAddManagerVC.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/30.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/30.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -31,9 +31,9 @@ class FZMGroupAddManagerVC: FZMGroupMemberListVC {
         super.viewDidLoad()
         self.navigationItem.rightBarButtonItems?.remove(at: 0)
         if showType == .owner {
-            self.navigationItem.title = "转让群主"
+            self.navigationItem.title = L("转让群主")
         }else {
-            self.navigationItem.title = "添加管理员"
+            self.navigationItem.title = L("添加管理员")
         }
     }
     
@@ -66,7 +66,7 @@ extension FZMGroupAddManagerVC {
         guard section < self.memberList.count else { return nil }
         let model = self.memberList[section]
         let array = model.value
-        let title = "\(model.title)(\(array.count)人)"
+        let title = "\(model.title)(\(array.count)"+L("人)")
         let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 12), textColor: Color_8A97A5, textAlignment: .left, text: "       " + title)
         lab.backgroundColor = Color_FFFFFF
         return lab
@@ -87,7 +87,7 @@ extension FZMGroupAddManagerVC {
                 GroupManager.shared().updateMemberType(serverUrl: serverUrl, groupId: self.group.id, memberId: member.sessionIDStr, memberType: 1) { [weak self] _ in
                     guard let strongSelf = self else { return }
                     strongSelf.hideProgress()
-                    strongSelf.showToast("管理员设置成功")
+                    strongSelf.showToast(L("管理员设置成功"))
                     DispatchQueue.main.async {
                         strongSelf.addBlock?(member)
                     }
@@ -95,14 +95,14 @@ extension FZMGroupAddManagerVC {
                 } failureBlock: { [weak self] _ in
                     guard let strongSelf = self else { return }
                     strongSelf.hideProgress()
-                    strongSelf.showToast("管理员设置失败")
+                    strongSelf.showToast(L("管理员设置失败"))
                 }
             } else {
                 // 转让群主
                 GroupManager.shared().updateGroupOwner(serverUrl: serverUrl, groupId: self.group.id, memberId: member.sessionIDStr) { [weak self] _ in
                     guard let strongSelf = self else { return }
                     strongSelf.hideProgress()
-                    strongSelf.showToast("转让群主设置成功")
+                    strongSelf.showToast(L("转让群主设置成功"))
                     
                     DispatchQueue.main.async {
                         strongSelf.reloadBlock?()
@@ -111,7 +111,7 @@ extension FZMGroupAddManagerVC {
                 } failureBlock: { [weak self] _ in
                     guard let strongSelf = self else { return }
                     strongSelf.hideProgress()
-                    strongSelf.showToast("转让群主设置失败")
+                    strongSelf.showToast(L("转让群主设置失败"))
                 }
 
             }
@@ -120,11 +120,11 @@ extension FZMGroupAddManagerVC {
             block()
         }else if showType == .owner {
             let alert = TwoBtnInfoAlertView.init()
-            alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
-            alert.leftBtnTitle = "取消"
-            alert.rightBtnTitle = "确定"
+            alert.attributedTitle = NSAttributedString.init(string: L("提示"), attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
+            alert.leftBtnTitle = L("取消")
+            alert.rightBtnTitle = L("确定")
             let alias = member.name
-            let str = "确定将群主转让给 \(alias) 吗?"
+            let str = L("确定将群主转让给") + "\(alias)" + L("吗?")
             let attStr = NSMutableAttributedString.init(string: str, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.systemFont(ofSize: 16)])
             attStr.addAttributes([NSAttributedString.Key.foregroundColor: Color_Theme], range:(str as NSString).range(of: alias as String))
             alert.attributedInfo = attStr

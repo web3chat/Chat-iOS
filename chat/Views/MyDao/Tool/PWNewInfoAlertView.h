@@ -2,8 +2,8 @@
 //  PWNewInfoAlertView.h
 //  PWallet
 //
-//  Created by 陈健 on 2018/11/15.
-//  Copyright © 2018 陈健. All rights reserved.
+//  Created by fzm on 2018/11/15.
+//  Copyright © 2018 fzm. All rights reserved.
 //
 
 #import "PWBaseAlertView.h"

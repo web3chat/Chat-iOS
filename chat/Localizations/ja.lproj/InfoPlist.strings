@@ -1,0 +1,15 @@
+/*
+ InfoPlist.strings（日本語）
+ ⚠️ ファイル名は必ず InfoPlist.strings（iOS が参照するのはこの名前だけ）。
+ ⚠️ キーは Info.plist のキー名（NSCameraUsageDescription …）を指定します。
+ ⚠️ 権限ダイアログの言語はシステム / App ごとの言語設定に従います。
+    App 内の言語切り替え（UserDefaults "AppSelectedLanguage"）は反映されません。
+*/
+"NSCameraUsageDescription" = "「谈信开源」は、QR コードのスキャンや写真の撮影・送信・アップロードのため、カメラへのアクセスを必要としています。";
+"NSMicrophoneUsageDescription" = "「谈信开源」は、ボイスメッセージの送信やボイスチャットのため、マイクへのアクセスを必要としています。";
+"NSLocalNetworkUsageDescription" = "「谈信开源」は、同じネットワーク内でのボイスチャットなどをご利用いただくため、ローカルネットワークへのアクセスを必要としています。";
+"NSLocationWhenInUseUsageDescription" = "「谈信开源」は、位置情報や地図などの機能をご利用いただくため、位置情報へのアクセスを必要としています。";
+"NSPhotoLibraryUsageDescription" = "「谈信开源」は、QR コードのスキャンや画像のアップロード・保存などのために、写真ライブラリへのアクセスを必要としています。";
+"NSPhotoLibraryAddUsageDescription" = "「谈信开源」は、QR コードのスキャンや画像のアップロード・保存などのために、写真ライブラリへのアクセスを必要としています。";
+"NSFaceIDUsageDescription" = "「谈信开源」は、秘匿チャットのパスワード入力の代わりに、本人確認のため Face ID を使用します（登録情報は本端末にのみ保存されます）。";
+"NSSpeechRecognitionUsageDescription" = "「談信」は音声メッセージをテキストに変換するために音声認識を使用します。認識はこの端末上で行われ、音声がアップロードされることはありません。";

@@ -70,12 +70,12 @@ extension Data {
         }
     }
 
-    struct HexEncodingOptions: OptionSet {
+    struct HexEncodingOptionss: OptionSet {
         let rawValue: Int
-        static let upperCase = HexEncodingOptions(rawValue: 1 << 0)
+        static let upperCase = HexEncodingOptionss(rawValue: 1 << 0)
     }
     
-    func hexEncodedString(options: HexEncodingOptions = []) -> String {
+    func hexEncodedString(options: HexEncodingOptionss = []) -> String {
         let format = options.contains(.upperCase) ? "%02hhX" : "%02hhx"
         return map { String(format: format, $0) }.joined()
     }

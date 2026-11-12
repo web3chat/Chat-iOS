@@ -9,7 +9,8 @@
 #import <Foundation/Foundation.h>
 
 NS_ASSUME_NONNULL_BEGIN
-
+//网络请求成功回调block
+typedef void (^successBlock)();
 @interface PreCoin : NSObject
 
 + (NSArray*)getPreCoinArr;
@@ -17,8 +18,7 @@ NS_ASSUME_NONNULL_BEGIN
 /**
  * 添加币到钱包
  */
-- (void)addCoinIntoW:(NSString *)rememberCode;
-
+- (void)addCoinIntoW:(NSString *)rememberCode passwd:(NSString *)passwd;
 @end
 
 NS_ASSUME_NONNULL_END

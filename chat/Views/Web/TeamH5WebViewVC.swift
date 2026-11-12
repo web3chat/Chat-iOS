@@ -115,15 +115,75 @@ class TeamH5WebViewVC: UIViewController, ViewControllerProtocol, WKNavigationDel
         }
         
         if let url = URL.init(string: self.urlString) {
-           webView.load(URLRequest.init(url: url))
+            // 先挂代理再加载：否则初始请求可能绕过下面的 host 白名单。
+            webView.navigationDelegate = self
+            // 入口地址可能来自扫码（joinTeam）：**不能把入口 URL 自己加进白名单**，
+            // 只认官方团队 H5 / 当前企业 OA / 企业 IM 域名；不匹配就直接拦下，不把链接丢给 Safari。
+            let scheme = url.scheme?.lowercased() ?? ""
+            let host = url.host?.lowercased() ?? ""
+            guard scheme == "https", allowedHosts.contains(host) else {
+                FZMLog("TeamH5：入口不在白名单，拒绝加载 \(self.urlString)")
+                self.showToast(L("该二维码不属于当前团队"))
+                DispatchQueue.main.async { [weak self] in
+                    self?.navigationController?.popViewController(animated: true)
+                }
+                return
+            }
+            webView.load(URLRequest.init(url: url))
         }
         
         webView.addObserver(self, forKeyPath: estimatedProgress, options: .new, context: nil)
         webView.addObserver(self, forKeyPath: "title", options: .new, context: nil)
         
+        #if DEBUG
         webView.setDebugMode(true)
+        #endif
         
         self.configBridgeRegister()
+    }
+    
+    // MARK: - 域名白名单
+    //
+    // 团队 H5 的入口地址可能来自扫码（`joinTeam(url:)`）或服务端下发，历史实现直接 load 任意 URL，
+    // 且 `addJavascriptObject(self, namespace: nil)` 暴露了全部 @objc 方法。这里只允许
+    // 官方团队 H5 / 当前企业 OA / 企业 IM 域名，其它一律交给系统浏览器。
+    private var allowedHosts: Set<String> {
+        var hosts = Set<String>()
+        func add(_ raw: String?) {
+            guard let raw = raw?.trimmingCharacters(in: .whitespacesAndNewlines),
+                  let host = URL(string: raw)?.host?.lowercased(),
+                  !host.isEmpty else { return }
+            hosts.insert(host)
+        }
+        add(TeamH5Url)
+        add(TeamOAServerUrl)
+        add(LoginUser.shared().myCompanyInfo?.imServer)
+        return hosts
+    }
+    
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.cancel)
+            return
+        }
+        let scheme = url.scheme?.lowercased() ?? ""
+        guard scheme == "https" else {
+            // http / file / data / 自定义 scheme 一律不在团队 H5 容器内加载
+            decisionHandler(.cancel)
+            if scheme == "http" {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+            return
+        }
+        guard let host = url.host?.lowercased(), allowedHosts.contains(host) else {
+            FZMLog("TeamH5：拒绝非白名单域名 \(url.host ?? "nil")")
+            decisionHandler(.cancel)
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            return
+        }
+        decisionHandler(.allow)
     }
     
     override func viewDidAppear(_ animated: Bool) {
@@ -177,7 +237,8 @@ class TeamH5WebViewVC: UIViewController, ViewControllerProtocol, WKNavigationDel
         if let keyPath = keyPath, keyPath == estimatedProgress {
             progress = Float(self.webView.estimatedProgress)
         } else if keyPath == "title" {
-            if (object as! UIView == webView){
+            // KVO 的 object 不一定是 UIView；强转会崩，改为可选判断
+            if let observedView = object as? UIView, observedView == webView {
                 self.navigationItem.title = webView.title
             }else{
                 super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
@@ -207,8 +268,8 @@ extension TeamH5WebViewVC {
                 // 跳转到Safari打开网页
                 APP.shared().openUrl(with: qrcodeStr)
             } else {
-                let alertView = UIAlertController.init(title: "扫描结果", message: qrcodeStr, preferredStyle: .alert)
-                let alert = UIAlertAction.init(title: "确定", style: .destructive) { _ in
+                let alertView = UIAlertController.init(title: L("扫描结果"), message: qrcodeStr, preferredStyle: .alert)
+                let alert = UIAlertAction.init(title: L("确定"), style: .destructive) { _ in
                     FZMLog("扫一扫结果弹窗显示点击确定按钮")
                 }
                 alertView.addAction(alert)
@@ -228,6 +289,7 @@ extension TeamH5WebViewVC {
 extension TeamH5WebViewVC {
     // 获取我的员工信息
     private func refreshMyStaffInfoRequest() {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭，不发员工信息请求
         TeamManager.shared().getStaffInfo(address: LoginUser.shared().address, successBlock: { [weak self] (staffinfo) in
             guard let strongSelf = self else { return }
             // 获取我的企业信息
@@ -311,42 +373,17 @@ extension TeamH5WebViewVC {
         handler(pubKey, true)
     }
     
-    // 给h5传值-我的手机号
-    @objc func getPhone(_ arg: Dictionary<String, Any>, handler: JSCallbackBlock) {
-        FZMLog("H5 func --- getPhone")
-        
-        let phone = LoginUser.shared().bindSeedPhone
-        FZMLog("getPhone \(phone)")
-        handler(phone, true)
-    }
+    // ⚠️ 安全整改（2026-11-10）：`getPhone` 已收回，不再把绑定手机号透给 H5。
+    //    （`getUserInfo` 仍按产品要求保留原字段，未在这里改。）
     
-    // 给h5传值-签名
-    @objc func signAuth(_ arg: Dictionary<String, Any>, handler: JSCallbackBlock) {
-        FZMLog("H5 func --- signAuth")
-        guard let signAuth = LoginUser.shared().signature else {
-            return }
-        FZMLog("signAuth \(signAuth)")
-        handler(signAuth, true)
-    }
-    
-    // 接收h5传过来的数据，签名后再传给h5
-    @objc func sign(_ arg: Dictionary<String, Any>, handler: JSCallbackBlock) {
-        FZMLog("H5 func --- sign")
-        
-        let dic = arg
-        
-        let privateKey = LoginUser.shared().privateKey
-        
-        let str = dic.sorted { $0.key < $1.key }.compactMap { "\($0.key)=\($0.value)"}.joined(separator: "&")
-        
-        guard let rawValue = str.data(using: .utf8)?.sha256(),
-              let signature =  EncryptManager.sign(data: rawValue, privateKey: privateKey) else {
-            return
-        }
-        let finalSignAture = signature.finalKey
-        FZMLog("sign signature \(finalSignAture)")
-        handler(finalSignAture, true)
-    }
+    // ⚠️ 安全整改（2026-11-06）：
+    //   `signAuth` 会把当前会话签名（含公钥、可复用的 FZM-SIGNATURE）直接交给页面；
+    //   `sign` 会用用户私钥对页面传入的任意键值对盲签，且无内容展示。
+    //   两者都足以让钓鱼页伪造身份/授权，已下线。OA 若确需签名，请走服务端
+    //   「一次性挑战 + 结构化字段 + 原生确认页」，不要恢复这两个方法。
+    //
+    // @objc func signAuth(...)
+    // @objc func sign(...)
     
     // 刷新企业信息进入app聊天页面（创建/解散/退出团队）
     @objc func refreshCompanyState(_ arg: Dictionary<String, Any>, handler: JSCallbackBlock) {
@@ -437,7 +474,9 @@ extension TeamH5WebViewVC {
         
         let array = arg
         guard array.count > 0 else { return }
-        let groupMembers: [String] = array.compactMap { ($0 as! String) }
+        // H5 可能传数字/对象：只接受字符串，避免 `as!` 崩溃
+        let groupMembers: [String] = array.compactMap { $0 as? String }
+        guard !groupMembers.isEmpty else { return }
         FZMLog("groupMembers --- \(groupMembers)")
         
         self.selectUsersBlock? (groupMembers)

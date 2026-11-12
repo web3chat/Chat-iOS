@@ -2,7 +2,7 @@
 //  SearchUserVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/14.
+//  Created by fzm on 2021/1/14.
 //
 
 import UIKit
@@ -31,7 +31,7 @@ class SearchUserVC: UIViewController, ViewControllerProtocol {
     
     private lazy var cancelBtn : UIButton = {
         let btn = UIButton()
-        btn.setAttributedTitle(NSAttributedString(string: "取消", attributes: [.foregroundColor:Color_Theme,.font:UIFont.systemFont(ofSize: 16)]), for: .normal)
+        btn.setAttributedTitle(NSAttributedString(string: L("取消"), attributes: [.foregroundColor:Color_Theme,.font:UIFont.systemFont(ofSize: 16)]), for: .normal)
         btn.rx.controlEvent(.touchUpInside).subscribe {[weak self] (_) in
             self?.navigationController?.popViewController(animated: true)
         }.disposed(by: disposeBag)
@@ -64,7 +64,7 @@ class SearchUserVC: UIViewController, ViewControllerProtocol {
         input.textAlignment = .left
         input.font = UIFont.systemFont(ofSize: 16)
         input.textColor = Color_24374E
-        input.attributedPlaceholder = NSAttributedString(string: "输入用户账号", attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.systemFont(ofSize: 16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("输入用户账号"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.systemFont(ofSize: 16)])
         input.returnKeyType = .search
         input.clearButtonMode = .whileEditing
         input.delegate = self
@@ -95,7 +95,7 @@ class SearchUserVC: UIViewController, ViewControllerProtocol {
             m.width.height.equalTo(20)
         })
         if !LoginUser.shared().address.isEmpty {
-            lab.text = "我的账号：\(LoginUser.shared().address.shortAddress)"
+            lab.text = L("我的账号：") + "\(LoginUser.shared().address.shortAddress)"
         }
         imageView.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer()
@@ -109,7 +109,7 @@ class SearchUserVC: UIViewController, ViewControllerProtocol {
     
     lazy var footerView: UIView = {
         let view = UIView(frame: CGRect(x: 0, y: 0, width: k_ScreenWidth, height: 246))
-        var noDataView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: "没有匹配的对象", btnTitle: nil, clickBlock: nil)
+        var noDataView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: L("没有匹配的对象"), btnTitle: nil, clickBlock: nil)
         view.addSubview(noDataView)
         noDataView.snp.makeConstraints({ (m) in
             m.top.equalToSuperview().offset(65)
@@ -187,7 +187,7 @@ class SearchUserVC: UIViewController, ViewControllerProtocol {
             self.listView.reloadData()
         } failureBlock: { (error) in
             self.view.hideActivity()
-            self.showToast("没有匹配对象")
+            self.showToast(L("没有匹配对象"))
         }
     }
     

@@ -2,7 +2,7 @@
 //  InputAlertView.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/28.
+//  Created by fzm on 2021/1/28.
 //
 
 import UIKit
@@ -46,7 +46,7 @@ class InputAlertView: UIView {
         btn.setTitleColor(Color_FFFFFF, for: .normal)
         btn.backgroundColor = Color_Theme
         btn.layer.cornerRadius = 20
-        btn.setTitle("确定", for: .normal)
+        btn.setTitle(L("确定"), for: .normal)
         btn.addTarget(self, action: #selector(confirmClick), for: .touchUpInside)
         return btn
     }()

@@ -54,7 +54,8 @@ public class OSS: NSObject,URLSessionDelegate {
             } else {
                 let json:JSON = JSON(tcs.task.result as AnyObject)
                 
-                print("Json Object:", json as Any)
+                // 不要打印 STS 响应：里面含 AccessKeyId / AccessKeySecret / SecurityToken
+                FZMLog("OSS STS 获取成功（凭证已隐藏）")
                 
                 let credentials = TokenCredentials.init(json: json["Credentials"])
                 

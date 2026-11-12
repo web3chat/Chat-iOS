@@ -60,6 +60,8 @@ class IMRedPacketModel: NSObject {
     var remark = "" //红包祝福语
     var createdAt : Date = Date.init() //发放时间
     var packetUrl = ""
+    /// 专属红包（链上白名单，仅指定好友可领）
+    var isExclusive = false
     var revInfo =  IMRedPacketReceiveModel.init()
     
     var countStr: String {
@@ -119,13 +121,13 @@ class IMRedPacketModel: NSObject {
     func getStatusStr(with type:IMRedPacketRecordType) -> String {
         switch status {
         case .normal:
-            return type == .send ? "领取中" : "正在入账"
+            return type == .send ? L("领取中") : L("正在入账")
         case .receiveAll:
-            return type == .send ? "已领完" : "入账成功"
+            return type == .send ? L("已领完") : L("入账成功")
         case .past:
-            return type == .send ? "已过期" : "入账失败"
+            return type == .send ? L("已过期") : L("入账失败")
         case .opened:
-            return type == .send ? "已完成" : "入账失败"
+            return type == .send ? L("已完成") : L("入账失败")
         default:
             return ""
         }
@@ -140,6 +142,13 @@ class IMRedPacketReceiveModel: NSObject {
     var coinId = -1
     var failMessage = ""
     var createdAt = Date.init() //领取时间
+    /// 真实领取时间（链上 `Claimed` 事件区块时间）；拿不到时为 nil，列表不展示时间
+    var claimedAt: Date?
+    /// 直接展示用的金额文案。**只有「本地数据」模式会用到**（安卓端专属红包的 csv 里金额是显示串，
+    /// 转成 `amount: Float` 会丢格式、带币种时甚至直接变 0）；非空时 cell 优先用它
+    var amountDisplayText: String?
+    /// 直接展示用的时间文案（同上：csv 里的时间是字符串，没有可靠格式可解析）
+    var timeDisplayText: String?
     var status = 1//1:正在入账2：入账成功3：入账失败4：用户token失效
     var amount : Float = 0 //领取金额
     var userAvatar = ""
@@ -160,4 +169,21 @@ class IMRedPacketReceiveModel: NSObject {
     override init() {
         super.init()
     }
+    
+//    func getuserStatusStr(with type:IMRedPacketRecordType) -> String {
+//        switch status {
+//        case .normal:
+//            return type == .send ? L("领取中") : L("正在入账")
+//        case .receiveAll:
+//            return type == .send ? L("已领完") : L("入账成功")
+//        case .past:
+//            return type == .send ? L("已过期") : L("入账失败")
+//        case .opened:
+//            return type == .send ? L("已完成") : L("入账失败")
+//        default:
+//            return ""
+//        }
+//    }
+    
+    
 }

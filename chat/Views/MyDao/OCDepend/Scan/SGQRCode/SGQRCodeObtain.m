@@ -9,7 +9,9 @@
 #import "SGQRCodeObtain.h"
 #import "SGQRCodeObtainConfigure.h"
 #import <Photos/Photos.h>
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface SGQRCodeObtain () <AVCaptureMetadataOutputObjectsDelegate, AVCaptureVideoDataOutputSampleBufferDelegate, UINavigationControllerDelegate, UIImagePickerControllerDelegate>
 @property (nonatomic, weak) UIViewController *controller;
 @property (nonatomic, strong) SGQRCodeObtainConfigure *configure;
@@ -36,10 +38,10 @@
 
 - (void)establishQRCodeObtainScanWithController:(UIViewController *)controller configure:(SGQRCodeObtainConfigure *)configure {
     if (controller == nil) {
-        @throw [NSException exceptionWithName:@"SGQRCode" reason:@"SGQRCodeObtain 中 establishQRCodeObtainScanWithController:configuration:方法的 controller 参数不能为空" userInfo:nil];
+        @throw [NSException exceptionWithName:@"SGQRCode" reason:L(@"扫码页面控制器不能为空") userInfo:nil];
     }
     if (configure == nil) {
-        @throw [NSException exceptionWithName:@"SGQRCode" reason:@"SGQRCodeObtain 中 establishQRCodeObtainScanWithController:configure:方法的 configure 参数不能为空" userInfo:nil];
+        @throw [NSException exceptionWithName:@"SGQRCode" reason:L(@"扫码配置不能为空") userInfo:nil];
     }
     
     _controller = controller;
@@ -158,7 +160,7 @@ void soundCompleteCallback(SystemSoundID soundID, void *clientData){
 #pragma mark - - 相册中读取二维码相关方法
 - (void)establishAuthorizationQRCodeObtainAlbumWithController:(UIViewController *)controller {
     if (controller == nil && _controller == nil) {
-        @throw [NSException exceptionWithName:@"SGQRCode" reason:@"SGQRCodeObtain 中 establishAuthorizationQRCodeObtainAlbumWithController: 方法的 controller 参数不能为空" userInfo:nil];
+        @throw [NSException exceptionWithName:@"SGQRCode" reason:L(@"相册扫码页面控制器不能为空") userInfo:nil];
     }
     if (_controller == nil) {
         _controller = controller;
@@ -198,17 +200,17 @@ void soundCompleteCallback(SystemSoundID soundID, void *clientData){
                 app_Name = [infoDict objectForKey:@"CFBundleName"];
             }
             
-            NSString *messageString = [NSString stringWithFormat:@"[前往：设置 - 隐私 - 照片 - %@] 允许应用访问", app_Name];
-            UIAlertController *alertC = [UIAlertController alertControllerWithTitle:@"温馨提示" message:messageString preferredStyle:(UIAlertControllerStyleAlert)];
-            UIAlertAction *alertA = [UIAlertAction actionWithTitle:@"确定" style:(UIAlertActionStyleDefault) handler:^(UIAlertAction * _Nonnull action) {
+            NSString *messageString = [NSString stringWithFormat:L(@"[前往：设置 - 隐私 - 照片 - %@] 允许应用访问"), app_Name];
+            UIAlertController *alertC = [UIAlertController alertControllerWithTitle:L(@"温馨提示") message:messageString preferredStyle:(UIAlertControllerStyleAlert)];
+            UIAlertAction *alertA = [UIAlertAction actionWithTitle:L(@"确定") style:(UIAlertActionStyleDefault) handler:^(UIAlertAction * _Nonnull action) {
                 
             }];
             
             [alertC addAction:alertA];
             [_controller presentViewController:alertC animated:YES completion:nil];
         } else if (status == PHAuthorizationStatusRestricted) {
-            UIAlertController *alertC = [UIAlertController alertControllerWithTitle:@"温馨提示" message:@"由于系统原因, 无法访问相册" preferredStyle:(UIAlertControllerStyleAlert)];
-            UIAlertAction *alertA = [UIAlertAction actionWithTitle:@"确定" style:(UIAlertActionStyleDefault) handler:^(UIAlertAction * _Nonnull action) {
+            UIAlertController *alertC = [UIAlertController alertControllerWithTitle:L(@"温馨提示") message:L(@"由于系统原因, 无法访问相册") preferredStyle:(UIAlertControllerStyleAlert)];
+            UIAlertAction *alertA = [UIAlertAction actionWithTitle:L(@"确定") style:(UIAlertActionStyleDefault) handler:^(UIAlertAction * _Nonnull action) {
                 
             }];
             

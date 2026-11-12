@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="19455" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="24506" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES">
     <device id="retina5_5" orientation="portrait" appearance="light"/>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="19454"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="24504"/>
         <capability name="Safe area layout guides" minToolsVersion="9.0"/>
         <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
@@ -29,7 +29,7 @@
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="bte-AA-yrq">
-                    <rect key="frame" x="18" y="12" width="11" height="20"/>
+                    <rect key="frame" x="18" y="32" width="11" height="20"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="11" id="iVj-RA-0tD"/>
                         <constraint firstAttribute="height" constant="20" id="yYu-xL-76R"/>
@@ -41,7 +41,7 @@
                     </connections>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="T2m-1Q-CNO">
-                    <rect key="frame" x="20" y="312" width="374" height="40"/>
+                    <rect key="frame" x="20" y="332" width="374" height="40"/>
                     <color key="backgroundColor" red="0.19607843137254902" green="0.69803921568627447" blue="0.96862745098039216" alpha="1" colorSpace="calibratedRGB"/>
                     <constraints>
                         <constraint firstAttribute="height" constant="40" id="Xo8-Kz-0r8"/>
@@ -65,19 +65,19 @@
                     </connections>
                 </button>
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="手机登录" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="XJh-1G-aY1">
-                    <rect key="frame" x="20" y="84" width="122" height="36"/>
+                    <rect key="frame" x="19.999999999999993" y="104" width="114.33333333333331" height="36"/>
                     <fontDescription key="fontDescription" type="boldSystem" pointSize="30"/>
                     <color key="textColor" red="0.14117647058823529" green="0.21568627450980393" blue="0.30588235294117649" alpha="1" colorSpace="calibratedRGB"/>
                     <nil key="highlightedColor"/>
                 </label>
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="手机号未绑定账号将自动生成账号" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="wdU-dG-vyg">
-                    <rect key="frame" x="20" y="125" width="215" height="17"/>
+                    <rect key="frame" x="20" y="145" width="208.66666666666666" height="17"/>
                     <fontDescription key="fontDescription" type="system" pointSize="14"/>
                     <color key="textColor" red="0.54117647058823526" green="0.59215686274509804" blue="0.6470588235294118" alpha="1" colorSpace="calibratedRGB"/>
                     <nil key="highlightedColor"/>
                 </label>
                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Mp3-ks-SSY">
-                    <rect key="frame" x="20" y="167" width="374" height="50"/>
+                    <rect key="frame" x="20" y="187" width="374" height="50"/>
                     <subviews>
                         <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="请输入手机号" minimumFontSize="17" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="mWB-6P-tmH">
                             <rect key="frame" x="67" y="0.0" width="307" height="50"/>
@@ -113,7 +113,7 @@
                     </userDefinedRuntimeAttributes>
                 </view>
                 <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="F0P-7q-wIU">
-                    <rect key="frame" x="20" y="232" width="374" height="50"/>
+                    <rect key="frame" x="20" y="252" width="374" height="50"/>
                     <subviews>
                         <textField opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="left" contentVerticalAlignment="center" placeholder="请输入验证码" minimumFontSize="17" clearButtonMode="whileEditing" translatesAutoresizingMaskIntoConstraints="NO" id="nec-gg-1Jm">
                             <rect key="frame" x="15" y="0.0" width="200" height="50"/>
@@ -158,8 +158,8 @@
                         </userDefinedRuntimeAttribute>
                     </userDefinedRuntimeAttributes>
                 </view>
-                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8K6-Rd-5de">
-                    <rect key="frame" x="326" y="2" width="70" height="40"/>
+                <button hidden="YES" opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="system" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="8K6-Rd-5de">
+                    <rect key="frame" x="326" y="22" width="70" height="40"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="70" id="bWD-un-yLv"/>
                         <constraint firstAttribute="height" constant="40" id="dGA-T3-ya2"/>
@@ -194,12 +194,7 @@
                 <constraint firstItem="fnl-2z-Ty3" firstAttribute="trailing" secondItem="F0P-7q-wIU" secondAttribute="trailing" constant="20" id="yv1-z5-QaH"/>
                 <constraint firstItem="wdU-dG-vyg" firstAttribute="top" secondItem="XJh-1G-aY1" secondAttribute="bottom" constant="5" id="zAd-7R-zdn"/>
             </constraints>
-            <userDefinedRuntimeAttributes>
-                <userDefinedRuntimeAttribute type="color" keyPath="borderColor">
-                    <color key="value" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                </userDefinedRuntimeAttribute>
-            </userDefinedRuntimeAttributes>
-            <point key="canvasLocation" x="-2236.231884057971" y="-6.5217391304347831"/>
+            <point key="canvasLocation" x="-2481" y="-170"/>
         </view>
     </objects>
     <resources>

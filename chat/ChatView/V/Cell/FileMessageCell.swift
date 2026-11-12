@@ -136,7 +136,8 @@ class FileMessageCell: MessageContentCell {
 //            fatalError("nilMessagesDisplayDelegate")
 //        }
         guard let displayDelegate = messageCollectionView.messagesDisplayDelegate else {
-            fatalError("nilMessageDisplayDelegate")
+            FZMLog("FileMessageCell：messagesDisplayDelegate 为空，跳过配置")
+            return
         }
         switch message.kind {
         case .file(let fileItem):

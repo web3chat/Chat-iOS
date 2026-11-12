@@ -2,7 +2,7 @@
 //  FZMFullTextSearchHistoryView.swift
 //  IMSDK
 //
-//  Created by 陈健 on 2019/9/25.
+//  Created by fzm on 2019/9/25.
 //
 
 import UIKit
@@ -12,10 +12,10 @@ import RxSwift
 class FZMFullTextSearchHistoryView: UIView {
     
     private let disposeBag = DisposeBag.init()
-    private let historyLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "搜索历史")
+    private let historyLab = UILabel.getLab(font: UIFont.regularFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("搜索历史"))
     private lazy var clearAllHistoryBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
-        btn.setTitle("清空历史", for: .normal)
+        btn.setTitle(L("清空历史"), for: .normal)
         btn.setTitleColor(Color_8A97A5, for: .normal)
         btn.titleLabel?.font = UIFont.regularFont(14)
         btn.rx.controlEvent(.touchUpInside).subscribe(onNext: {[weak self] (_) in
@@ -60,7 +60,12 @@ class FZMFullTextSearchHistoryView: UIView {
                     self.addSubview(clearAllHistoryBtn)
                     clearAllHistoryBtn.snp.makeConstraints { (m) in
                         m.centerX.equalToSuperview()
-                        m.size.equalTo(CGSize.init(width: 70, height: 25))
+                        if LanguageManager.shared.isChinese {
+                            m.size.equalTo(CGSize.init(width: 70, height: 25))
+                        }else {
+                            m.size.equalTo(CGSize.init(width: 100, height: 25))
+                        }
+                        
                         m.top.equalTo(cell.snp.bottom).offset(15)
                     }
                 }

@@ -2,7 +2,7 @@
 //  ChatSocket.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/16.
+//  Created by fzm on 2021/1/16.
 //
 
 import UIKit
@@ -10,7 +10,7 @@ import Starscream
 
 class ChatSocket {
     
-    private let socket: WebSocket
+    private let socket: Starscream.WebSocket
     
     weak var delegate: WebSocketDelegate? {
         didSet {

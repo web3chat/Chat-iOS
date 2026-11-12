@@ -11,7 +11,7 @@ import SnapKit
 class GroupInfoCell: UICollectionViewCell {
     
     private lazy var nameLab: UILabel = {
-        let lab = UILabel.getLab(font: .mediumFont(16), textColor: Color_62DEAD, textAlignment: .left, text: "服务器名称")
+        let lab = UILabel.getLab(font: .mediumFont(16), textColor: Color_62DEAD, textAlignment: .left, text: L("服务器名称"))
         lab.minimumScaleFactor = 0.7
         lab.adjustsFontSizeToFitWidth = true
         lab.numberOfLines = 0

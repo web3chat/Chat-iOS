@@ -2,18 +2,20 @@
 //  APP.swift
 //  xls
 //
-//  Created by 陈健 on 2020/9/4.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/9/4.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import Foundation
 import SwiftyJSON
 import AFNetworking
+import Kingfisher
 import Reachability
 import RxSwift
 import sqlcipher
 
-class APP {
+
+ class APP {
     private static let sharedInstance = APP.init()
     
     class func shared() -> APP {
@@ -57,7 +59,14 @@ enum AlertType {
 
 extension APP {
     @objc private func didFinishLaunching() {
-       
+
+        // ⚠️ 所有通过 Kingfisher 加载的图片一律**后台解码**：
+        //    Kingfisher 默认不 decoding，把未解码的 JPEG 直接交给 `UIImageView`，
+        //    CA 提交时会在主线程走 `CA::Layer::prepare_contents` → ImageIO →
+        //    `CMPhotoUnifiedJPEGDecoderDecode` 硬解；超大/异常 JPEG 会在 CMPhoto 里 SIGSEGV
+        //    （TestFlight 2026-10-13 崩溃，无 App 栈）。
+        KingfisherManager.shared.defaultOptions = [.backgroundDecode]
+
         // 读取本地存储的审核状态flg
         let flg = FZM_UserDefaults.bool(forKey: CHAT33PRO_SHOW_UPDATE_KEY)
         if flg {
@@ -73,12 +82,22 @@ extension APP {
         // 获取模块启用状态
         self.getModulesRequest()
         
+        // 抹掉历史版本落在 UserDefaults 里的**明文助记词**：
+        // `LoginUser.seed` 已不参与序列化，这里主动重写一次整块 `chat_save_user`，
+        // 旧数据中的明文就会随之消失（未登录时不写，避免把已登录数据覆盖成空对象）。
+        if LoginUser.shared().isLogin {
+            LoginUser.shared().save()
+        }
+        
         // 刷新我的员工信息和企业信息
         LoginUser.shared().refreshMyStaffInfoAndTeamInfo()
         
         // 刷新我的个人信息
         LoginUser.shared().refreshUserInfo()
         
+        // 开启wc功能
+//       lazy var config = ConfigurationService()
+//        config.configure()
         // 更新地址弹窗
 //        showNoticeView(type: 2) //WJHTODO
     }
@@ -91,6 +110,8 @@ extension APP {
         guard let appDelegate = UIApplication.shared.delegate as? AppDelegate else { return }
         appDelegate.launchView()
     }
+    
+    
     
     /// 多端登录处理（被踢下线）
     func endpointLoginAction(_ pbMsg: PbMsg_ActionEndpointLogin) {
@@ -117,13 +138,17 @@ extension APP {
             alert.hideCrossBtn = true
             alert.autoHide = false
             alert.touchBackgroundToHide = false
-            alert.attributedTitle = NSAttributedString.init(string: "退出通知", attributes: [.font : UIFont.boldFont(17), .foregroundColor : Color_24374E])
-            let prefix = "你的账号于 \(datetime) 在 \(deviceName) 设备上登录。如果不是你的操作，可能你的密码或助记词已经泄露。请尽快修改密码或创建新助记词账户使用。\n"
+            alert.attributedTitle = NSAttributedString.init(string: L("退出通知"), attributes: [.font : UIFont.boldFont(17), .foregroundColor : Color_24374E])
             
+            var prefix = L("你的账号于")+" \(datetime) "+L("在")+" \(deviceName) "+L("设备上登录。")+L("如果不是你的操作，可能你的密码或助记词已经泄露。请尽快修改密码或创建新助记词账户使用。\n")
+            let savedLang = UserDefaults.standard.string(forKey: "AppSelectedLanguage")
+            if savedLang == "en" { // 英文要修改语序
+                prefix = L("你的账号于")+L("设备上登录")+" \(deviceName) "+L("在")+" \(datetime) 。"+L("如果不是你的操作，可能你的密码或助记词已经泄露。请尽快修改密码或创建新助记词账户使用。\n")
+            }
             let attString = NSMutableAttributedString(string: prefix, attributes: [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.regularFont(16)])
             alert.attributedInfo = attString
             
-            alert.confirmBtnTitle = "知道了"
+            alert.confirmBtnTitle = L("知道了")
             
             alert.confirmBlock = {
                 alert.removeFromSuperview()
@@ -139,18 +164,18 @@ extension APP {
         alert.hideCrossBtn = true
         alert.autoHide = false
         alert.touchBackgroundToHide = false
-        alert.attributedTitle = NSAttributedString.init(string: "系统公告", attributes: [.font : UIFont.systemFont(ofSize: 17), .foregroundColor : Color_24374E])
+        alert.attributedTitle = NSAttributedString.init(string: L("系统公告"), attributes: [.font : UIFont.systemFont(ofSize: 17), .foregroundColor : Color_24374E])
         var prefix = ""
         var suffix = ""
         var btnTitle = ""
         if type == 1 {
-            prefix = "谈信平台的用户账号将统一升级为新地址，为保证您的账号信息能成功备份，请在2022年2月14号前生成新地址并与原地址关联。\n\n"
-            suffix = "2022年2月14号前未完成操作则无法备份账号信息，登录后将成为全新的账号！"
-            btnTitle = "生成新地址"
+            prefix = L("谈信平台的用户账号将统一升级为新地址，为保证您的账号信息能成功备份，请在2022年2月14号前生成新地址并与原地址关联。\n\n")
+            suffix = L("2022年2月14号前未完成操作则无法备份账号信息，登录后将成为全新的账号！")
+            btnTitle = L("生成新地址")
         } else if type == 2 {
-            prefix = "谈信平台的用户账号将统一升级为新地址，为保证您的账号信息能成功备份，请在2022年2月17号前完成备份。\n\n"
-            suffix = "2022年2月17号前未完成操作则无法备份账号信息，登录后将成为全新的账号！"
-            btnTitle = "备份信息"
+            prefix = L("谈信平台的用户账号将统一升级为新地址，为保证您的账号信息能成功备份，请在2022年2月17号前完成备份。\n\n")
+            suffix = L("2022年2月17号前未完成操作则无法备份账号信息，登录后将成为全新的账号！")
+            btnTitle = L("备份信息")
         }
         let prefixAttr = [NSAttributedString.Key.foregroundColor: Color_24374E, NSAttributedString.Key.font: UIFont.regularFont(16)]
         let suffixAttr = [NSAttributedString.Key.foregroundColor: Color_DD5F5F, NSAttributedString.Key.font: UIFont.boldFont(16)]
@@ -196,12 +221,14 @@ extension APP {
         switch type {
         case .notifCenter:
             self.hasShowNotifCenterFlg = true
-            titleStr = "“\(APPNAME)”想给您发送通知"
-            messageStr = "“通知”可能包括提醒、声音和图标标记。这些可在“设置”中配置"
-            btnStr = "去设置"
+            titleStr = "“\(APPNAME)”"+L("想给您发送通知")
+            messageStr = L("“通知”可能包括提醒、声音和图标标记。这些可在“设置”中配置")
+            btnStr = L("去设置")
         }
         let alertController = UIAlertController.init(title: titleStr, message: messageStr, preferredStyle: .alert)
-        let cancelAction = UIAlertAction(title: "取消", style: .cancel, handler: nil)
+        let cancelAction = UIAlertAction(title: L("取消"), style: .cancel) { _ in
+            UserDefaultsDB.userDismissedNotificationSettingsPrompt = true
+        }
         let okAction = UIAlertAction.init(title: btnStr, style: .destructive) { _ in
             //打开应用的设置界面
             if let url = URL(string: UIApplication.openSettingsURLString) {
@@ -234,9 +261,10 @@ extension APP {
     /// 从中心化服务器获取默认的IM服务器地址和区块链节点地址
     func getOfficialServerRequest(successBlock: Provider.SuccessBlock? = nil, failureBlock: Provider.FailureBlock? = nil) {
         
+       
+        
         Provider.request(DiscoveryAPI.disc) {(json) in
             
-            // IM地址
             OfficialChatServers = json["servers"].arrayValue.compactMap {
                 Server.init(name: $0["name"].stringValue, value: $0["address"].stringValue)
             }
@@ -248,6 +276,9 @@ extension APP {
             
             successBlock?(json)
         } failureBlock: { (error) in
+            // 发现接口失败时不再写死任何服务器地址（未配置时为空字符串，需由使用方在服务端配置）
+            OfficialChatServers = [Server.init(name: "default",value: "")]
+            OfficialBlockchainServers = [Server(name: "default-1",value: "")]
             FZMLog("获取模块启用状态失败 \(error)")
             failureBlock?(error)
         }
@@ -281,7 +312,11 @@ extension APP {
     // 检测是否有更新
     func updateApp() {
         guard let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, !currentVersion.isEmpty else { return }
-        let versionCode = Int(currentVersion.replacingOccurrences(of: ".", with: ""))!
+        // 版本号含非数字（beta / 带括号）时 Int() 返回 nil，强解包会崩；解析失败就跳过版本检测
+        guard let versionCode = Int(currentVersion.replacingOccurrences(of: ".", with: "")) else {
+            FZMLog("版本号无法解析，跳过更新检测：\(currentVersion)")
+            return
+        }
         Provider.request(SystemAPI.update(versionCode: versionCode), successBlock: { [weak self] (json) in
             guard let self = self else { return }
             self.version = VersionCheck.init(json: json)

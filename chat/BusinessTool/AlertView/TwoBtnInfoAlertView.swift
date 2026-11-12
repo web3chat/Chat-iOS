@@ -2,7 +2,7 @@
 //  TwoBtnInfoAlertView.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/29.
+//  Created by fzm on 2021/1/29.
 //
 
 import UIKit
@@ -34,7 +34,7 @@ class TwoBtnInfoAlertView: UIView {
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.backgroundColor = Color_FAFBFC
-        btn.setTitle("取消", for: .normal)
+        btn.setTitle(L("取消"), for: .normal)
         btn.addTarget(self, action: #selector(leftBtnClick), for: .touchUpInside)
         return btn
     }()
@@ -44,7 +44,7 @@ class TwoBtnInfoAlertView: UIView {
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.backgroundColor = Color_FAFBFC
-        btn.setTitle("确定", for: .normal)
+        btn.setTitle(L("确定"), for: .normal)
         btn.addTarget(self, action: #selector(rightBtnClick), for: .touchUpInside)
         return btn
     }()

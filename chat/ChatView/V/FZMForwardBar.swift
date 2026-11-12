@@ -45,15 +45,15 @@ class FZMForwardBar: UIView {
     convenience init(normal: Bool) {
         self.init()
         guard normal == true else{return}
-        let oneForwardView = self.getItemView(imgName: "forward", title: "逐条转发") {[weak self] in
+        let oneForwardView = self.getItemView(imgName: "forward", title: L("逐条转发")) {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.eventBlock?(.forward)
         }
-        let bothForwardView = self.getItemView(imgName: "forward_both", title: "合并转发") {[weak self] in
+        let bothForwardView = self.getItemView(imgName: "forward_both", title: L("合并转发")) {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.eventBlock?(.allForward)
         }
-        let deleteView = self.getItemView(imgName: "delete_msg", title: "删除") {[weak self] in
+        let deleteView = self.getItemView(imgName: "delete_msg", title: L("删除")) {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.eventBlock?(.delete)
         }
@@ -78,11 +78,11 @@ class FZMForwardBar: UIView {
     convenience init(withDownload: Bool) {
         self.init()
         guard withDownload == true else{return}
-        let downloadView = self.getItemView(imgName: "bar_download", title: "下载") {[weak self] in
+        let downloadView = self.getItemView(imgName: "bar_download", title: L("下载")) {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.eventBlock?(.download)
         }
-        let deleteView = self.getItemView(imgName: "delete_msg", title: "删除") {[weak self] in
+        let deleteView = self.getItemView(imgName: "delete_msg", title: L("删除")) {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.eventBlock?(.delete)
         }

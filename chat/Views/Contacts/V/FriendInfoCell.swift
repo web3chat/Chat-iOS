@@ -155,7 +155,7 @@ class FriendInfoServerCell: UITableViewCell {
     private func setupViews() {
         self.contentView.backgroundColor = Color_FFFFFF
         
-        let lab1 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: "接收TA消息的服务器")
+        let lab1 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: L("接收TA消息的服务器"))
         lab1.numberOfLines = 2
         self.addSubview(lab1)
         lab1.snp.makeConstraints { (m) in
@@ -268,7 +268,7 @@ class FriendInfoSettingCell: UITableViewCell {
     private func setupViews() {
         self.contentView.backgroundColor = Color_FFFFFF
         
-        let lab1 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: "查找聊天记录")
+        let lab1 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: L("查找聊天记录"))
         self.addSubview(lab1)
         lab1.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -301,7 +301,7 @@ class FriendInfoSettingCell: UITableViewCell {
             m.top.equalTo(lab1.snp.bottom)
         }
         
-        let lab2 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: "聊天文件")
+        let lab2 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: L("聊天文件"))
         self.addSubview(lab2)
         lab2.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -335,7 +335,7 @@ class FriendInfoSettingCell: UITableViewCell {
             m.top.equalTo(lab2.snp.bottom)
         }
         
-        let lab3 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: "消息免打扰")
+        let lab3 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: L("消息免打扰"))
         self.addSubview(lab3)
         lab3.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -345,9 +345,17 @@ class FriendInfoSettingCell: UITableViewCell {
         
         self.addSubview(isMuteSwitch)
         isMuteSwitch.snp.makeConstraints { (m) in
-            m.size.equalTo(CGSize.init(width: 40, height: 20))
-            m.right.equalToSuperview().offset(-15)
-            m.centerY.equalTo(lab3)
+            // ⚠️ 不能写死 40×20：UISwitch 不会把内容缩到 40 宽，而是按固有尺寸(51×31)
+            // 居中在这个框里 ⇒ 右边缘溢出到 -15 之外，看起来「开关太靠右」。
+            // iOS 26/27 上只约束右边距，尺寸交给固有值；老系统保持原来的 40×20 不变。
+            if #available(iOS 26.0, *) {
+                m.right.equalToSuperview().offset(-15)
+                m.centerY.equalTo(lab3)
+            } else {
+                m.size.equalTo(CGSize.init(width: 40, height: 20))
+                m.right.equalToSuperview().offset(-15)
+                m.centerY.equalTo(lab3)
+            }
         }
         
         let lineV3 = UIView.init()
@@ -359,7 +367,7 @@ class FriendInfoSettingCell: UITableViewCell {
             m.top.equalTo(lab3.snp.bottom)
         }
         
-        let lab4 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: "置顶聊天")
+        let lab4 = UILabel.getLab(font: UIFont.systemFont(ofSize: 16), textColor: Color_24374E, textAlignment: .left, text: L("置顶聊天"))
         self.addSubview(lab4)
         lab4.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -369,9 +377,15 @@ class FriendInfoSettingCell: UITableViewCell {
         
         self.addSubview(isOnTopSwitch)
         isOnTopSwitch.snp.makeConstraints { (m) in
-            m.size.equalTo(CGSize.init(width: 40, height: 20))
-            m.right.equalToSuperview().offset(-15)
-            m.centerY.equalTo(lab4)
+            // 同上：写死 40×20 会让开关内容溢出到右边
+            if #available(iOS 26.0, *) {
+                m.right.equalToSuperview().offset(-15)
+                m.centerY.equalTo(lab4)
+            } else {
+                m.size.equalTo(CGSize.init(width: 40, height: 20))
+                m.right.equalToSuperview().offset(-15)
+                m.centerY.equalTo(lab4)
+            }
         }
         
         DispatchQueue.main.async {
@@ -506,7 +520,7 @@ class FriendInfoTeamCell: UITableViewCell {
     private func setupViews() {
         self.contentView.backgroundColor = Color_FFFFFF
         
-        let lab = UILabel.getLab(font: .boldFont(16), textColor: Color_Theme, textAlignment: .left, text: "成员信息")
+        let lab = UILabel.getLab(font: .boldFont(16), textColor: Color_Theme, textAlignment: .left, text: L("成员信息"))
         self.contentView.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -514,7 +528,7 @@ class FriendInfoTeamCell: UITableViewCell {
             m.height.equalTo(40)
         }
         
-        let labName = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "姓名")
+        let labName = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("姓名"))
         self.contentView.addSubview(labName)
         labName.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -538,7 +552,7 @@ class FriendInfoTeamCell: UITableViewCell {
             m.top.equalTo(usernameLab.snp.bottom)
         }
         
-        let labTeam = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "团队")
+        let labTeam = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("团队"))
         self.contentView.addSubview(labTeam)
         labTeam.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -570,7 +584,7 @@ class FriendInfoTeamCell: UITableViewCell {
         }
         
         
-        let labPhone = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "手机号")
+        let labPhone = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("手机号"))
         phoneView.addSubview(labPhone)
         labPhone.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -608,7 +622,7 @@ class FriendInfoTeamCell: UITableViewCell {
             m.height.equalTo(50)
         }
         
-        let labShortPhone = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "短号")
+        let labShortPhone = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("短号"))
         shortPhoneView.addSubview(labShortPhone)
         labShortPhone.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -639,7 +653,7 @@ class FriendInfoTeamCell: UITableViewCell {
             m.top.equalTo(shortPhoneLab.snp.bottom)
         }
         
-        let labEmail = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "邮箱")
+        let labEmail = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("邮箱"))
         self.contentView.addSubview(labEmail)
         labEmail.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -663,7 +677,7 @@ class FriendInfoTeamCell: UITableViewCell {
             m.top.equalTo(emailLab.snp.bottom)
         }
         
-        let labDepartment = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "部门")
+        let labDepartment = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("部门"))
         self.addSubview(labDepartment)
         labDepartment.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -687,7 +701,7 @@ class FriendInfoTeamCell: UITableViewCell {
             m.top.equalTo(departmentLab.snp.bottom)
         }
         
-        let labPosition = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: "职位")
+        let labPosition = UILabel.getLab(font: .mediumFont(14), textColor: Color_8A97A5, textAlignment: .left, text: L("职位"))
         self.addSubview(labPosition)
         labPosition.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -796,11 +810,16 @@ class FriendInfoTeamCell: UITableViewCell {
         }
         
         let phone = "telprompt://" + tempPhone
-        if UIApplication.shared.canOpenURL(URL(string: phone)!) {
+        // 号码可能带空格/特殊字符，`URL(string:)` 会返回 nil；强解包会闪退
+        guard let phoneURL = URL(string: phone) else {
+            FZMLog("拨号号码无效：\(tempPhone)")
+            return
+        }
+        if UIApplication.shared.canOpenURL(phoneURL) {
             if #available(iOS 10.0, *) {
-                UIApplication.shared.open(URL(string: phone)!, options: [:], completionHandler: nil)
+                UIApplication.shared.open(phoneURL, options: [:], completionHandler: nil)
             } else {
-                UIApplication.shared.openURL(URL(string: phone)!)
+                UIApplication.shared.openURL(phoneURL)
             }
         }
     }

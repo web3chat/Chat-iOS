@@ -2,8 +2,8 @@
 //  FZMGroupMemberCell.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/30.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/30.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -44,6 +44,9 @@ class FZMGroupMemberCell: UITableViewCell {
             }
         }
     }
+
+    /// 是否在昵称下方显示成员地址（专属红包选人页使用，默认不显示）
+    var showAddress = false
     
     var isSelect = false {
         didSet{
@@ -97,7 +100,7 @@ class FZMGroupMemberCell: UITableViewCell {
         btn.layer.cornerRadius = 15
         btn.layer.borderWidth = 1
         btn.layer.borderColor = Color_Theme.cgColor
-        btn.setAttributedTitle(NSAttributedString(string: "解除", attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(14)]), for: .normal)
+        btn.setAttributedTitle(NSAttributedString(string: L("解除"), attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(14)]), for: .normal)
         btn.isHidden = true
         return btn
     }()
@@ -166,7 +169,7 @@ class FZMGroupMemberCell: UITableViewCell {
             self.cleanBlock?()
             self.clearBannedInfo()
         } failureBlock: { (error) in
-            self.showToast("设置失败 \(error)")
+            self.showToast(L("设置失败") + "\(error)")
         }
     }
     
@@ -189,7 +192,7 @@ class FZMGroupMemberCell: UITableViewCell {
                 typeLab.isHidden = false
                 typeLab.backgroundColor = Color_Theme_Light
                 typeLab.textColor = Color_Theme
-                typeLab.text = "群主"
+                typeLab.text = L("群主")
                 nameLab.snp.updateConstraints { (m) in
                     m.left.equalTo(headerImageView.snp.right).offset(70)
                 }
@@ -197,7 +200,7 @@ class FZMGroupMemberCell: UITableViewCell {
                 typeLab.isHidden = false
                 typeLab.backgroundColor = UIColor.init(hexString: "#EFA019", transparency: 0.1)!
                 typeLab.textColor = UIColor.init(hexString: "#EFA019")!
-                typeLab.text = "管理员"
+                typeLab.text = L("管理员")
                 nameLab.snp.updateConstraints { (m) in
                     m.left.equalTo(headerImageView.snp.right).offset(70)
                 }
@@ -232,6 +235,23 @@ class FZMGroupMemberCell: UITableViewCell {
             self.nameLab.text = member.name
             self.desLab.text = ""
         }
+
+        // 专属红包选人页：在昵称下方展示成员地址（与昵称左对齐），方便按地址核对/选人
+        self.refreshAddressDisplay(member.sessionIDStr)
+    }
+
+    /// 刷新昵称下方的地址行（与昵称左对齐，**只显示短地址**如 `0x12****abcd`；空地址时高度收回）。
+    /// ⚠️ `showAddress` 往往是在 `configure` 之后才被外部打开（cell 复用/页面设置顺序），
+    /// 外部设置完开关后再调一次这个方法补上地址即可，不必整行重配。
+    func refreshAddressDisplay(_ address: String) {
+        guard self.showAddress else { return }
+        let trimmed = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        self.desLab.attributedText = nil
+        // 完整地址（42 位）列表里放不下，统一用短地址
+        self.desLab.text = trimmed.isEmpty ? "" : trimmed.shortAddress
+        self.desLab.snp.updateConstraints { (m) in
+            m.height.equalTo(trimmed.isEmpty ? 5 : 17)
+        }
     }
     
     private func clearBannedInfo() {
@@ -251,12 +271,12 @@ class FZMGroupMemberCell: UITableViewCell {
             FZMAnimationTool.countdown(with: desLab, fromValue: time, toValue: 0, block: { [weak self] (useTime) in
                 let time = useTime - 8 * 3600
                 let date = Date.init(timeIntervalSince1970: TimeInterval(time))
-                self?.desLab.text = "已禁言 " + formatter.string(from: date)
+                self?.desLab.text = L("已禁言 ") + formatter.string(from: date)
             },finishBlock: {[weak self] in
                 self?.clearBannedInfo()
             })
         }else{
-            self.desLab.text = "永远禁言"
+            self.desLab.text = L("永远禁言")
         }
     }
     
@@ -284,9 +304,9 @@ extension FZMGroupMemberCell {
                 var desString = ""
                 let memberName = data.memberName ?? data.memberId
                 if let user = data.user, let alias = user.alias, alias.lowercased().contains(searchString.lowercased()) {
-                    desString = "昵称: " + alias
+                    desString = L("昵称: ") + alias
                 } else if memberName.contains(searchString) {
-                    desString = "群昵称: " + memberName
+                    desString = L("群昵称: ") + memberName
                 }
 //                if data.nickname.lowercased().contains(searchString.lowercased()) {
 //                    desString = "昵称: " + data.nickname

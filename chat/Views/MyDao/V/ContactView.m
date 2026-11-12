@@ -7,7 +7,9 @@
 
 #import "ContactView.h"
 #import "Depend.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface ContactView()
 
 @property (nonatomic, strong) UILabel *addreLab;
@@ -34,7 +36,7 @@
 - (void)createView
 {
     UIButton *selectedCoinBtn = [[UIButton alloc] init];
-    [selectedCoinBtn setTitle:@"转账 >" forState:UIControlStateNormal];
+    [selectedCoinBtn setTitle:L(@"转账 >") forState:UIControlStateNormal];
     [selectedCoinBtn setTitleColor:CMColorFromRGB(0x0f0f0f) forState:UIControlStateNormal];
     [selectedCoinBtn.titleLabel setFont:[UIFont boldSystemFontOfSize:30]];
     [selectedCoinBtn addTarget:self action:@selector(choiceCoin:) forControlEvents:UIControlEventTouchUpInside];
@@ -111,7 +113,7 @@
 - (void)setContactDict:(NSDictionary *)contactDict
 {
     if (contactDict == nil) {
-        self.addreLab.text = @"点击选择好友";
+        self.addreLab.text = L(@"点击选择好友");
         self.avatarImageView.image = [UIImage imageNamed:@"avatar_persion"];
         self.toAddrLab.text = @"";
         return;
@@ -142,7 +144,7 @@
 {
     NSString *coinName = coin.coin_type;
     
-    [self.selectedCoinBtn setTitle:[NSString stringWithFormat:@"%@转账 >",coinName] forState:UIControlStateNormal];
+    [self.selectedCoinBtn setTitle:[NSString stringWithFormat:L(@"%@转账 >"),coinName] forState:UIControlStateNormal];
 }
 
 - (void)choiceCoin:(UIButton *)sender

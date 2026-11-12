@@ -18,7 +18,7 @@ class NameView: UIView {
         lab.numberOfLines = 1
         lab.font = UIFont.systemFont(ofSize: 12)
         lab.textAlignment = .left
-        lab.text = "阿里抠脚大汉公企鹅然后就评价带回家哦脾气"
+        lab.text = ""
         lab.textColor = Color_8A97A5
         return lab
     }()
@@ -32,7 +32,7 @@ class NameView: UIView {
         lab.backgroundColor = #colorLiteral(red: 0.8862745098, green: 0.937254902, blue: 0.968627451, alpha: 1)
         lab.layer.cornerRadius = 4
         lab.layer.masksToBounds = true
-        lab.text = "群主"
+        lab.text = L("群主")
         return lab
     }()
     
@@ -70,12 +70,12 @@ class NameView: UIView {
             typeLable.isHidden = false
             typeLable.backgroundColor = Color_Theme_Light
             typeLable.textColor = Color_Theme
-            typeStr = "群主"
+            typeStr = L("群主")
         } else if userType == 1 {
             typeLable.isHidden = false
             typeLable.backgroundColor = UIColor.init(hexString: "#EFA019", transparency: 0.1)!
             typeLable.textColor = UIColor.init(hexString: "#EFA019")!
-            typeStr = "管理员"
+            typeStr = L("管理员")
         } else {// if userType == 0
             self.typeLable.isHidden = true
         }

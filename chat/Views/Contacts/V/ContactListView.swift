@@ -95,7 +95,7 @@ class FZMFriendContactListView: FZMContactListView {
     
     private var isBlackList = false
     
-    var noDataView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_contact_friend"), imageSize: CGSize(width: 250, height: 200), desText: "暂无好友", btnTitle: "邀请好友", clickBlock: {
+    var noDataView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_contact_friend"), imageSize: CGSize(width: 250, height: 200), desText: L("暂无好友"), btnTitle: L("邀请好友"), clickBlock: {
         FZMUIMediator.shared().pushVC(.goQRCodeShow(type: .me))
     })
     
@@ -116,7 +116,7 @@ class FZMFriendContactListView: FZMContactListView {
         lab.textAlignment = .center
         lab.textColor = Color_8A97A5
         lab.font = .systemFont(ofSize: 14)
-        lab.text = "0个好友"
+        lab.text = L("0个好友")
         
         return lab
     }()
@@ -159,7 +159,7 @@ class FZMFriendContactListView: FZMContactListView {
         self.noDataView.isHidden = true
         if isBlacklist {
             self.selectType = .no
-            self.noDataView.desLab.text = "暂无黑名单"
+            self.noDataView.desLab.text = L("暂无黑名单")
             self.noDataView.hideBottomBtn = true
         }
     }
@@ -218,8 +218,8 @@ class FZMFriendContactListView: FZMContactListView {
         }
         
         DispatchQueue.main.async {
-            let str = self.isBlackList ? "黑名单成员" : "好友"
-            self.countLab.text = "\(friendsCount)个\(str)"
+            let str = self.isBlackList ? L("黑名单成员") : L("好友")
+            self.countLab.text = "\(friendsCount) \(str)"
             self.tableView.tableFooterView = friendsCount == 0 ? UIView.init(frame: CGRect.zero) : self.footerView
             
             let items = self.dataSource.compactMap { $0.title }.compactMap { (title) -> SectionIndexViewItem? in
@@ -327,7 +327,7 @@ class FZMGroupContactListView: FZMContactListView {
     var showSelect = false
     var selectGroupBlock : ((ContactViewModel)->())?
     
-    var noDataView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_contact_group"), imageSize: CGSize(width: 250, height: 200), desText: "暂无群聊", btnTitle: "创建群聊", clickBlock: {
+    var noDataView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_contact_group"), imageSize: CGSize(width: 250, height: 200), desText: L("暂无群聊"), btnTitle: L("创建群聊"), clickBlock: {
         FZMUIMediator.shared().pushVC(.goChooseServerToCreateGroup)
     })
     
@@ -337,7 +337,7 @@ class FZMGroupContactListView: FZMContactListView {
         lab.textAlignment = .center
         lab.textColor = Color_8A97A5
         lab.font = .systemFont(ofSize: 14)
-        lab.text = "0个群聊"
+        lab.text = L("0个群聊")
         
         return lab
     }()
@@ -386,7 +386,7 @@ class FZMGroupContactListView: FZMContactListView {
         }
         
         DispatchQueue.main.async {
-            self.countLab.text = "\(groupsCount)个群聊"
+            self.countLab.text = "\(groupsCount) " + L("个群聊")
             self.tableView.tableFooterView = groupsCount == 0 ? UIView.init(frame: CGRect.zero) : self.footerView
             
             let items = self.dataSource.compactMap { $0.title }.compactMap { (title) -> SectionIndexViewItem? in

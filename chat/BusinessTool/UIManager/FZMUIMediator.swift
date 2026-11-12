@@ -7,6 +7,7 @@
 
 import Foundation
 import RxSwift
+import UserNotifications
 
  enum FZMPushVCType {
     case goFullTextSearch(searchType: FZMFullTextSearchType = .all, limitCount: Int = 3, isHideHistory: Bool = false)//搜索好友/群/聊天记录
@@ -22,6 +23,7 @@ import RxSwift
     case goAddGroup(groupId: Int,inviterId:String) //进入加群页面
     case goRedpacket(detail:String) // 进入红包详情页面
     case goChooseMemberSourceVC(type: FZMGroupChooseMemberType, server: Server? = nil, completeBlock: StringArrayBlock?)// 添加新群成员时选择好友/组织架构成员页面
+    case gotoWeb3VC // 跳转到web3页面
 }
 
 @objc public class FZMUIMediator: NSObject {
@@ -70,7 +72,12 @@ import RxSwift
     // 设置app角标未读数
     func setApplicationIconBadgeNumber(_ count: Int) {
         DispatchQueue.main.async {
-            UIApplication.shared.applicationIconBadgeNumber = count
+            if #available(iOS 16.0, *) {
+                // UIApplication.applicationIconBadgeNumber 在 iOS 16 已废弃
+                UNUserNotificationCenter.current().setBadgeCount(count)
+            } else {
+                UIApplication.shared.applicationIconBadgeNumber = count
+            }
         }
     }
     
@@ -107,6 +114,8 @@ import RxSwift
             vc = RedpackageDetailvc(with: detail)
         case .goChooseMemberSourceVC(let type, let server, let completeBlock):
             self.goToChooseMemberSourceVC(type: type, server: server, completeBlock: completeBlock)
+        case .gotoWeb3VC:
+            self.goToWeb3VC()
         }
         if let vc = vc {
             DispatchQueue.main.async {
@@ -116,8 +125,22 @@ import RxSwift
         }
     }
     
+    
+    
+    
+    private func goToWeb3VC(){
+        let vc = ExploreSearchViewController.init()
+        vc.hidesBottomBarWhenPushed = true
+       
+        DispatchQueue.main.async {
+            UIViewController.current()?.navigationController?.pushViewController(vc)
+        }
+    }
+    
+    
     // 跳转团队相关H5页面
     private func goToTeamH5WebVC(with type: TeamViewType, completeBlock: NormalBlock? = nil) {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭：团队 H5（创建/加入/管理团队等）一律不打开
         let vc = TeamH5WebViewVC.init(with: type)
         vc.teamOperationBlock = {
             completeBlock?()
@@ -143,12 +166,22 @@ import RxSwift
     /// 创建群聊-跳转选择聊天服务器页
     @objc private func createGroup() {
         
+        
+        let addre = LoginUser.shared().address
+//        if addre == "1Fiyuhhagt8XQZTrGQrksHExxi2HXNF62J"
+//            || addre == "15fV7wr4978eLhYGHU4M9sWJrL2eJY9WZf"
+//            || addre == "1PVqP8GQ1hgYJiDSsGe4u8zUcE9Rqdyii6" {
+//            
+//        }else{
+//            UIViewController.current()?.showToast("暂无创建群聊权限")
+//            return
+//        }
         // 先选择在哪个服务器创建群聊（群聊选择完所在服务器后不可更改）
         let chatServerGroups = LoginUser.shared().chatServerGroups
         let servers = chatServerGroups.compactMap {
             Server.init(userchatServerGroup: $0)
         }
-        let serverDataSource = [("接收聊天消息的服务器", servers)]
+        let serverDataSource = [(L("接收聊天消息的服务器"), servers)]
         
         let vc = ServerListVC.init()
         vc.listType = .chatServer
@@ -157,7 +190,7 @@ import RxSwift
         vc.showManageBtnFlg = true
         vc.dataSource = serverDataSource
         vc.isHiddenSelectedImgView = true
-        vc.title = "选择服务器"
+        vc.title = L("选择服务器")
         vc.hidesBottomBarWhenPushed = true
         DispatchQueue.main.async {
             UIViewController.current()?.navigationController?.pushViewController(vc)
@@ -201,6 +234,19 @@ import RxSwift
 //        }
     }
     
+    /// 切换根页面 / tab / 导航栈时，如果当前正好有导航过场动画在进行（例如转账页 pop 返回
+    /// 到详情页后立刻要跳聊天页），UIKit 的过场状态会错乱导致闪退；统一等过场结束再切。
+    private func performAfterCurrentTransition(_ work: @escaping () -> Void) {
+        // transitionCoordinator 只在过场进行中有值，用它拿过场结束的回调
+        if let coordinator = UIViewController.current()?.transitionCoordinator {
+            coordinator.animate(alongsideTransition: nil) { _ in
+                DispatchQueue.main.async(execute: work)
+            }
+        } else {
+            DispatchQueue.main.async(execute: work)
+        }
+    }
+    
     // 聊天页
     private func goToChatVC(with sessionID: SessionID, locationMsg:(String, String)? = nil, backToRootVC: Bool = true, selectedRootVCIndex: Int = 0) {
         let session = SessionManager.shared().getOrCreateSession(id: sessionID)
@@ -210,8 +256,15 @@ import RxSwift
         let vc = ChatVC.init(session: session, locationMsg: locationMsg)
         
         guard let tabBar = homeTabbarVC, let nav = sessionNav, let nowNav = tabBar.selectedViewController as? UINavigationController, let index = tabBar.viewControllers?.firstIndex(of: nav) else { return }
-        // 切换到页面的私聊/群聊
-        DispatchQueue.main.async {
+        // 切换到页面的私聊/群聊（等当前过场结束再切，避免过场中改导航栈/切 tab 闪退）
+        self.performAfterCurrentTransition {
+            // 已经站在目标会话的聊天页上（例如转账/红包页直接 pop 回了聊天页）：
+            // 不能再 popToRoot，否则会把刚回去的聊天页销毁重建（页面会闪一下）
+            if locationMsg == nil, let current = UIViewController.current() as? ChatVC,
+                current.session.id == sessionID
+            {
+                return
+            }
             // 切换根页面时先返回到根页面
             UIViewController.current()?.navigationController?.popToRootViewController(animated: false)
             
@@ -248,8 +301,8 @@ import RxSwift
         let vc = ChatVC.init(session: session, coinName: coinName, txHash: txHash)
         
         guard let tabBar = homeTabbarVC, let nav = sessionNav, let nowNav = tabBar.selectedViewController as? UINavigationController, let index = tabBar.viewControllers?.firstIndex(of: nav) else { return }
-        // 切换到页面的私聊/群聊
-        DispatchQueue.main.async {
+        // 切换到页面的私聊/群聊（等当前过场结束再切，避免过场中改导航栈/切 tab 闪退）
+        self.performAfterCurrentTransition {
             // 切换根页面时先返回到根页面
             UIViewController.current()?.navigationController?.popToRootViewController(animated: false)
             
@@ -312,17 +365,20 @@ import RxSwift
         return nav
     }
     
-    private var walletNav : UINavigationController?
-    ///钱包页面--root
-    func getWalletNavigationController() -> UINavigationController {
-        if let nav = walletNav {
+    private var searchNav : UINavigationController?
+    
+    func getSearchNavigationController() -> UINavigationController {
+        if let nav = searchNav {
             return nav
         }
-        let vc = WalletVC.init()
+        let vc = ExploreSearchViewController.init()
         let nav = UINavigationController.init(rootViewController: vc)
-        walletNav = nav
+        searchNav = nav
+        
         return nav
     }
+    
+    private var walletNav : UINavigationController?
     
     func getMyDaoNavigationController() -> UINavigationController{
         if let nav = walletNav {

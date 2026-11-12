@@ -2,7 +2,7 @@
 //  Session.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/11.
+//  Created by fzm on 2021/1/11.
 //
 
 import Foundation
@@ -25,9 +25,11 @@ struct Session {
     
     var hasAtMe = false// 群聊用，是否有未读的'@'（被'@'后未读，收到新消息仍显示‘[有人@我]’）
     
+    var autoDeleteOption = 0// 自动删除选项（0=关闭 1=1天 2=3天 3=7天 4=30天 5=180天）
+    
     init(id: SessionID) {
         self.id = id
-        var contactsName = ""/*id.idValue*/// 会话名称
+        var contactsName = ""
         var imageUrl = ""
         
         if self.id.isPersonChat {// 私聊

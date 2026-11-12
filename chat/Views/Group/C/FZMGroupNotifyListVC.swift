@@ -39,7 +39,7 @@ class FZMGroupNotifyListVC: FZMBaseViewController {
     
     init(with group: IMGroupDetailInfoModel) {
         self.group = group
-        super.init()
+        super.init(nibName: nil, bundle: nil)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -50,7 +50,7 @@ class FZMGroupNotifyListVC: FZMBaseViewController {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view.
-        self.navigationItem.title = "群公告"
+        self.navigationItem.title = L("群公告")
         self.view.addSubview(listView)
         listView.snp.makeConstraints { (m) in
             m.edges.equalToSuperview()
@@ -134,7 +134,7 @@ extension FZMGroupNotifyListVC: UITableViewDelegate, UITableViewDataSource {
         return .none
     }
     func tableView(_ tableView: UITableView, titleForDeleteConfirmationButtonForRowAt indexPath: IndexPath) -> String? {
-        return "删除"
+        return L("删除")
     }
     func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
         if editingStyle == .delete {

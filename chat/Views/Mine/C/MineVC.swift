@@ -2,7 +2,7 @@
 //  MineVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/4.
+//  Created by fzm on 2021/1/4.
 //
 
 import UIKit
@@ -15,6 +15,14 @@ class MineVC: UIViewController, ViewControllerProtocol {
     private let bag = DisposeBag.init()
     
     private var dataSource:[[(logo: String, leftText: String, rightText: String, selector: Selector)]] = []
+    
+    private var languageChangeObserver: NSObjectProtocol?
+    
+    deinit {
+        if let observer = languageChangeObserver {
+            FZM_NotificationCenter.removeObserver(observer)
+        }
+    }
     
     private lazy var avatarImageView: UIImageView = {
         let v = UIImageView.init()
@@ -60,7 +68,7 @@ class MineVC: UIViewController, ViewControllerProtocol {
     }()
     
     private lazy var nicknameLab: UILabel = {
-        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 17), textColor: Color_24374E, textAlignment: .left, text: "有一只鱼有一只")
+        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 17), textColor: Color_24374E, textAlignment: .left, text: L("设置昵称"))
         lab.numberOfLines = 0
         lab.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer.init()
@@ -89,11 +97,12 @@ class MineVC: UIViewController, ViewControllerProtocol {
             strongSelf.view.hideActivity()
             LoginUser.shared().nickName?.value = nickName
             LoginUser.shared().save()
+            _ = PWDataBaseManager.shared().updateUserInfoName(withAddress: LoginUser.shared().address, name: nickName)
             
-            let nickname = nickName.isBlank == true ? "请设置昵称" : nickName
+            let nickname = nickName.isBlank == true ? L("设置昵称") : nickName
             strongSelf.nicknameLab.attributedText = nickname.jointImage(image: #imageLiteral(resourceName: "me_edit"))
             
-            strongSelf.showToast("昵称修改成功，请耐心等待，稍后查看结果...")
+            strongSelf.showToast(L("昵称修改成功，请耐心等待，稍后查看结果..."))
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.view.hideActivity()
@@ -101,17 +110,56 @@ class MineVC: UIViewController, ViewControllerProtocol {
         }
     }
     
+    /// 与切换账号列表副标题一致：优先链上/绑定手机号，否则为地址脱敏
+    private func resolvedPhoneForMineHeader() -> String? {
+        let user = LoginUser.shared()
+        let fromProfile = user.phone?.value.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        if !fromProfile.isEmpty { return fromProfile }
+        let bind = user.bindSeedPhone.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !bind.isEmpty { return bind }
+        return nil
+    }
+    
+    private func maskedSubtitleUnderNickname() -> String {
+        let addressText = LoginUser.shared().address.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let phone = resolvedPhoneForMineHeader() {
+            return MineVC.maskedPhoneDisplay(phone)
+        }
+        return MineVC.maskedAddressDisplay(addressText)
+    }
+    
+    /// 与 `SwitchAccountCell.maskedPhone` 一致
+    private static func maskedPhoneDisplay(_ phone: String) -> String {
+        let text = phone.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.count >= 7 else { return text }
+        return "\(text.prefix(3))****\(text.suffix(4))"
+    }
+    
+    /// 与 `SwitchAccountCell.maskedAddress` 一致
+    private static func maskedAddressDisplay(_ address: String) -> String {
+        let text = address.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard text.count > 16 else { return text }
+        return "\(text.prefix(8))****\(text.suffix(8))"
+    }
+    
     private lazy var uidLab: UILabel = {
-        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: LoginUser.shared().address)
+        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: "")
         lab.numberOfLines = 0
         lab.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer.init()
         lab.addGestureRecognizer(tap)
-        tap.rx.event.subscribe(onNext: { (ges) in
+        tap.rx.event.subscribe(onNext: { [weak self] (ges) in
             guard ges.state == .ended else { return }
-            guard !LoginUser.shared().address.isEmpty else { return }
-            UIPasteboard.general.string = LoginUser.shared().address
-            self.showToast("地址已复制")
+            guard let self = self else { return }
+            let user = LoginUser.shared()
+            if let phone = self.resolvedPhoneForMineHeader(), !phone.isEmpty {
+                UIPasteboard.general.string = phone
+                self.showToast(L("手机号已复制"))
+                return
+            }
+            guard !user.address.isEmpty else { return }
+            UIPasteboard.general.string = user.address
+            self.showToast(L("地址已复制"))
         }).disposed(by: self.bag)
         return lab
     }()
@@ -151,22 +199,44 @@ class MineVC: UIViewController, ViewControllerProtocol {
         return v
     }()
     
+    private lazy var switchAccountBtn: UIButton = {
+        let btn = UIButton(type: .custom)
+        btn.backgroundColor = Color_FFFFFF
+        btn.layer.cornerRadius = 20
+        btn.setAttributedTitle(NSAttributedString(string: L("切换账号"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.systemFont(ofSize: 16)]), for: .normal)
+        return btn
+    }()
+    
+    private lazy var logoutBtn: UIButton = {
+        let btn = UIButton(type: .custom)
+        btn.backgroundColor = Color_FFFFFF
+        btn.layer.cornerRadius = 20
+        btn.setAttributedTitle(NSAttributedString(string: L("退出账号"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.systemFont(ofSize: 16)]), for: .normal)
+        return btn
+    }()
+    
     lazy var footerView : UIView = {
-        let view = UIView(frame: CGRect(x: 0, y: 0, width: k_ScreenWidth, height: 55))
-        let logoutBtn = UIButton(type: .custom)
-        logoutBtn.backgroundColor = Color_FFFFFF
-        logoutBtn.layer.cornerRadius = 20
-        logoutBtn.setAttributedTitle(NSAttributedString(string: "退出账号", attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.systemFont(ofSize: 16)]), for: .normal)
+        let view = UIView(frame: CGRect(x: 0, y: 0, width: k_ScreenWidth, height: 105))
         
-        view.addSubview(logoutBtn)
-        logoutBtn.snp.makeConstraints({ (m) in
-            m.center.equalToSuperview()
+        view.addSubview(self.switchAccountBtn)
+        view.addSubview(self.logoutBtn)
+        switchAccountBtn.snp.makeConstraints({ (m) in
+            m.top.equalToSuperview()
+            m.centerX.equalToSuperview()
             m.size.equalTo(CGSize(width: k_ScreenWidth-30, height: 40))
         })
+        logoutBtn.snp.makeConstraints({ (m) in
+            m.top.equalTo(switchAccountBtn.snp.bottom).offset(10)
+            m.centerX.equalToSuperview()
+            m.size.equalTo(CGSize(width: k_ScreenWidth-30, height: 40))
+        })
+        switchAccountBtn.rx.controlEvent(.touchUpInside).subscribe({[weak self] (_) in
+            self?.goSwitchAccount()
+        }).disposed(by: bag)
         logoutBtn.rx.controlEvent(.touchUpInside).subscribe({[weak self] (_) in
-            let alertController = UIAlertController.init(title: "提示", message: "确定退出登录", preferredStyle: .alert)
-            let cancelAction = UIAlertAction(title: "取消", style: .cancel, handler: nil)
-            let okAction = UIAlertAction.init(title: "确定", style: .destructive, handler: { (_) in
+            let alertController = UIAlertController.init(title: L("提示"), message: L("确定退出登录"), preferredStyle: .alert)
+            let cancelAction = UIAlertAction(title: L("取消"), style: .cancel, handler: nil)
+            let okAction = UIAlertAction.init(title: L("确定"), style: .destructive, handler: { (_) in
                 // 登出
                 LoginUser.shared().logout()
                 
@@ -226,6 +296,13 @@ class MineVC: UIViewController, ViewControllerProtocol {
         if #available(iOS 15.0, *) {   ///  standardAppearance 这个api其实是 13以上就可以使用的 ，这里写 15 其实主要是iOS15上出现的这个死样子
             let naba = UINavigationBarAppearance.init()
             naba.configureWithOpaqueBackground()
+            // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+            naba.buttonAppearance.normal.backgroundImage = UIImage()
+            naba.buttonAppearance.highlighted.backgroundImage = UIImage()
+            naba.doneButtonAppearance.normal.backgroundImage = UIImage()
+            naba.doneButtonAppearance.highlighted.backgroundImage = UIImage()
+            naba.backButtonAppearance.normal.backgroundImage = UIImage()
+            naba.backButtonAppearance.highlighted.backgroundImage = UIImage()
             naba.backgroundColor = Color_F6F7F8
             naba.shadowColor = UIColor.lightGray
             self.navigationController?.navigationBar.standardAppearance = naba
@@ -237,6 +314,14 @@ class MineVC: UIViewController, ViewControllerProtocol {
         super.viewDidLoad()
         
         self.initView()
+        
+        // 语言切换后刷新 cell 与底部按钮文案
+        languageChangeObserver = FZM_NotificationCenter.addObserver(forName: LanguageManager.LanguageChangedNotification, object: nil, queue: .main) { [weak self] (_) in
+            guard let self = self else { return }
+            self.reloadDataSource()
+            self.reloadFooterButtons()
+            self.tableView.reloadData()
+        }
     }
     
     // 获取我的信息
@@ -266,21 +351,30 @@ class MineVC: UIViewController, ViewControllerProtocol {
             m.bottom.left.right.equalToSuperview()
         }
         
+        self.reloadDataSource()
+    }
+    
+    // 重建底部按钮文案（语言切换后调用）
+    private func reloadFooterButtons() {
+        switchAccountBtn.setAttributedTitle(NSAttributedString(string: L("切换账号"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.systemFont(ofSize: 16)]), for: .normal)
+        logoutBtn.setAttributedTitle(NSAttributedString(string: L("退出账号"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.systemFont(ofSize: 16)]), for: .normal)
+    }
+    
+    // 重建 cell 数据源（语言切换后需重新取 L() 文案）
+    private func reloadDataSource() {
         if APP.shared().showUpdateViewFlg {
             self.dataSource = [
-                [("mine_logo_server","服务器", "", #selector(goServer)),
-                 ("mine_logo_share","分享邀请", "APP下载",#selector(goQRCodeVC)),
-                 ("mine_logo_security","安全管理", "",#selector(goSecurity)),
-                 ("mine_logo_setting","设置中心", "", #selector(goSetting)),
-                 ("mine_logo_customer","用户反馈", "", #selector(goCustomerVC)),
-                 ("mine_logo_updating","检测更新", "V\(k_APPVersion)", #selector(goUpdating))]]
+                [("mine_logo_server", L("服务器"), "", #selector(goServer)),
+                 ("mine_logo_share", L("分享邀请"), L("应用下载"),#selector(goShareInvite)),
+                 ("mine_logo_security", L("安全管理"), "",#selector(goSecurity)),
+                 ("mine_logo_setting", L("设置中心"), "", #selector(goSetting)),
+                 ("mine_logo_updating", L("检测更新"), "V\(k_APPVersion)", #selector(goUpdating))]]
         } else {
             self.dataSource = [
-                [("mine_logo_server","服务器", "", #selector(goServer)),
-                 ("mine_logo_share","分享邀请", "APP下载",#selector(goQRCodeVC)),
-                 ("mine_logo_security","安全管理", "",#selector(goSecurity)),
-                 ("mine_logo_setting","设置中心", "", #selector(goSetting)),
-                 ("mine_logo_customer","用户反馈", "", #selector(goCustomerVC)),]]
+                [("mine_logo_server", L("服务器"), "", #selector(goServer)),
+                 ("mine_logo_share", L("分享邀请"), L("应用下载"),#selector(goShareInvite)),
+                 ("mine_logo_security", L("安全管理"), "",#selector(goSecurity)),
+                 ("mine_logo_setting", L("设置中心"), "", #selector(goSetting)),]]
         }
     }
     
@@ -288,11 +382,11 @@ class MineVC: UIViewController, ViewControllerProtocol {
         let user = LoginUser.shared()
         
         let name = user.nickName?.value ?? ""
-        let nickname = name.isBlank == true ? "请设置昵称" : name
+        let nickname = name.isBlank == true ? L("设置昵称") : name
         self.nicknameLab.attributedText = nickname.jointImage(image: #imageLiteral(resourceName: "me_edit"))
         
-        let address = user.address
-        self.uidLab.attributedText = address.jointImage(image: #imageLiteral(resourceName: "icon_copy"))
+        let subtitle = maskedSubtitleUnderNickname()
+        self.uidLab.attributedText = subtitle.jointImage(image: #imageLiteral(resourceName: "icon_copy"))
         
         let height = Int(self.uidLab.frame.maxY) + 20 > 200 ? Int(self.uidLab.frame.maxY) + 20 : 200
         self.headerView.frame = CGRect.init(x: 0, y: 0, width: Int(k_ScreenWidth), height: height)
@@ -325,6 +419,13 @@ extension MineVC {
         vc.hidesBottomBarWhenPushed = true
         self.navigationController?.pushViewController(vc)
     }
+
+    /// 账号切换
+    @objc private func goSwitchAccount() {
+        let vc = SwitchAccountVC()
+        vc.hidesBottomBarWhenPushed = true
+        self.navigationController?.pushViewController(vc)
+    }
     
     /// 检测更新
     @objc private func goUpdating() {
@@ -335,7 +436,12 @@ extension MineVC {
     func updateApp() {
         self.showProgress()
         guard let currentVersion = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String, !currentVersion.isEmpty else { return }
-        let versionCode = Int(currentVersion.replacingOccurrences(of: ".", with: ""))!
+        // 版本号含非数字时 Int() 返回 nil，强解包会崩；解析失败就收起菊花并跳过版本检测
+        guard let versionCode = Int(currentVersion.replacingOccurrences(of: ".", with: "")) else {
+            FZMLog("版本号无法解析，跳过更新检测：\(currentVersion)")
+            self.hideProgress()
+            return
+        }
         Provider.request(SystemAPI.update(versionCode: versionCode), successBlock: { [weak self] (json) in
             guard let self = self else { return }
             self.hideProgress()
@@ -348,7 +454,7 @@ extension MineVC {
             }
             
             guard version!.versionCode > versionCode else {
-                self.showToast("当前已是最新版本")
+                self.showToast(L("当前已是最新版本"))
                 return
             }
             
@@ -364,6 +470,13 @@ extension MineVC {
         }
     }
     
+    /// 分享邀请（TestFlight 下载链接 / 二维码，不再进入「我的二维码」页面）
+    @objc private func goShareInvite() {
+        let vc = ShareInviteVC()
+        vc.hidesBottomBarWhenPushed = true
+        self.navigationController?.pushViewController(vc)
+    }
+
     /// 我的二维码/分享邀请
     @objc private func goQRCodeVC() {
         FZMUIMediator.shared().pushVC(.goQRCodeShow(type: .me))

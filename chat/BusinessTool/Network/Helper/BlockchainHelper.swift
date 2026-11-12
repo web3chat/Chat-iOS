@@ -2,14 +2,14 @@
 //  BlockchainHelper.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/4.
+//  Created by fzm on 2021/1/4.
 //
 
 import Foundation
 
 extension NSError {
     class var signError: NSError {
-        let error = NSError.init(domain: "com.local.blockchain.sign.error", code: 778, userInfo: [NSLocalizedDescriptionKey: "签名错误"])
+        let error = NSError.init(domain: "com.local.blockchain.sign.error", code: 778, userInfo: [NSLocalizedDescriptionKey: L("签名错误")])
         return error
     }
 }

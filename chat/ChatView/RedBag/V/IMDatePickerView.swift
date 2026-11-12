@@ -2,7 +2,7 @@
 //  IMDatePickerView.swift
 //  IM_SocketIO_Demo
 //
-//  Created by 吴文拼 on 2018/7/18.
+//  Created by fzm on 2018/7/18.
 //  Copyright © 2018年 Wang. All rights reserved.
 //
 
@@ -20,7 +20,7 @@ class IMDatePickerView: UIView {
         view.backgroundColor = FZM_BackgroundColor
         view.layer.cornerRadius = 5
         view.clipsToBounds = true
-        let titleLab = UILabel.getLab(font: UIFont.regularFont(13), textColor: FZM_GrayWordColor, textAlignment: .left, text: "时间")
+        let titleLab = UILabel.getLab(font: UIFont.regularFont(13), textColor: FZM_GrayWordColor, textAlignment: .left, text: L("时间"))
         view.addSubview(titleLab)
         titleLab.snp.makeConstraints { (m) in
             m.top.equalToSuperview()
@@ -42,13 +42,37 @@ class IMDatePickerView: UIView {
     fileprivate var yearDataArr = [String](){
         didSet{
             self.yearView.dataArr = yearDataArr
+            self.yearView.displayArr = yearDataArr.map { IMDatePickerView.displayName(for: $0) }
         }
     }
     fileprivate var yearIndex : NSInteger = 0
     
+    /// 英文月份缩写（只在英文下用来展示，「2026年 / 12月」这种内部串保持中文不变，解析逻辑不受影响）
+    private static let englishMonthSymbols: [String] = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return Array(formatter.shortMonthSymbols.prefix(12))
+    }()
+    
+    /// 选择器列里**展示**用的文案：中文原样（2026年 / 12月 / 全年），
+    /// 英文换成 2026 / Dec / All year。
+    /// ⚠️ 只影响显示：`yearDataArr` / `monthDataArr` 仍存中文串，
+    /// `selectedDate` 的 `yyyy年/MM月` 解析与 `全年` 判断都依赖原文，不能改。
+    fileprivate static func displayName(for raw: String) -> String {
+        guard LanguageManager.shared.isEnglish else { return raw }
+        if raw == "全年" { return L("全年") }
+        if raw.hasSuffix("年"), let year = Int(raw.dropLast()) { return "\(year)" }
+        if raw.hasSuffix("月"), let month = Int(raw.dropLast()), month >= 1, month <= 12,
+           englishMonthSymbols.count == 12 {
+            return englishMonthSymbols[month - 1]
+        }
+        return raw
+    }
+    
     fileprivate var monthDataArr = [String](){
         didSet{
             self.monthView.dataArr = monthDataArr
+            self.monthView.displayArr = monthDataArr.map { IMDatePickerView.displayName(for: $0) }
         }
     }
     fileprivate var monthIndex : NSInteger = 0
@@ -190,6 +214,13 @@ fileprivate class IMPickerColumnView: UIView {
         }
     }
     
+    /// 展示文案（与 `dataArr` 一一对应，仅用于显示；内部比较/解析仍用 `dataArr` 原文）
+    var displayArr : [String]?{
+        didSet{
+            self.safeReload()
+        }
+    }
+    
     var selectIndexBlock : ((_ index : NSInteger) -> ())?
     
     
@@ -232,7 +263,11 @@ extension IMPickerColumnView : UITableViewDelegate,UITableViewDataSource,UIScrol
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "IMDatePickerViewCell", for: indexPath) as! IMDatePickerViewCell
         cell.backgroundColor = .clear
-        cell.titleLab.text = dataArr[indexPath.row]
+        if let displayArr = displayArr, indexPath.row < displayArr.count {
+            cell.titleLab.text = displayArr[indexPath.row]
+        } else {
+            cell.titleLab.text = dataArr[indexPath.row]
+        }
         cell.titleLab.textColor = tableView == centerTableView ? FZM_BlackWordColor : FZM_GrayWordColor
         cell.titleLab.font = tableView == centerTableView ? UIFont.boldFont(18) : UIFont.regularFont(13)
         cell.titleLab.backgroundColor = tableView == centerTableView ? FZM_LineColor : UIColor.clear
@@ -343,19 +378,22 @@ class FZMSelectCoinView: UIView {
     }
     
     func loadData() {
-        self.showProgress()
-//        HttpConnect.shared().getRedPacketBalance { (response) in
-//            self.hideProgress()
-//            if response.success == true, let array = response.data?["balances"].array?.compactMap({$0.dictionaryObject}) {
-//                self.dataArray = [["coinName":"全部"]] + array
-//            } else {
-//                self.showToast(with: response.message)
-//            }
-//        }
+        RedPacketWalletBridge.fetchWalletTokensForRedPacket { [weak self] coins in
+            // 剔除 BTY 币种（1开头地址或主链/币种均为BTY）
+            let filteredCoins = coins.filter { !RedPacketWalletDataSource.shared.shouldExcludeBTYCoin($0) }
+            let coinDicts = filteredCoins.map { coin -> [String: Any] in
+                let dict = RedPacketWalletBridge.convertToDictionary(coin: coin)
+                return [
+                    "coinId": dict["coinId"] ?? 0,
+                    "coinName": dict["coinName"] ?? ""
+                ]
+            }
+            self?.dataArray = [["coinName": L("全部")]] + coinDicts
+        }
     }
     
     func createViews() {
-        let lab = UILabel.getLab(font: UIFont.regularFont(13), textColor: FZM_GrayWordColor, textAlignment: .center, text: "币种")
+        let lab = UILabel.getLab(font: UIFont.regularFont(13), textColor: FZM_GrayWordColor, textAlignment: .center, text: L("币种"))
         self.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.height.equalTo(40)
@@ -515,7 +553,7 @@ class FZMRedBagRecordFilterView: UIView {
         }
         
         let cancelBtn = UIButton.init(type: .custom)
-        cancelBtn.setAttributedTitle(NSAttributedString.init(string: "取消", attributes: [.foregroundColor:FZM_LuckyPacketColor,.font:UIFont.boldFont(16)]), for: .normal)
+        cancelBtn.setAttributedTitle(NSAttributedString.init(string: L("取消"), attributes: [.foregroundColor:FZM_LuckyPacketColor,.font:UIFont.boldFont(16)]), for: .normal)
         cancelBtn.addTarget(self, action: #selector(cancelBtnClick), for: .touchUpInside)
         coverView.addSubview(cancelBtn)
         cancelBtn.layer.borderColor = FZM_LuckyPacketColor?.cgColor
@@ -531,7 +569,7 @@ class FZMRedBagRecordFilterView: UIView {
         }
         
         let confirmBtn = UIButton.init(type: .custom)
-        confirmBtn.setAttributedTitle(NSAttributedString.init(string: "确定", attributes: [.foregroundColor:FZM_WhiteColor,.font:UIFont.boldFont(16)]), for: .normal)
+        confirmBtn.setAttributedTitle(NSAttributedString.init(string: L("确定"), attributes: [.foregroundColor:FZM_WhiteColor,.font:UIFont.boldFont(16)]), for: .normal)
         confirmBtn.addTarget(self, action: #selector(confirmBtnClick), for: .touchUpInside)
         coverView.addSubview(confirmBtn)
         confirmBtn.layer.cornerRadius = 5

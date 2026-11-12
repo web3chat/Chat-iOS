@@ -74,6 +74,7 @@ message Source {
     int32 channelType   =1;
     SourceUser from     =2;
     SourceUser target   =3;
+    bool burn           =4;//阅后即焚标记
 }
 
 message SourceUser {
@@ -239,6 +240,7 @@ message NotifyMsg {
 enum ActionType {
     Received                    = 0;//送达
     Revoke                      = 1;//撤回
+    DeleteMessages              = 2;//删除聊天记录（多端同步）
     SignInGroup                 = 10;//加群
     SignOutGroup                = 11;//退群
     DeleteGroup                 = 12;//删群
@@ -260,6 +262,35 @@ enum ActionType {
 
 message ActionReceived {
     repeated int64 logs = 1;
+}
+
+// 阅后即焚焚毁原因
+enum RevokeReason {
+    revoked = 0;//普通撤回
+    burned  = 1;//阅后即焚焚毁
+}
+
+// 撤回信令（对应 ActionType.Revoke）；reason=burned 时表示阅后即焚焚毁
+message ActionRevoke {
+    int64 logId          = 1;
+    string operator      = 2;
+    bool self            = 3;
+    RevokeReason reason  = 4;
+}
+
+// 删除聊天记录同步信令
+// sessionId 为发起方视角的会话 ID（私聊=对方地址，群聊=群ID）
+// msgIds（精确删除，两端 msgId 一致）与 before（按时间批量删除）至少填一个；clearAll 为 true 时清空整个会话
+// channelType/fromId/targetId 用于接收端反推本地会话 ID（私聊场景两端 sessionId 互为对方地址）
+message ActionDeleteMessages {
+    string sessionId = 1;
+    repeated string msgIds = 2;
+    int64 before = 3;
+    uint64 time = 4;
+    bool clearAll = 5;
+    int32 channelType = 6;// 0 私聊 1 群聊
+    string fromId = 7;// 消息发送方（私聊场景为双方之一）
+    string targetId = 8;// 消息接收方（私聊场景为双方之一）
 }
 
 message ActionSignInGroup {

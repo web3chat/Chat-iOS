@@ -2,7 +2,7 @@
 //  SeedCollectionViewCell.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/6.
+//  Created by fzm on 2021/1/6.
 //
 
 import UIKit
@@ -11,16 +11,16 @@ class SeedCollectionViewCell: UICollectionViewCell {
     
     private lazy var bgView: UIView = {
         let v = UIView.init()
-        v.backgroundColor = UIColor.init(hexString: "#2B292F")
+        v.backgroundColor = Color_Theme
         v.layer.cornerRadius = 3
         v.layer.masksToBounds = true
-        v.layer.borderColor = UIColor.init(hexString: "#8E92A3")?.cgColor
+        v.layer.borderColor = Color_Theme.cgColor
         v.layer.borderWidth = 1
         return v
     }()
     
     private lazy var label: UILabel = {
-        let lab = UILabel.getLab(font: .systemFont(ofSize: 18), textColor: UIColor.init(hexString: "#8E92A3"), textAlignment: .center, text: nil)
+        let lab = UILabel.getLab(font: .systemFont(ofSize: 18), textColor: UIColor.init(hexString: "#ffffff"), textAlignment: .center, text: nil)
         return lab
     }()
         
@@ -58,13 +58,13 @@ class SeedCollectionViewCell: UICollectionViewCell {
     
     func setSelectStatus(_ isSelected: Bool) {
         if isSelected {
-            self.bgView.backgroundColor = UIColor.init(hexString: "#4E5370")
-            self.bgView.layer.borderColor = UIColor.init(hexString: "#4E5370")?.cgColor
-            self.label.textColor = UIColor.white
-        } else {
-            self.bgView.backgroundColor = UIColor.init(hexString: "#2B292F")
-            self.bgView.layer.borderColor = UIColor.init(hexString: "#8E92A3")?.cgColor
+            self.bgView.backgroundColor = .white
+            self.bgView.layer.borderColor = UIColor.init(hexString: "#333333")?.cgColor
             self.label.textColor = UIColor.init(hexString: "#8E92A3")
+        } else {
+            self.bgView.backgroundColor = Color_Theme
+            self.bgView.layer.borderColor = Color_Theme.cgColor
+            self.label.textColor = .white
         }
     }
     

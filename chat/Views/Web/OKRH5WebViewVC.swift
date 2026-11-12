@@ -71,6 +71,45 @@ class OKRH5WebViewVC: UIViewController, ViewControllerProtocol, WKNavigationDele
         
         self.configBridgeRegister()
     }
+
+    // MARK: - 域名白名单
+
+    /// 只允许 OKR 官方站点（含 www 跳转）；其它 https 一律交给系统浏览器。
+    private var allowedHosts: Set<String> {
+        var hosts = Set<String>()
+        if let host = URL(string: OKRH5Url)?.host?.lowercased(), !host.isEmpty {
+            hosts.insert(host)
+            if !host.hasPrefix("www.") {
+                hosts.insert("www." + host)
+            }
+        }
+        return hosts
+    }
+
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        guard let url = navigationAction.request.url else {
+            decisionHandler(.cancel)
+            return
+        }
+        let scheme = url.scheme?.lowercased() ?? ""
+        guard scheme == "https" else {
+            // http / file / data / 自定义 scheme 一律不在 OKR 容器内加载
+            decisionHandler(.cancel)
+            if scheme == "http" {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
+            return
+        }
+        guard let host = url.host?.lowercased(), allowedHosts.contains(host) else {
+            FZMLog("OKR：拒绝非白名单域名 \(url.host ?? "nil")")
+            decisionHandler(.cancel)
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            return
+        }
+        decisionHandler(.allow)
+    }
     
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
@@ -123,7 +162,8 @@ class OKRH5WebViewVC: UIViewController, ViewControllerProtocol, WKNavigationDele
         if let keyPath = keyPath, keyPath == estimatedProgress {
             progress = Float(self.webView.estimatedProgress)
         } else if keyPath == "title" {
-            if (object as! UIView == webView){
+            // KVO 的 object 不一定是 UIView；强转会崩，改为可选判断
+            if let observedView = object as? UIView, observedView == webView {
                 self.navigationItem.title = webView.title
             }else{
                 super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
@@ -153,8 +193,8 @@ extension OKRH5WebViewVC {
                 // 跳转到Safari打开网页
                 APP.shared().openUrl(with: qrcodeStr)
             } else {
-                let alertView = UIAlertController.init(title: "扫描结果", message: qrcodeStr, preferredStyle: .alert)
-                let alert = UIAlertAction.init(title: "确定", style: .destructive) { _ in
+                let alertView = UIAlertController.init(title: L("扫描结果"), message: qrcodeStr, preferredStyle: .alert)
+                let alert = UIAlertAction.init(title: L("确定"), style: .destructive) { _ in
                     FZMLog("扫一扫结果弹窗显示点击确定按钮")
                 }
                 alertView.addAction(alert)
@@ -174,6 +214,7 @@ extension OKRH5WebViewVC {
 extension OKRH5WebViewVC {
     // 获取我的员工信息
     private func refreshMyStaffInfoRequest() {
+        guard FZM_EnableEnterpriseFeature else { return }// 企业号功能关闭，不发员工信息请求
         TeamManager.shared().getStaffInfo(address: LoginUser.shared().address, successBlock: { [weak self] (staffinfo) in
             guard let strongSelf = self else { return }
             // 获取我的企业信息
@@ -266,31 +307,12 @@ extension OKRH5WebViewVC {
         handler(phone, true)
     }
     
-    // 给h5传值-签名
-    @objc func signAuth(_ arg: Dictionary<String, Any>, handler: JSCallbackBlock) {
-        FZMLog("H5 func --- signAuth")
-        guard let signAuth = LoginUser.shared().signature else {
-            return }
-        FZMLog("signAuth \(signAuth)")
-        handler(signAuth, true)
-    }
-    
-    // 接收h5传过来的数据，签名后再传给h5
-    @objc func sign(_ arg: Dictionary<String, Any>, handler: JSCallbackBlock) {
-        FZMLog("H5 func --- sign")
-        
-        let dic = arg
-        
-        let privateKey = LoginUser.shared().privateKey
-        
-        let str = dic.sorted { $0.key < $1.key }.compactMap { "\($0.key)=\($0.value)"}.joined(separator: "&")
-        
-        guard let rawValue = str.data(using: .utf8)?.sha256(),
-              let signature =  EncryptManager.sign(data: rawValue, privateKey: privateKey) else {
-            return
-        }
-        let finalSignAture = signature.finalKey
-        FZMLog("sign signature \(finalSignAture)")
-        handler(finalSignAture, true)
-    }
+    // ⚠️ 安全整改（2026-11-10）：
+    //   `signAuth` 会把当前会话签名（含公钥、可复用的 FZM-SIGNATURE）直接交给页面；
+    //   `sign` 会用用户私钥对页面传入的任意键值对盲签，且无内容展示。
+    //   两者都足以让钓鱼页伪造身份/授权，已下线；OKR 若确需签名，请走服务端
+    //   「一次性挑战 + 结构化字段 + 原生确认页」，不要恢复这两个方法。
+    //
+    // @objc func signAuth(...)
+    // @objc func sign(...)
 }

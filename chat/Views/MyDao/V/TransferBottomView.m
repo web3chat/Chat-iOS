@@ -3,12 +3,15 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/30.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "TransferBottomView.h"
 #import "PWChoiceFeeSheetView.h"
 #import "Depend.h"
+#import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface TransferBottomView()
 @property (nonatomic, strong) UILabel *titleLab;
 @property (nonatomic, strong) UILabel *moneyLab;
@@ -28,9 +31,35 @@
 @property (nonatomic, strong) UIButton *toBtn;
 @property (nonatomic, strong) NSDictionary *selecetdFeeDict;
 
+// 新的矿工费展示（链上 gas / 固定档位）
+@property (nonatomic, assign) BOOL useNewFeeMode;
+@property (nonatomic, copy) NSString *feeUnit;
+@property (nonatomic, strong) NSArray *feeTiersDataArr;
+@property (nonatomic, assign) NSInteger feeDefaultIndex;
+@property (nonatomic, strong) UIImageView *feeArrow;
+
 @end
 
 @implementation TransferBottomView
+
+- (void)setCoin:(LocalCoin *)coin {
+    _coin = coin;
+    // 新矿工费模式（链上/固定档）由 apply... 设置，这里不再覆盖
+    if (self.useNewFeeMode) {
+        return;
+    }
+    /// BTY 主链上的非 BTY 币种（如平行链代币）：隐藏滑动条场景下矿工费固定 0.001 BTY
+    if (coin != nil && [coin.coin_chain isEqualToString:@"BTY"] && ![coin.coin_type isEqualToString:@"BTY"]) {
+        [self setHiddenSlider:YES];
+        if ([_coin.coin_type isEqualToString:@"PMM"]) {
+            self.feeValue = 0.06;
+            self.moneyLab.text = @"0.06 BTY";
+        }else{
+            self.feeValue = 0.001;
+            self.moneyLab.text = @"0.001 BTY";
+        }
+    }
+}
 
 -(instancetype)init {
     self = [super init];
@@ -44,7 +73,7 @@
 - (void)createView {
     
     UILabel *titleLab = [[UILabel alloc] init];
-    titleLab.text = [NSString stringWithFormat:@"  %@",@"矿工费"  ];
+    titleLab.text = [NSString stringWithFormat:@"  %@",L(@"矿工费")];
     titleLab.textColor = CMColorFromRGB(0x333649);
     titleLab.font = [UIFont boldSystemFontOfSize:14];
     titleLab.textAlignment = NSTextAlignmentLeft;
@@ -86,7 +115,7 @@
     }
     
     UILabel *speedSlow = [[UILabel alloc] init];
-    speedSlow.text = @"慢"  ;
+    speedSlow.text = L(@"慢")  ;
     speedSlow.font = CMTextFont13;
     speedSlow.textColor = CMColorFromRGB(0x8E92A3);
     speedSlow.textAlignment = NSTextAlignmentLeft;
@@ -94,7 +123,7 @@
     self.speedLow = speedSlow;
     
     UILabel *speedMid = [[UILabel alloc] init];
-    speedMid.text = @"最佳"  ;
+    speedMid.text = L(@"最佳")  ;
     speedMid.font = CMTextFont13;
     speedMid.textColor = CMColorFromRGB(0x8E92A3);
     speedMid.textAlignment = NSTextAlignmentCenter;
@@ -102,7 +131,7 @@
     self.speedMid = speedMid;
     
     UILabel *speedHigh = [[UILabel alloc] init];
-    speedHigh.text = @"快"  ;
+    speedHigh.text = L(@"快")  ;
     speedHigh.font = CMTextFont13;
     speedHigh.textColor = CMColorFromRGB(0x8E92A3);
     speedHigh.textAlignment = NSTextAlignmentRight;
@@ -132,6 +161,16 @@
     self.choiceFeeView.userInteractionEnabled = YES;
     [self.toBtn addTarget:self action:@selector(toChoiceFee) forControlEvents:UIControlEventTouchUpInside];
     self.choiceFeeView.hidden = YES;
+
+    // 新的矿工费模式：整行可点选（弹档位/手输面板）
+    UITapGestureRecognizer *feeTap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(feeRowTapped)];
+    [self addGestureRecognizer:feeTap];
+
+    UIImageView *feeArrow = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"accessory"]];
+    feeArrow.contentMode = UIViewContentModeScaleAspectFit;
+    feeArrow.hidden = YES;
+    [self addSubview:feeArrow];
+    self.feeArrow = feeArrow;
     
     
 }
@@ -216,6 +255,12 @@
         make.width.height.mas_equalTo(25);
     }];
 
+    [self.feeArrow mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.width.height.mas_equalTo(16);
+        make.right.equalTo(self).offset(-16);
+        make.centerY.equalTo(self.titleLab);
+    }];
+
     self.moneyLab.hidden = NO;
     self.showTipBtn.hidden = YES;
     
@@ -278,16 +323,29 @@
 }
 
 - (void)setFeeModel:(Fee *)feeModel {
+    // 新矿工费模式（链上/固定档）下忽略后台费率，避免覆盖已选费用
+    if (self.useNewFeeMode) {
+        return;
+    }
     
     if(_hiddenSlider){
+        /// BTY 主链 + 非 BTY 币种：矿工费固定 0.001（与接口返回无关）
+        if ([_coin.coin_chain isEqualToString:@"BTY"] && ![_coin.coin_type isEqualToString:@"BTY"]) {
+            if ([_coin.coin_type isEqualToString:@"PMM"]) {
+                self.feeValue = 0.06;
+                self.moneyLab.text = @"0.06 BTY";
+            }else{
+                self.feeValue = 0.001;
+                self.moneyLab.text = @"0.001 BTY";
+            }
+           
+            return;
+        }
        
-        if ([_coin.coin_platform isEqualToString:@"wwchain"]) {
-            self.moneyLab.text = @"0.003";
-            self.feeValue = 0.003;
-        }else if([_coin.coin_chain isEqualToString:@"ETH"] && [_coin.coin_platform isEqualToString:@"yhchain"]){
-            // ybf币的特殊处理
-            self.moneyLab.text = @"0.5";
-            self.feeValue = 0.5;
+        if([_coin.coin_platform isEqualToString:@"Benefy"]){
+            
+            self.moneyLab.text = @"0.01";
+            self.feeValue = 0.01;
         }else{
             if (_coin.treaty == 2
                 && [_coin.coin_platform isEqualToString:self.coin.coin_platform])
@@ -326,7 +384,7 @@
         self.moneyLab.text = [NSString stringWithFormat:@"%@%@",coinMoneyStr,feeModel.name];
     }else if ([self.coin.coin_type isEqualToString:@"BTY"] && [self.coin.coin_chain isEqualToString:@"ETH"]){
         self.moneyLab.text = [NSString stringWithFormat:@"%@%@",coinMoneyStr,@"BTY"];
-    }else if ([self.coin.coin_chain isEqualToString:@"ETH"] && [self.coin.coin_platform isEqualToString:@"ychain"]){
+    }else if ([self.coin.coin_platform isEqualToString:@"Benefy"]){
         self.moneyLab.text = [NSString stringWithFormat:@"%@%@",coinMoneyStr,@"BTY"];
     }else{
         self.moneyLab.text = [NSString stringWithFormat:@"%@%@",coinMoneyStr,self.coin.coin_chain];
@@ -394,16 +452,122 @@
 //                           @"gas":self.selectedGas,
 //                           @"gasPrice":self.selectedGasPrice,
 //                           @"index":@(self.selectedInx)};
-    PWChoiceFeeSheetView *choiceFeeView = [[PWChoiceFeeSheetView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight) withCoin:self.coin withDict:self.selecetdFeeDict];
+    NSString *unit = self.feeUnit.length > 0 ? self.feeUnit : self.coin.coin_chain;
+    PWChoiceFeeSheetView *choiceFeeView = nil;
+    if (self.useNewFeeMode && self.feeTiersDataArr.count > 0) {
+        NSDictionary *first = self.feeTiersDataArr.firstObject;
+        choiceFeeView = [[PWChoiceFeeSheetView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight)
+                                                            dataArr:self.feeTiersDataArr
+                                                           gasLimit:first[@"gas"]
+                                                      selectedIndex:self.feeDefaultIndex];
+    } else {
+        choiceFeeView = [[PWChoiceFeeSheetView alloc] initWithFrame:CGRectMake(0, 0, kScreenWidth, kScreenHeight) withCoin:self.coin withDict:self.selecetdFeeDict];
+    }
     choiceFeeView.choiceFeeBlock = ^(NSDictionary * _Nonnull dict) {
         self.selecetdFeeDict = dict;
-        NSString *fee = dict[@"value"];
-        self.moneyLab.text = fee;
-        self.detailLab.text = [NSString stringWithFormat:@"%@ %@ = Gas(21000)*GasPrice(%@ GWEI)",fee,self.coin.coin_chain,dict[@"gasPrice"]];
-        self.feeValue = [fee floatValue];
+        double feeNum = [dict[@"value"] doubleValue];
+        self.feeValue = feeNum;
+        self.moneyLab.text = [self feeStringWithValue:feeNum unit:unit];
+        NSInteger idx = [dict[@"index"] integerValue];
+        if (idx >= 0 && idx <= 3) {
+            self.feeDefaultIndex = idx;
+        }
     };
     
     [choiceFeeView show];
+}
+
+#pragma mark - 新的矿工费展示（链上 gas / 固定档位）
+
+- (void)applyChainGasFeeWithGasPriceWei:(NSString *)gasPriceWei
+                               gasLimit:(double)gasLimit
+                                   unit:(NSString *)unit {
+    double gpGwei = gasPriceWei.doubleValue / 1000000000.0;
+    double fast = gasLimit * gpGwei * 3.0 / 1000000000.0;
+    double nor  = gasLimit * gpGwei * 2.0 / 1000000000.0;
+    double low  = gasLimit * gpGwei * 1.5 / 1000000000.0;
+    NSString *gasStr = gasLimit > 0 ? [NSString stringWithFormat:@"%.0f", gasLimit] : @"";
+    [self applyTiersFast:fast nor:nor low:low gasLimitStr:gasStr gasPriceGwei:gpGwei unit:unit defaultIndex:1 chainMode:YES];
+}
+
+- (void)applyFixedFeeTiers:(NSArray<NSString *> *)tiers
+              defaultIndex:(NSInteger)defaultIndex
+                      unit:(NSString *)unit {
+    if (tiers.count < 3) {
+        return;
+    }
+    if (defaultIndex < 0 || defaultIndex > 2) {
+        defaultIndex = 2;
+    }
+    double fast = [tiers[0] doubleValue];
+    double nor  = [tiers[1] doubleValue];
+    double low  = [tiers[2] doubleValue];
+    // 固定档位不是 gas 计算：自定义手输时的默认 Gas 用 21000
+    [self applyTiersFast:fast nor:nor low:low gasLimitStr:@"21000" gasPriceGwei:0 unit:unit defaultIndex:defaultIndex chainMode:NO];
+}
+
+- (NSString *)feeStringWithValue:(double)value unit:(NSString *)unit {
+    NSString *num = [CommonFunction removeZeroFromMoney:[NSString stringWithFormat:@"%.8f", value]];
+    return [NSString stringWithFormat:@"%@ %@", num, unit.length > 0 ? unit : @""];
+}
+
+- (void)applyTiersFast:(double)fast nor:(double)nor low:(double)low
+           gasLimitStr:(NSString *)gasLimitStr
+          gasPriceGwei:(double)gpGwei
+                  unit:(NSString *)unit
+          defaultIndex:(NSInteger)defaultIndex
+             chainMode:(BOOL)chainMode {
+    self.useNewFeeMode = YES;
+    self.feeUnit = unit;
+
+    NSArray *names = @[L(@"最快"), L(@"标准"), L(@"经济")];
+    NSArray *values = @[[self feeStringWithValue:fast unit:unit],
+                        [self feeStringWithValue:nor unit:unit],
+                        [self feeStringWithValue:low unit:unit]];
+    NSArray *nums = @[@(fast), @(nor), @(low)];
+
+    NSMutableArray *arr = [NSMutableArray array];
+    for (NSInteger i = 0; i < 3; i++) {
+        NSString *gasPriceStr = @"";
+        NSString *detail = values[i];
+        if (chainMode) {
+            gasPriceStr = [NSString stringWithFormat:@"%.2f", gpGwei * (i == 0 ? 3.0 : (i == 1 ? 2.0 : 1.5))];
+            detail = [NSString stringWithFormat:@"%@ = Gas(%@)*GasPrice(%@ GWEI)", values[i], gasLimitStr, gasPriceStr];
+        }
+        [arr addObject:@{@"name": names[i],
+                         @"value": values[i],
+                         @"detail": detail,
+                         @"gas": gasLimitStr ?: @"",
+                         @"gasPrice": gasPriceStr}];
+    }
+    [arr addObject:@{@"name": L(@"自定义"),
+                     @"value": @"",
+                     @"detail": @"",
+                     @"gas": gasLimitStr ?: @"",
+                     @"gasPrice": @""}];
+    self.feeTiersDataArr = arr;
+    self.feeDefaultIndex = defaultIndex;
+
+    // 隐藏滑块、显示可点选箭头，并回填默认档费用
+    [self setHiddenSlider:YES];
+    self.feeArrow.hidden = NO;
+    self.feeValue = [nums[defaultIndex] doubleValue];
+    self.moneyLab.text = values[defaultIndex];
+}
+
+- (void)feeRowTapped {
+    if (!self.useNewFeeMode) {
+        return;
+    }
+    [self toChoiceFee];
+}
+
+- (void)resetFeeMode {
+    self.useNewFeeMode = NO;
+    self.feeArrow.hidden = YES;
+    self.feeTiersDataArr = nil;
+    self.feeUnit = nil;
+    self.feeValue = 0;
 }
 
 #pragma mark ---getter

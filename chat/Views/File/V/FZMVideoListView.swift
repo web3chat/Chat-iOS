@@ -78,7 +78,7 @@ class FZMVideoListView: FZMScrollPageItemBaseView {
         v.image = #imageLiteral(resourceName: "nodata_search_media")
         v.contentMode = .scaleAspectFit
         v.isHidden = true
-        let lab = UILabel.getLab(font: UIFont.mediumFont(14), textColor: Color_8A97A5, textAlignment: .center, text: "暂无图片/视频")
+        let lab = UILabel.getLab(font: UIFont.mediumFont(14), textColor: Color_8A97A5, textAlignment: .center, text: L("暂无图片/视频"))
         v.addSubview(lab)
         lab.snp.makeConstraints({ (m) in
             m.centerX.equalToSuperview()
@@ -157,7 +157,12 @@ extension FZMVideoListView: UICollectionViewDelegate, UICollectionViewDataSource
     
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         guard !self.isSelect else {return}
-        self.selectBlock?(self.dataSource[indexPath.section][indexPath.row],(collectionView.cellForItem(at: indexPath) as! FZMVideoListCell).contentImageView)
+        guard indexPath.section < self.dataSource.count,
+              indexPath.row < self.dataSource[indexPath.section].count,
+              let cell = collectionView.cellForItem(at: indexPath) as? FZMVideoListCell else {
+            return
+        }
+        self.selectBlock?(self.dataSource[indexPath.section][indexPath.row], cell.contentImageView)
     }
     
     func numberOfSections(in collectionView: UICollectionView) -> Int {
@@ -169,7 +174,9 @@ extension FZMVideoListView: UICollectionViewDelegate, UICollectionViewDataSource
     }
     
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "FZMVideoListCell", for: indexPath) as! FZMVideoListCell
+        guard let cell = collectionView.dequeueReusableCell(withReuseIdentifier: "FZMVideoListCell", for: indexPath) as? FZMVideoListCell else {
+            return UICollectionViewCell()
+        }
         let vm = self.dataSource[indexPath.section][indexPath.row]
         
         cell.configure(with: vm, isShowSelect: self.isSelect)

@@ -2,7 +2,7 @@
 //  EditNicknameVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/25.
+//  Created by fzm on 2021/1/25.
 //
 
 import UIKit
@@ -45,7 +45,7 @@ class EditNicknameVC: UIViewController, ViewControllerProtocol {
     }()
     
     private lazy var titleLab: UILabel = {
-        let str = editType == .alias ? "备注" : "昵称"
+        let str = editType == .alias ? L("备注") : L("昵称")
         let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 12), textColor: Color_8A97A5, textAlignment: .left, text:str)
         return lab
     }()
@@ -60,14 +60,14 @@ class EditNicknameVC: UIViewController, ViewControllerProtocol {
         input.font = UIFont.systemFont(ofSize: 16)
         input.textColor = Color_24374E
         input.tintColor = Color_Theme
-        let str = editType == .alias ? "请输入备注" : "请输入昵称"
+        let str = editType == .alias ? L("请输入备注") : L("请输入昵称")
         input.attributedPlaceholder = NSAttributedString(string: str, attributes: [.foregroundColor:Color_8A97A5])
-        input.addToolBar(with: "确定", target: self, sel: #selector(commitInfo))
+        input.addToolBar(with: L("确定"), target: self, sel: #selector(commitInfo))
         return input
     }()
     
     private lazy var confirmBtn : UIButton = {
-        let btn = UIButton.getNormalBtn(with: "确定")
+        let btn = UIButton.getNormalBtn(with: L("确定"))
         btn.layer.cornerRadius = 20
         return btn
     }()
@@ -81,7 +81,7 @@ class EditNicknameVC: UIViewController, ViewControllerProtocol {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.navigationItem.title = self.editType == .alias ? "修改备注" : "修改昵称"
+        self.navigationItem.title = self.editType == .alias ? L("修改备注") : L("修改昵称")
         
         self.createUI()
     }

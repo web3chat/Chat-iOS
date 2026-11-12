@@ -3,12 +3,15 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/29.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "TransferMidView.h"
 #import "UITextView+Placeholder.h"
 #import "Depend.h"
+#import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface TransferMidView() <UITextViewDelegate>
 @property (nonatomic,strong) UILabel *titleLab;
 @property (nonatomic,strong) UILabel *nameLab;
@@ -35,7 +38,7 @@
 - (void)createView {
     
     UILabel *launchTitleLab = [[UILabel alloc] init];
-    launchTitleLab.text = @"转账"  ;
+    launchTitleLab.text = L(@"转账");
     launchTitleLab.textColor = CMColorFromRGB(0x0F0F0F);
     launchTitleLab.font = [UIFont boldSystemFontOfSize:30];
     launchTitleLab.textAlignment = NSTextAlignmentLeft;
@@ -57,7 +60,7 @@
     self.walletNameLab.hidden = true;
     
     UILabel *titleLab = [[UILabel alloc] init];
-    titleLab.text = [NSString stringWithFormat:@"  %@",@"收币地址"  ];
+    titleLab.text = [NSString stringWithFormat:@"  %@",L(@"收币地址")];
     
     titleLab.textColor = CMColorFromRGB(0x333333);
     titleLab.font = [UIFont boldSystemFontOfSize:14];
@@ -95,7 +98,7 @@
     addressLab.text = @"";
     addressLab.delegate = self;
     addressLab.keyboardType = UIKeyboardTypeEmailAddress;
-    addressLab.placeholder = @"输入/扫一扫地址"  ;
+    addressLab.placeholder = L(@"输入/扫一扫地址");
     addressLab.placeholderColor = CMColorFromRGB(0xD9DCE9);
     [self addSubview:addressLab];
     self.addressText = addressLab;
@@ -186,9 +189,9 @@
 
 - (void)setCoin:(LocalCoin *)coin {
     _coin = coin;
-    NSString *title = @"转账"  ;
+    NSString *title = L(@"转账")  ;
     self.launchTitleLab.text = [NSString stringWithFormat:@"%@%@",coin.optional_name,title];
-    self.addressText.placeholder = [NSString stringWithFormat:@"%@%@%@",@"输入/扫一扫"  ,coin.optional_name,@"地址"  ];
+    self.addressText.placeholder = [NSString stringWithFormat:@"%@%@%@",L(@"输入/扫一扫")  ,coin.optional_name,L(@"地址")];
     LocalWallet *wallet = [[PWDataBaseManager shared] queryWallet:coin.coin_walletid];
     self.walletNameLab.text = wallet.wallet_name;
 }

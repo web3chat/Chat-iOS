@@ -2,8 +2,8 @@
 //  FZMGroupUserCell.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/29.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/29.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -75,11 +75,11 @@ class FZMGroupUserCell: UICollectionViewCell {
             self.nameLab.text = data.name
             self.nameLab.textColor = Color_8A97A5
         case .invite:
-            self.nameLab.text = "邀请"
+            self.nameLab.text = L("邀请")
             self.nameLab.textColor = Color_Theme
             self.headImageView.image = #imageLiteral(resourceName: "group_add_user")
         case .remove:
-            self.nameLab.text = "移除"
+            self.nameLab.text = L("移除")
             self.nameLab.textColor = Color_Theme
             self.headImageView.image = #imageLiteral(resourceName: "group_remove_user")
         }

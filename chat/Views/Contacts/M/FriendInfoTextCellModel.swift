@@ -2,7 +2,7 @@
 //  FriendInfoTextCellModel.swift
 //  chat
 //
-//  Created by 陈健 on 2021/3/5.
+//  Created by fzm on 2021/3/5.
 //
 
 import UIKit
@@ -53,7 +53,7 @@ class FriendInfoTeamCellModel: NSObject {
     var userRealName: String? {
         didSet {
             guard let userRealName = userRealName, !userRealName.isBlank else {
-                self.userRealName = "无"
+                self.userRealName = L("无")
                 return
             }
         }
@@ -62,7 +62,7 @@ class FriendInfoTeamCellModel: NSObject {
     var organizationName: String? {
         didSet {
             guard let organizationName = organizationName, !organizationName.isBlank else {
-                self.organizationName = "无"
+                self.organizationName = L("无")
                 return
             }
         }
@@ -73,7 +73,7 @@ class FriendInfoTeamCellModel: NSObject {
     var email: String? {
         didSet {
             guard let email = email, !email.isBlank else {
-                self.email = "无"
+                self.email = L("无")
                 return
             }
         }
@@ -82,7 +82,7 @@ class FriendInfoTeamCellModel: NSObject {
     var depName: String? {
         didSet {
             guard let depName = depName, !depName.isBlank else {
-                self.depName = "无"
+                self.depName = L("无")
                 return
             }
         }
@@ -91,7 +91,7 @@ class FriendInfoTeamCellModel: NSObject {
     var position: String? {
         didSet {
             guard let position = position, !position.isBlank else {
-                self.position = "无"
+                self.position = L("无")
                 return
             }
         }

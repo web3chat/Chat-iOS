@@ -2,7 +2,7 @@
 //  MessageKind.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/22.
+//  Created by fzm on 2020/12/22.
 //
 
 import Foundation
@@ -36,7 +36,7 @@ enum MessageKind {
     //收款
     case collect(String)
     //红包
-    case redPacket(String)
+    case redPacket(RedpacketItem)
     //名片
     case contactCard(ContactCardItem)
     //未知类型

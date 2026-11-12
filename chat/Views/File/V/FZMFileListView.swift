@@ -71,7 +71,7 @@ class FZMFileListView: FZMScrollPageItemBaseView {
         v.image = #imageLiteral(resourceName: "nodata_search_file")
         v.contentMode = .scaleAspectFit
         v.isHidden = true
-        let lab = UILabel.getLab(font: UIFont.mediumFont(14), textColor: Color_8A97A5, textAlignment: .center, text: "暂无文件")
+        let lab = UILabel.getLab(font: UIFont.mediumFont(14), textColor: Color_8A97A5, textAlignment: .center, text: L("暂无文件"))
         v.addSubview(lab)
         lab.snp.makeConstraints({ (m) in
             m.centerX.equalToSuperview()
@@ -218,7 +218,9 @@ extension FZMFileListView: UITableViewDelegate, UITableViewDataSource {
             return
         }
         let model = fileListVMArr[index]
-        let cell = tableView.cellForRow(at: indexPath) as! FZMFileListCell
+        guard let cell = tableView.cellForRow(at: indexPath) as? FZMFileListCell else {
+            return
+        }
         self.selectBlock?(model, cell)
     }
 }

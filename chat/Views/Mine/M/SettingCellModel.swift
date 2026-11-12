@@ -19,6 +19,8 @@ class SettingCellModel: NSObject {
 class SettingTextCellModel: SettingCellModel {
     var rightString: String?
     var rightAttributedString: NSAttributedString?
+    /// 右侧是否显示 chevron 箭头（默认显示；「清理缓存」这类只展示数值、点一下弹确认的行不需要）
+    var showsArrow: Bool = true
 }
 
 class SettingSwitchCellModel: SettingCellModel {

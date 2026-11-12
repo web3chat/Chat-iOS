@@ -2,7 +2,7 @@
 //  PagingVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/27.
+//  Created by fzm on 2021/1/27.
 //
 
 import UIKit
@@ -28,7 +28,11 @@ class PagingVC: PagingViewController {
         options.indicatorOptions = .visible(height: 35, zIndex: -1, spacing: .zero, insets: .zero)
         options.indicatorColor = Color_Auxiliary
         
-        options.menuItemSize = .fixed(width: 120, height: 35)
+        if LanguageManager.shared.isChinese{
+            options.menuItemSize = .fixed(width: 120, height: 35)
+        }else {
+            options.menuItemSize = .fixed(width: 160, height: 35)
+        }
         options.menuItemLabelSpacing = 10
         options.menuHorizontalAlignment = .center
         options.borderOptions = .hidden

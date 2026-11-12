@@ -13,7 +13,7 @@ class CustomBarView: UIView {
         let btn = UIButton(type: .custom)
         btn.frame = CGRect.init(x: 0, y: 0, width: 26, height: 44)
         btn.setImage(#imageLiteral(resourceName: "tool_search"), for: .normal)
-        btn.addTarget(self, action: #selector(searchBtnClick), for: .touchUpInside)
+        btn.addTarget(self, action: #selector(web3Click), for: .touchUpInside)
         btn.enlargeClickEdge(.init(top: 0, left: 10, bottom: 0, right: 10))
         return btn
     }()
@@ -47,7 +47,7 @@ class CustomBarView: UIView {
     }
     
     func setupViews() {
-        self.addSubview(searchBtn)
+//        self.addSubview(searchBtn)
         self.addSubview(addBtn)
         self.addSubview(sweepBtn)
     }
@@ -66,6 +66,13 @@ class CustomBarView: UIView {
             sweepBtn.isHidden = false
         }
     }
+    
+    
+    /// 跳转到web3浏览器
+    @objc private func web3Click(){
+        FZMUIMediator.shared().pushVC(.gotoWeb3VC)
+    }
+    
     
     /// 跳转搜索页 搜联系人 聊天记录
     @objc private func searchBtnClick() {
@@ -95,30 +102,33 @@ class CustomBarView: UIView {
     
     /// +按钮点击
     @objc private func addBtnClick() {
-        var menuViewArr = [FZMImageMenuItem(title: "扫一扫", image: #imageLiteral(resourceName: "tool_sweep").withRenderingMode(.alwaysTemplate), size: CGSize(width: 26, height: 26), block: {[weak self] in
+        let menuViewArr = [FZMImageMenuItem(title: L("扫一扫"), image: #imageLiteral(resourceName: "tool_sweep").withRenderingMode(.alwaysTemplate), size: CGSize(width: 26, height: 26), block: {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.sweepItemClick()
-        }),FZMImageMenuItem(title: "添加朋友/群", image: #imageLiteral(resourceName: "tool_add_friend"), size: CGSize(width: 26, height: 26), block: {[weak self] in
+        }),FZMImageMenuItem(title: L("搜索聊天记录"), image: #imageLiteral(resourceName: "tool_search").withRenderingMode(.alwaysTemplate), size: CGSize(width: 26, height: 26), block: {[weak self] in
+            guard let strongSelf = self else { return }
+            strongSelf.searchBtnClick()
+        }),FZMImageMenuItem(title: L("添加朋友/群"), image: #imageLiteral(resourceName: "tool_add_friend"), size: CGSize(width: 26, height: 26), block: {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.addFriendBtnClick()
-        }),FZMImageMenuItem(title: "创建群聊", image: #imageLiteral(resourceName: "tool_create_group"), size: CGSize(width: 26, height: 26), block: {
+        }),FZMImageMenuItem(title: L("创建群聊"), image: #imageLiteral(resourceName: "tool_create_group"), size: CGSize(width: 26, height: 26), block: {
             FZMUIMediator.shared().pushVC(.goChooseServerToCreateGroup)
-        }),FZMImageMenuItem(title: "我的码", image: #imageLiteral(resourceName: "tool_qrcode").withRenderingMode(.alwaysTemplate), size: CGSize(width: 26, height: 26), block: {[weak self] in
+        }),FZMImageMenuItem(title: L("我的码"), image: #imageLiteral(resourceName: "tool_qrcode").withRenderingMode(.alwaysTemplate), size: CGSize(width: 26, height: 26), block: {[weak self] in
             guard let strongSelf = self else { return }
             strongSelf.goQRCodeVC()
         })]
         
-        if let _ = LoginUser.shared().myStaffInfo {
-            menuViewArr = menuViewArr + [FZMImageMenuItem(title: "OKR", image: #imageLiteral(resourceName: "tool_okr"), size: CGSize(width: 26, height: 26), block: {[weak self] in
-                guard let strongSelf = self else { return }
-                strongSelf.goToOKR()
-            })]
-        } else {
-            menuViewArr = menuViewArr + [FZMImageMenuItem(title: "创建团队", image: #imageLiteral(resourceName: "tool_creat_team"), size: CGSize(width: 26, height: 26), block: {[weak self] in
-                guard let strongSelf = self else { return }
-                strongSelf.createTeam()
-            })]
-        }
+//        if let _ = LoginUser.shared().myStaffInfo {
+//            menuViewArr = menuViewArr + [FZMImageMenuItem(title: "OKR", image: #imageLiteral(resourceName: "tool_okr"), size: CGSize(width: 26, height: 26), block: {[weak self] in
+//                guard let strongSelf = self else { return }
+//                strongSelf.goToOKR()
+//            })]
+//        } else {
+//            menuViewArr = menuViewArr + [FZMImageMenuItem(title: "创建团队", image: #imageLiteral(resourceName: "tool_creat_team"), size: CGSize(width: 26, height: 26), block: {[weak self] in
+//                guard let strongSelf = self else { return }
+//                strongSelf.createTeam()
+//            })]
+//        }
         
         let view = FZMImageMenuView(with: menuViewArr)
         view.show(in: CGPoint(x: k_ScreenWidth-15, y: k_StatusNavigationBarHeight))
@@ -128,60 +138,21 @@ class CustomBarView: UIView {
     @objc private func sweepItemClick() {
         DispatchQueue.main.async {
             let vc = QRCodeReaderVC.init()
-            vc.readBlock = { (qrcodeStr) in
-                if qrcodeStr.contains(ShareURL) {
-                    let address = qrcodeStr.replacingOccurrences(of: ShareURL, with: "")
-                    
-                    // 跳转到用户/好友详情页
-                    FZMUIMediator.shared().pushVC(.goUserDetailInfoVC(address: address, source: .sweep))
-                } else if qrcodeStr.contains(TeamH5Url) {
-                    // 跳转到加入团队网页
-                    self.goH5WebVC(.joinTeam(url: qrcodeStr))
-                }else if qrcodeStr.contains("gid"){
-                    //加入群聊二维码
-                    let urlStr = URL(string: qrcodeStr)
-                    let groupId = urlStr?.queryValue(for: "gid")
-                    let inviterid = urlStr?.queryValue(for: "inviterId")
-                    FZMUIMediator.shared().pushVC(.goAddGroup(groupId: groupId!.intEncoded, inviterId: inviterid!))
-                }else if qrcodeStr.contains("transfer"){
-                    //
-                    let urlStr = URL(string: qrcodeStr)
-                    let target = urlStr?.queryValue(for: "transfer_target")
-                    let address = urlStr?.queryValue(for: "address")
-                    let chain = urlStr?.queryValue(for: "chain")
-                    let platform = urlStr?.queryValue(for: "platform")
-                    let coinArray = PWDataBaseManager.shared().queryCoinArrayBasedOnSelectedWalletID()
-                    let arr = NSArray(array: coinArray!)
-                    var localCoin = LocalCoin.init()
-                    for data  in arr {
-                        let coin = data as! LocalCoin
-                        if coin.coin_type == chain {
-                            localCoin = coin
-                        }
-                    }
-                    let vc =  TransferViewController.init()
-                    vc.contactDict = ["avatarUrl":"" as NSString,"address":target! as NSString,"toAddr":address! as NSString]
-                    vc.coin = localCoin
-                    vc.transferBlock =  { [] (coinName,txHash,amount) in
-                        let sessionId = SessionID.person(target!)
-                        FZMUIMediator.shared().pushVC(.goChatVCToTransfer(sessionID: sessionId, coinName: coinName, txHash: txHash!))
-                    }
-                    vc.hidesBottomBarWhenPushed = true
-                    UIViewController.current()?.navigationController?.pushViewController(vc, animated: true)
-                    
+            vc.readBlock = { [weak self] (qrcodeStr) in
+                // 分发逻辑抽到 QRCodeResultHandler（大图长按「识别图中二维码」也走同一套）
+                if QRCodeResultHandler.handle(qrcodeStr, from: UIViewController.current(), onTeamJoined: { [weak self] in
+                    self?.checkBindTeamRequest()
+                }) {
+                    return
                 }
-                else if qrcodeStr.contains("http") {
-                    // 跳转到Safari打开网页
-                    APP.shared().openUrl(with: qrcodeStr)
-                }else {
-                    let alertView = UIAlertController.init(title: "扫描结果", message: qrcodeStr, preferredStyle: .alert)
-                    let alert = UIAlertAction.init(title: "确定", style: .destructive) { _ in
-                        FZMLog("扫一扫结果弹窗显示点击确定按钮")
-                    }
-                    alertView.addAction(alert)
-                    DispatchQueue.main.async {
-                        UIViewController.current()?.present(alertView, animated: true, completion: nil)
-                    }
+                // 不认识的二维码：把内容原样展示出来
+                let alertView = UIAlertController.init(title: L("扫描结果"), message: qrcodeStr, preferredStyle: .alert)
+                let alert = UIAlertAction.init(title: L("确定"), style: .destructive) { _ in
+                    FZMLog("扫一扫结果弹窗显示点击确定按钮")
+                }
+                alertView.addAction(alert)
+                DispatchQueue.main.async {
+                    UIViewController.current()?.present(alertView, animated: true, completion: nil)
                 }
             }
             UIViewController.current()?.navigationController?.present(vc, animated: true, completion: nil)
@@ -211,7 +182,7 @@ class CustomBarView: UIView {
             strongSelf.hideProgress()
             
             // 重新加载页面
-            APP.shared().showToast("团队创建成功")
+            APP.shared().showToast(L("团队创建成功"))
         } failureBlock: { [weak self] (errorStr) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()

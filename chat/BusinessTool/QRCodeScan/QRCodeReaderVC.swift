@@ -2,7 +2,7 @@
 //  QRCodeReaderVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/3/3.
+//  Created by fzm on 2021/3/3.
 //
 
 import UIKit
@@ -13,7 +13,7 @@ import Photos
 @objc class QRCodeReaderVC: UIViewController, ViewControllerProtocol {
     
     lazy var scanTitleLab: UILabel  = {
-        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 17), textColor: Color_Theme, textAlignment: .center, text: "扫一扫")
+        let lab = UILabel.getLab(font: UIFont.boldSystemFont(ofSize: 17), textColor: Color_Theme, textAlignment: .center, text: L("扫一扫"))
         return lab
     }()
     
@@ -28,7 +28,7 @@ import Photos
     
     private lazy var albumBtn: UIButton = {
         let btn = UIButton.init()
-        btn.setTitle("从相册选择", for: .normal)
+        btn.setTitle(L("从相册选择"), for: .normal)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.enlargeClickEdge(UIEdgeInsets.init(top: 10, left: 10, bottom: 10, right: 10))
         btn.addTarget(self, action: #selector(albumBtnTouch), for: .touchUpInside)
@@ -122,44 +122,34 @@ import Photos
     }
     
     @objc private func albumBtnTouch() {
-        
-        let block = {
-            let picker = ImagePickerController.init(withSelectOne: true, maxSelectCount: 1, allowEditing: false, showVideo: false)
-            picker.didFinishPickingPhotosHandle = {[weak self] (photos, _, _) in
-                guard let self = self, let image = photos?.first  else { return }
-                self.reader.stopScanning()
-                guard let qrcodeStr = QRCodeGenerator.detectorQRCode(with: image) else {
-                    self.showToast("解析失败")
-                    self.reader.startScanning()
-                    return
-                }
-                self.backWithBlock(value: qrcodeStr)
-//                self.readBlock?(qrcodeStr)
-            }
-            self.present(picker, animated: true, completion: nil)
+        // 打开系统相册前统一走权限检查（未决定→请求；部分照片→提示；拒绝→去设置）。
+        // 注：扫一扫用的是系统 PHPicker，权限只影响其它直接读相册的页面，但产品要求统一提示。
+        PhotoLibraryAccess.preparePhotoAccess(
+            from: self,
+            limitedMessage: L("你当前只允许访问「部分照片」。扫一扫使用的是系统相册选择器，仍可浏览全部照片；如需在其它页面也看到全部照片，请点「选择更多照片」。")
+        ) { [weak self] in
+            self?.startAlbumPick()
         }
-        
-        if PHPhotoLibrary.authorizationStatus() == .notDetermined {
-            PHPhotoLibrary.requestAuthorization { (status) in
-                DispatchQueue.main.async {
-                    if status == .authorized {
-                        block()
-                    }else {
-                        UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
-                    }
-                }
+    }
+
+    /// 真正打开相册选择器（权限已就绪）
+    private func startAlbumPick() {
+        // 与「聊天发送图片 / 广场发帖」复用同一个系统相册选择器（PHPicker）：
+        //  · 系统 UI 自带「相簿」入口，能进任意相册、看到全部照片；
+        //  · 选图 + 识别的实现统一在 SystemMediaPicker.pickQRCode（钱包侧扫一扫也走同一套）。
+        self.reader.stopScanning()
+
+        SystemMediaPicker.pickQRCode(from: self) { [weak self] cancelled, code in
+            guard let self = self else { return }
+            if let code = code, !code.isEmpty {
+                self.backWithBlock(value: code)
+                return
             }
-        }else if PHPhotoLibrary.authorizationStatus() == .authorized {
-            block()
-        }else {
-            let alert = InfoAlertView.init()
-            alert.attributedTitle = NSAttributedString.init(string: "提示", attributes: [.font : UIFont.systemFont(ofSize: 14), .foregroundColor : Color_8A97A5])
-            alert.confirmBtnTitle = "确定"
-            alert.attributedInfo = NSAttributedString.init(string: "系统相册权限未打开，请设置", attributes: [.font : UIFont.systemFont(ofSize: 16), .foregroundColor : Color_24374E])
-            alert.confirmBlock = {
-                UIApplication.shared.open(URL(string: UIApplication.openSettingsURLString)!)
+            // 取消或没识别到：恢复扫码（没识别到才提示）
+            if !cancelled {
+                self.showToast(L("解析失败"))
             }
-            alert.show()
+            self.reader.startScanning()
         }
     }
     
@@ -174,17 +164,17 @@ extension QRCodeReaderVC {
         let alert: UIAlertController
         switch error.code {
         case -11852:
-          alert = UIAlertController(title: "没有相机权限", message: "请打开相机权限", preferredStyle: .alert)
-          alert.addAction(UIAlertAction(title: "去设置", style: .default, handler: { (_) in
+          alert = UIAlertController(title: L("没有相机权限"), message: L("请打开相机权限"), preferredStyle: .alert)
+          alert.addAction(UIAlertAction(title: L("去设置"), style: .default, handler: { (_) in
             DispatchQueue.main.async {
               if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
                 UIApplication.shared.open(settingsURL, completionHandler: nil)
               }
             }
           }))
-          alert.addAction(UIAlertAction(title: "取消", style: .cancel, handler: nil))
+          alert.addAction(UIAlertAction(title: L("取消"), style: .cancel, handler: nil))
         default:
-          alert = UIAlertController(title: "", message: "当前设备不支持扫一扫", preferredStyle: .alert)
+          alert = UIAlertController(title: "", message: L("当前设备不支持扫一扫"), preferredStyle: .alert)
           alert.addAction(UIAlertAction(title: "OK", style: .cancel, handler: nil))
         }
         present(alert, animated: true, completion: nil)

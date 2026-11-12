@@ -2,8 +2,8 @@
 //  NSObject+Empty.m
 //  MZB
 //
-//  Created by 吴文拼 on 2017/11/10.
-//  Copyright © 2017年 吴文拼. All rights reserved.
+//  Created by fzm on 2017/11/10.
+//  Copyright © 2017年 fzm. All rights reserved.
 //
 
 #import "NSObject+Empty.h"

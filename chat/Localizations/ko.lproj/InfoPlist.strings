@@ -1,0 +1,15 @@
+/*
+ InfoPlist.strings (한국어)
+ ⚠️ 파일 이름은 반드시 InfoPlist.strings 여야 합니다(iOS가 인식하는 이름은 이것뿐).
+ ⚠️ 키는 Info.plist 의 키 이름(NSCameraUsageDescription …)을 사용합니다.
+ ⚠️ 권한 팝업의 언어는 시스템 / 앱별 언어 설정을 따릅니다.
+    앱 내 언어 전환(UserDefaults "AppSelectedLanguage")은 반영되지 않습니다.
+*/
+"NSCameraUsageDescription" = "\"谈信开源\"은(는) QR 코드 스캔, 사진 촬영·전송·업로드를 위해 카메라에 접근하려 합니다.";
+"NSMicrophoneUsageDescription" = "\"谈信开源\"은(는) 음성 메시지 전송과 음성 채팅을 위해 마이크에 접근하려 합니다.";
+"NSLocalNetworkUsageDescription" = "\"谈信开源\"은(는) 같은 네트워크에서 음성 채팅 등을 이용할 수 있도록 로컬 네트워크에 접근하려 합니다.";
+"NSLocationWhenInUseUsageDescription" = "\"谈信开源\"은(는) 위치, 지도 등의 서비스를 이용할 수 있도록 위치 정보에 접근하려 합니다.";
+"NSPhotoLibraryUsageDescription" = "\"谈信开源\"은(는) QR 코드 스캔, 이미지 업로드·저장 등을 위해 사진 라이브러리에 접근하려 합니다.";
+"NSPhotoLibraryAddUsageDescription" = "\"谈信开源\"은(는) QR 코드 스캔, 이미지 업로드·저장 등을 위해 사진 라이브러리에 접근하려 합니다.";
+"NSFaceIDUsageDescription" = "\"谈信开源\"은(는) 비밀 채팅 비밀번호 입력 대신 본인 확인을 위해 Face ID를 사용합니다(등록 정보는 이 기기에만 저장됩니다).";
+"NSSpeechRecognitionUsageDescription" = "“谈信开源”은 음성 메시지를 텍스트로 변환하기 위해 음성 인식을 사용합니다. 인식은 이 기기에서만 이루어지며 오디오는 업로드되지 않습니다.";

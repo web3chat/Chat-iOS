@@ -82,12 +82,12 @@ class BannedMemberCell: UITableViewCell {
         self.nameLab.text = member.name
         let time = member.groupMember?.memberMuteTime
         if time == 9223372036854775807 {
-            self.timeLab.text = "永久禁言"
+            self.timeLab.text = L("永久禁言")
         }else{
             let dateTime = Date.timeStampToString(timeStamp: Double(time!))
             let formatter = DateFormatter.getDataformatter()
             formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-            self.timeLab.text = "已禁言至" + formatter.string(from: dateTime)
+            self.timeLab.text = L("已禁言至") + formatter.string(from: dateTime)
         }
         
     }

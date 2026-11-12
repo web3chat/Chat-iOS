@@ -3,7 +3,7 @@
 //  InputBarView.swift
 //  chat
 //
-//  Created by 陈健 on 2021/2/2.
+//  Created by fzm on 2021/2/2.
 //
 
 import UIKit
@@ -76,6 +76,7 @@ class InputBarView: UIView {
     }()
     
     var rightStackViewWidth = 0
+    private var rightStackViewWidthConstraint: SnapKit.Constraint?
     
     let textContenView = UIView.init()
     
@@ -99,7 +100,7 @@ class InputBarView: UIView {
         inputTextView.textView.textColor = Color_24374E
         inputTextView.textView.tintColor = Color_Theme
         inputTextView.textView.limitText(with: 6000)// 限制最大输入文字个数为6000字
-        inputTextView.placeholderAttributedText = NSAttributedString.init(string: "想说点什么呢…", attributes: [.font: UIFont.systemFont(ofSize: 16), .foregroundColor: Color_8A97A5])
+        inputTextView.placeholderAttributedText = NSAttributedString.init(string: L("想说点什么呢…"), attributes: [.font: UIFont.systemFont(ofSize: 16), .foregroundColor: Color_8A97A5])
         return inputTextView
     }()
     
@@ -115,8 +116,8 @@ class InputBarView: UIView {
         btn.clipsToBounds = true
         btn.layer.borderWidth = 1
         btn.layer.borderColor = Color_Theme.cgColor
-        btn.setAttributedTitle(NSAttributedString(string: "按住说话", attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(16)]), for: .normal)
-        btn.setAttributedTitle(NSAttributedString(string: "松开结束", attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(16)]), for: .highlighted)
+        btn.setAttributedTitle(NSAttributedString(string: L("按住说话"), attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(16)]), for: .normal)
+        btn.setAttributedTitle(NSAttributedString(string: L("松开结束"), attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(16)]), for: .highlighted)
         btn.setBackgroundColor(color: UIColor(hexString: "#E7F5FC")!, state: .normal)
         btn.setBackgroundColor(color: UIColor(hexString: "#D0E6F2")!, state: .highlighted)
         return btn
@@ -179,7 +180,6 @@ class InputBarView: UIView {
         return btn
     }()
     
-    
     /* - - - - - - */
     // 引用消息视图
     lazy var referenceView: UIView = {
@@ -226,11 +226,36 @@ class InputBarView: UIView {
             make.top.equalToSuperview().offset(8.5)
             make.left.equalToSuperview().offset(10)
             make.bottom.equalToSuperview().offset(-8.5)
-            make.right.equalToSuperview().offset(-10)
+            self.referenceLabRightConstraint = make.right.equalToSuperview().offset(-10).constraint
+        }
+
+        // 引用的是图片/视频/文件时，右侧显示缩略图（和气泡下方引用条一致）
+        view.addSubview(referenceThumbView)
+        referenceThumbView.snp.makeConstraints { (m) in
+            m.right.equalToSuperview().offset(-8)
+            m.centerY.equalToSuperview()
+            m.width.height.equalTo(QuoteBlockMetrics.thumbSide)
         }
         
         return view
     }()
+
+    /// 引用条右侧的缩略图（图片/视频/文件）
+    private lazy var referenceThumbView: UIImageView = {
+        let iv = UIImageView()
+        iv.contentMode = .scaleAspectFill
+        iv.clipsToBounds = true
+        iv.layer.cornerRadius = 4
+        iv.backgroundColor = UIColor.init(hexString: "#8A97A5", transparency: 0.12)
+        iv.isHidden = true
+        return iv
+    }()
+
+    /// 引用文本右边距约束（有缩略图时要让出空间）
+    /// ⚠️ 必须写全 `SnapKit.Constraint`：项目里另有一个 `Constraint` 类型，直接写会撞名
+    private var referenceLabRightConstraint: SnapKit.Constraint?
+    /// 缩略图异步加载的令牌（切引用时丢弃过期回调）
+    private var referenceThumbToken: Int = 0
     
     // 引用文本
     lazy var referenceLab: UILabel = {
@@ -277,6 +302,39 @@ class InputBarView: UIView {
     // 输入框高度约束
     var inputTextViewHeightConstraint: SnapKit.Constraint?
     
+    /// 阅后即焚模式样式：整个输入框边界变蓝（+ 浅色底）；提示条浮在**输入框上方**。
+    /// 输入框内的占位文案保持不变（提示不放输入框里）。
+    func setBurnMode(_ on: Bool) {
+        textContenView.layer.cornerRadius = 6
+        textContenView.layer.borderWidth = on ? 1 : 0
+        textContenView.layer.borderColor = Color_Theme.cgColor
+        textContenView.backgroundColor = on ? Color_Theme.withAlphaComponent(0.06) : .clear
+        burnHintView.isHidden = !on
+    }
+
+    /// 阅后即焚提示条：浮在输入框上方（不在内容链里，**不影响输入栏高度**）
+    private lazy var burnHintView: UIView = {
+        let v = UIView()
+        v.backgroundColor = Color_Theme
+        v.layer.cornerRadius = 10
+        v.layer.masksToBounds = true
+        v.isHidden = true
+        self.addSubview(v)
+        v.snp.makeConstraints { (m) in
+            m.left.equalToSuperview().offset(15)
+            m.bottom.equalTo(self.snp.top).offset(-8)
+            m.height.equalTo(20)
+        }
+        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 12), textColor: .white, textAlignment: .center, text: "🔥 " + L("阅后即焚"))
+        v.addSubview(lab)
+        lab.snp.makeConstraints { (m) in
+            m.left.equalToSuperview().offset(10)
+            m.right.equalToSuperview().offset(-10)
+            m.centerY.equalToSuperview()
+        }
+        return v
+    }()
+    
     func bindTo(view: UIView) {
         self.removeFromSuperview()
         
@@ -313,7 +371,8 @@ class InputBarView: UIView {
         // 引用视图
         self.addSubview(self.referenceView)
         self.referenceView.snp.makeConstraints { make in
-            make.top.left.right.equalToSuperview()
+            make.top.equalToSuperview()
+            make.left.right.equalToSuperview()
             make.height.equalTo(0)// 0 一行文字：50 两行文字：70
         }
         
@@ -335,6 +394,7 @@ class InputBarView: UIView {
         self.rightStackView.snp.makeConstraints { (m) in
             m.top.right.bottom.equalToSuperview()
             m.width.equalTo(rightStackViewWidth)
+            self.rightStackViewWidthConstraint = m.width.equalTo(rightStackViewWidth).constraint
         }
         
         self.contenView.addSubview(self.textContenView)
@@ -374,14 +434,27 @@ class InputBarView: UIView {
         self.superview?.layoutIfNeeded()
     }
     
+    /// 隐藏/显示右侧"更多(+)"按钮
+    func setMoreBtnHidden(_ hidden: Bool) {
+        self.moreBtn.isHidden = hidden
+        let width = hidden ? 50 : 100
+        self.rightStackViewWidth = width
+        self.rightStackViewWidthConstraint?.update(offset: width)
+    }
+    
     // 点击引用视图删除事件
     @objc private func clickDeleteAction() {
         
         self.referenceLab.text = nil
+        self.referenceThumbView.isHidden = true
+        self.referenceThumbView.image = nil
+        self.referenceThumbToken += 1
+        self.referenceLabRightConstraint?.update(offset: -10)
         resetReferenceViewHeight(type: 0)
         
 //        self.clickDeleteReferenceBlock?()
         self.delegate?.inputBarViewDeleteReference()
+        self.notifySpaceToBottom()
     }
     
     /// 设置引用视图高度
@@ -402,10 +475,95 @@ class InputBarView: UIView {
     // 设置引用消息文字
     func referenceMsgStr(_ contStr: String) {
         self.referenceLab.text = contStr
-        
+
         let height = contStr.getContentHeight(font: referenceLab.font, width: k_ScreenWidth - 80)// 一行：16.8 2行：33.6
-        
+
         self.resetReferenceViewHeight(type: height > 20 ? 2 : 1)
+        self.notifySpaceToBottom()
+    }
+
+    /// 设置引用条（带缩略图）：图片/视频显示缩略图，文件显示类型图标
+    func setReference(_ preview: QuotePreview) {
+        // 有缩略图时给文字让出右侧空间
+        let trailing = -(10 + (preview.media.exists ? QuoteBlockMetrics.thumbSide + 8 : 0))
+        self.referenceLabRightConstraint?.update(offset: trailing)
+        self.referenceThumbView.isHidden = !preview.media.exists
+        self.loadReferenceThumb(preview.media)
+        self.referenceMsgStr(preview.barText)
+    }
+
+    /// 加载引用条缩略图（与气泡下方引用条同一套取图逻辑）
+    private func loadReferenceThumb(_ media: QuoteMedia) {
+        self.referenceThumbToken += 1
+        let token = self.referenceThumbToken
+        self.referenceThumbView.kf.cancelDownloadTask()
+        self.referenceThumbView.image = nil
+        self.referenceThumbView.contentMode = .scaleAspectFill
+        self.referenceThumbView.backgroundColor = UIColor.init(hexString: "#8A97A5", transparency: 0.12)
+        guard media.exists else { return }
+
+        switch media {
+        case .none:
+            break
+        case .photo(let cacheKey, let url):
+            self.loadCachedThumb(cacheKey) { [weak self] image in
+                guard let self = self, self.referenceThumbToken == token else { return }
+                if let image = image {
+                    self.referenceThumbView.image = image
+                } else if let urlString = url, let url = URL(string: urlString) {
+                    self.referenceThumbView.kf.setImage(
+                        with: url,
+                        options: [
+                            .processor(
+                                DownsamplingImageProcessor(
+                                    size: CGSize(width: 64, height: 64))),
+                            .targetCache(ChatMediaCache)
+                        ])
+                }
+            }
+        case .video(let cacheKey):
+            self.loadCachedThumb(cacheKey) { [weak self] image in
+                guard let self = self, self.referenceThumbToken == token else { return }
+                self.referenceThumbView.image = image
+            }
+        case .file(let iconName):
+            self.referenceThumbView.contentMode = .scaleAspectFit
+            self.referenceThumbView.backgroundColor = .clear
+            self.referenceThumbView.image =
+                UIImage.init(named: iconName ?? "") ?? UIImage.init(named: "chat_file_default")
+        }
+    }
+
+    private func loadCachedThumb(_ key: String?, completion: @escaping (UIImage?) -> Void) {
+        guard let key = key, !key.isBlank else {
+            completion(nil)
+            return
+        }
+        ChatMediaCache.safeRetrieveImage(forKey: key, maxPixelSize: 200) { image in
+            completion(image)
+        }
+    }
+
+    /// 清空引用条（发送成功后 / 外部取消引用）
+    func clearReference() {
+        guard self.referenceLab.text != nil else { return }
+        self.referenceLab.text = nil
+        self.referenceThumbView.isHidden = true
+        self.referenceThumbView.kf.cancelDownloadTask()
+        self.referenceThumbView.image = nil
+        self.referenceThumbToken += 1
+        self.referenceLabRightConstraint?.update(offset: -10)
+        self.resetReferenceViewHeight(type: 0)
+        self.layoutIfNeeded()
+        self.notifySpaceToBottom()
+    }
+
+    /// 引用条高度变化后，把「输入框到屏幕底」的占用高度同步给聊天列表 ——
+    /// 不通知的话列表底部 inset 不跟着变，气泡会被引用条压住。
+    private func notifySpaceToBottom() {
+        guard let superview = self.superview else { return }
+        superview.layoutIfNeeded()
+        self.changeSpaceToBottom?(superview.height - self.frame.origin.y)
     }
     
     private func setRecordActions() {
@@ -467,7 +625,7 @@ class InputBarView: UIView {
             return
         }
         self.recordHub.removeFromSuperview()
-        UIApplication.shared.keyWindow?.showProgress(with: "处理中")
+        UIApplication.shared.keyWindow?.showProgress(with: L("处理中"))
         DispatchQueue.global().async {
             guard let filename = self.recordHelper.recordPath?.fileName(), let amrPath = FZMLocalFileClient.shared().createFile(with: .amr(fileName: filename)), let recordpath = self.recordHelper.recordPath else { return }
             let result = TSVoiceConverter.convertWavToAmr(recordpath, amrSavePath: amrPath)
@@ -488,7 +646,7 @@ class InputBarView: UIView {
             //全员禁言
             bannedView.isHidden = false
             FZMAnimationTool.removeCountdown(with: bannedView)
-            bannedView.text = "全员禁言"
+            bannedView.text = L("全员禁言")
             return
         }
         
@@ -496,14 +654,14 @@ class InputBarView: UIView {
         if time > 0 {
             bannedView.isHidden = false
             if time > k_OnedaySeconds {
-                bannedView.text = "禁言中"
+                bannedView.text = L("禁言中")
             } else {
                 let formatter = DateFormatter.getDataformatter()
                 formatter.dateFormat = "HH:mm:ss"
                 FZMAnimationTool.countdown(with: bannedView, fromValue: time, toValue: 0, block: { [weak self] (useTime) in
                     let time = useTime - 8 * 3600
                     let date = Date.init(timeIntervalSince1970: TimeInterval(time))
-                    self?.bannedView.text = "禁言中 " + formatter.string(from: date)
+                    self?.bannedView.text = L("禁言中 ") + formatter.string(from: date)
                     },finishBlock: {[weak self] in
                         self?.bannedView.isHidden = true
                 })
@@ -623,12 +781,19 @@ extension InputBarView: UITextViewDelegate {
         // 判断是否删除 @谁 文本的末尾，是则删除整个 @谁 内容
         if let _ = group, text == "", range.length == 1 {
             // 截取到未删除前光标所在位置之前的所有文本
-            let subInputText = self.inputTextView.textView.text.substring(to: range.location + 1)
+            // 注意：range.location 是 NSRange 的 UTF-16 位置，必须用 NSString 语义操作，且需越界保护
+            let nsText = self.inputTextView.textView.text as NSString
+            let location = range.location + 1// UTF-16 位置
+            guard location >= 0, location <= nsText.length else { return true }
+            let subInputText = nsText.substring(to: location)
             if let needDelRange = self.getDeleteAtRange(in: subInputText) {
                 let deletedAtInputText = (subInputText as NSString).replacingCharacters(in: needDelRange, with: "")
+                let fromLocation = location
                 DispatchQueue.main.async {
-                    textView.text = deletedAtInputText + textView.text.substring(from: range.location + 1)
-                    textView.selectedRange = NSRange.init(location: deletedAtInputText.count, length: 0)
+                    let currentText = textView.text as NSString
+                    let tail = fromLocation <= currentText.length ? currentText.substring(from: fromLocation) : ""
+                    textView.text = deletedAtInputText + tail
+                    textView.selectedRange = NSRange.init(location: (deletedAtInputText as NSString).length, length: 0)
                 }
                 return false
             }
@@ -647,7 +812,7 @@ extension InputBarView: CustomEmojiDelegate {
     func didClickSendEmojiBtn() {
         let text = self.inputTextView.textView.text
         if text?.isBlank == true{
-            self.showToast("不能发送空白信息")
+            self.showToast(L("不能发送空白信息"))
             return
         }
         self.delegate?.inputBarView(self, sendText: self.inputTextView.textView.text, mentionIds: [])

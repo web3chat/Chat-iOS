@@ -3,12 +3,14 @@
 //  PWallet
 //
 //  Created by 杨威 on 2019/12/23.
-//  Copyright © 2019 陈健. All rights reserved.
+//  Copyright © 2019 fzm. All rights reserved.
 //
 
 #import "PWNoCoinViewCell.h"
 #import "Depend.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWNoCoinViewCell()
 //上链通背景
 @property (nonatomic, weak) UIImageView *bgView;
@@ -35,9 +37,11 @@
 }
 
 - (void)changeLanguage{
-    NSString *artText=@"暂无资产，快去添加吧";
+    NSString *artText=L(@"暂无资产，快去添加吧");
     NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
-    NSMutableAttributedString *artString = [[NSMutableAttributedString alloc] initWithString:artText attributes: @{NSFontAttributeName: [UIFont fontWithName:@"PingFangSC-Regular" size:14],NSForegroundColorAttributeName: [UIColor colorWithRed:142/255.0 green:146/255.0 blue:163/255.0 alpha:1.0],NSParagraphStyleAttributeName:paragraphStyle}];
+    // ⚠️ fontWithName: 取不到会返回 nil，字典字面量里塞 nil 会直接崩（attempt to insert nil object）
+    UIFont *font = [UIFont fontWithName:@"PingFangSC-Regular" size:14] ?: [UIFont systemFontOfSize:14];
+    NSMutableAttributedString *artString = [[NSMutableAttributedString alloc] initWithString:artText attributes: @{NSFontAttributeName: font,NSForegroundColorAttributeName: [UIColor colorWithRed:142/255.0 green:146/255.0 blue:163/255.0 alpha:1.0],NSParagraphStyleAttributeName:paragraphStyle}];
     self.bgLabel.attributedText = artString;
 }
 
@@ -56,9 +60,11 @@
     UILabel *label= [[UILabel alloc] init];
     self.bgLabel=label;
     [self.contentView addSubview:label];
-    NSString *artText=@"暂无资产，快去添加吧";
+    NSString *artText=L(@"暂无资产，快去添加吧");
     NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
-    NSMutableAttributedString *artString = [[NSMutableAttributedString alloc] initWithString:artText attributes: @{NSFontAttributeName: [UIFont fontWithName:@"PingFangSC-Regular" size:14],NSForegroundColorAttributeName: [UIColor colorWithRed:142/255.0 green:146/255.0 blue:163/255.0 alpha:1.0],NSParagraphStyleAttributeName:paragraphStyle}];
+    // 同上：fontWithName: 失败返回 nil，不能直接塞进字典字面量
+    UIFont *font = [UIFont fontWithName:@"PingFangSC-Regular" size:14] ?: [UIFont systemFontOfSize:14];
+    NSMutableAttributedString *artString = [[NSMutableAttributedString alloc] initWithString:artText attributes: @{NSFontAttributeName: font,NSForegroundColorAttributeName: [UIColor colorWithRed:142/255.0 green:146/255.0 blue:163/255.0 alpha:1.0],NSParagraphStyleAttributeName:paragraphStyle}];
     label.attributedText = artString;
     label.textAlignment = NSTextAlignmentCenter;
     [label mas_makeConstraints:^(MASConstraintMaker *make){

@@ -8,7 +8,9 @@
 
 #import "PWChoiceFeeSheetCell.h"
 #import "Depend.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWChoiceFeeSheetCell()
 <UITextFieldDelegate>
 
@@ -233,7 +235,7 @@
         lab.font = [UIFont systemFontOfSize:13.f];
         lab.textAlignment = NSTextAlignmentLeft;
         lab.numberOfLines = 0;
-        lab.text = @"矿费";
+        lab.text = L(@"矿费");
         _detailLab = lab;
     }
     return _detailLab;
@@ -283,7 +285,7 @@
         lab.font = [UIFont systemFontOfSize:13.f];
         lab.textAlignment = NSTextAlignmentLeft;
         lab.numberOfLines = 0;
-        lab.text = @"请输入gasPrice";
+        lab.text = L(@"请输入gasPrice");
         _gasPriceTipLab = lab;
     }
     return _gasPriceTipLab;
@@ -342,7 +344,7 @@
         lab.font = [UIFont systemFontOfSize:13.f];
         lab.textAlignment = NSTextAlignmentLeft;
         lab.numberOfLines = 0;
-        lab.text = @"请输入gas";
+        lab.text = L(@"请输入gas");
         _gasTipLab = lab;
     }
     return _gasTipLab;

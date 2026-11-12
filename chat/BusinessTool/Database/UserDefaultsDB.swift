@@ -2,8 +2,8 @@
 //  UserDefaultsDB.swift
 //  xls
 //
-//  Created by 陈健 on 2020/8/11.
-//  Copyright © 2020 陈健. All rights reserved.
+//  Created by fzm on 2020/8/11.
+//  Copyright © 2020 fzm. All rights reserved.
 //
 
 import Foundation
@@ -56,6 +56,15 @@ struct UserDefaultsDB {
     
     @WUserDefaults(key: "chat_save_isFirstLaunchApp")
     static var isNotFirstLaunchApp: Bool?// app是否是新安装第一次启动
+
+    /// 用户曾在「开启通知」引导弹窗中点击「取消」，之后不再弹出该引导（持久化）
+    @WUserDefaults(key: "chat_user_dismissed_notification_settings_prompt")
+    static var userDismissedNotificationSettingsPrompt: Bool?
+    
+    @WUserDefaults(key: "chat_save_userinfo")
+    static var userInfo:[LoginUser]?
+
+    
 }
 
 /**

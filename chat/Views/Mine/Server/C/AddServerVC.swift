@@ -18,7 +18,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var nameTextField: UITextField = {
         let input = UITextField()
         input.font = UIFont.systemFont(ofSize: 16)
-        input.attributedPlaceholder = NSAttributedString(string: "请输入服务器名称", attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("请输入服务器名称"), attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
         input.textColor = Color_24374E
         input.backgroundColor = Color_FAFBFC
         return input
@@ -27,7 +27,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var nameView: UIView = {
         let v = UIView.init()
         v.makeOriginalShdowShow()
-        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: "服务器名称")
+        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: L("服务器名称"))
         v.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -51,7 +51,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var valueTextField: UITextField = {
         let input = UITextField()
         input.font = UIFont.systemFont(ofSize: 16)
-        input.attributedPlaceholder = NSAttributedString(string: "请输入域名", attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("请输入域名"), attributes: [.foregroundColor:Color_8A97A5, .font: UIFont.systemFont(ofSize: 16)])
         input.textColor = Color_24374E
         input.backgroundColor = Color_FAFBFC
         return input
@@ -60,7 +60,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var valueView: UIView = {
         let v = UIView.init()
         v.makeOriginalShdowShow()
-        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: "域名")
+        let lab = UILabel.getLab(font: UIFont.systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: L("域名"))
         v.addSubview(lab)
         lab.snp.makeConstraints { (m) in
             m.left.equalToSuperview().offset(15)
@@ -80,7 +80,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     private lazy var saveBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
         btn.frame = CGRect.init(x: 0, y: 0, width: 50, height: 30)
-        btn.setTitle("保存", for: .normal)
+        btn.setTitle(L("保存"), for: .normal)
         btn.setTitleColor(Color_FFFFFF, for: .normal)
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 14)
         btn.backgroundColor = Color_C8D3DE
@@ -93,7 +93,7 @@ class SetServerVC: UIViewController, ViewControllerProtocol {
     }()
     
     private lazy var deleteBtn: UIButton = {
-        let btn = UIButton.getNormalBtn(with: "删除", backgroundColor: Color_FAFBFC)
+        let btn = UIButton.getNormalBtn(with: L("删除"), backgroundColor: Color_FAFBFC)
         btn.addTarget(self, action: #selector(deleteBtnTouch), for: .touchUpInside)
         return btn
     }()

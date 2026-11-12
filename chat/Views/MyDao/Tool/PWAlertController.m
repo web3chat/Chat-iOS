@@ -2,8 +2,8 @@
 //  PWAlertController.m
 //  PWAlert
 //
-//  Created by 陈健 on 2018/6/14.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Created by fzm on 2018/6/14.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "PWAlertController.h"
@@ -11,6 +11,8 @@
 #import "GameGoFunction.h"
 #import "Depend.h"
 #import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface PWAlertController ()<UITextFieldDelegate,UIGestureRecognizerDelegate>
 /**title*/
 @property (nonatomic,copy) NSString *topTitle;
@@ -109,7 +111,7 @@
 
 - (void)viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    if (![self.topTitle isEqualToString:@"手续费"]) {
+    if (![self.topTitle isEqualToString:L(@"手续费")]) {
         [self.textField becomeFirstResponder];
     }
 }
@@ -145,7 +147,7 @@
 - (void)requestFee {
     
     NSDictionary *param = @{@"name":_coinType};
-    [[SGNetWork defaultManager] sendRequestMethod:HTTPMethodGET serverUrl:@"https://www.bitfeel.cn" apiPath:@"/goapi/interface/fees/recommended" parameters:param progress:nil success:^(BOOL isSuccess, id  _Nullable responseObject) {
+    [[SGNetWork defaultManager] sendRequestMethod:HTTPMethodGET serverUrl:@"" apiPath:@"/goapi/interface/fees/recommended" parameters:param progress:nil success:^(BOOL isSuccess, id  _Nullable responseObject) {
          NSDictionary *result = [NSJSONSerialization JSONObjectWithData:responseObject options:NSJSONReadingAllowFragments error:nil];
          NSLog(@"%@",result[@"msg"]);
         NSInteger code = [result[@"code"] integerValue];
@@ -201,7 +203,7 @@
         {
             double feeAndAm = self.amount + self.slider.value;
             if (self.balance < feeAndAm) {
-                [self showCustomMessage:@"矿工费不足" hideAfterDelay:2.f];
+                [self showCustomMessage:L(@"矿工费不足") hideAfterDelay:2.f];
                 return;
             }
         }
@@ -224,7 +226,7 @@
 - (BOOL)textField:(UITextField *)textField shouldChangeCharactersInRange:(NSRange)range replacementString:(NSString *)string
 {
     
-    if([self.topTitle isEqualToString:@"修改钱包名称"  ])
+    if([self.topTitle isEqualToString:L(@"修改钱包名称")  ])
     {
         NSString *finalStr = [textField.text stringByAppendingString:string];
         if (finalStr.length > 8) {
@@ -233,7 +235,7 @@
         }
     }
     
-    if([self.topTitle isEqualToString:@"修改用户名"  ])
+    if([self.topTitle isEqualToString:L(@"修改用户名")  ])
        {
            NSString *finalStr = [textField.text stringByAppendingString:string];
            if (finalStr.length > 12) {
@@ -292,7 +294,7 @@
    
     
     UILabel *ftitleLab = [[UILabel alloc] init];
-    ftitleLab.text = [NSString stringWithFormat:@"  %@",@"矿工费"  ];
+    ftitleLab.text = [NSString stringWithFormat:@"  %@",L(@"矿工费")];
     ftitleLab.textColor = CMColorFromRGB(0x333649);
     ftitleLab.font = [UIFont boldSystemFontOfSize:17];
     ftitleLab.textAlignment = NSTextAlignmentLeft;
@@ -333,7 +335,7 @@
     }
     
     UILabel *speedSlow = [[UILabel alloc] init];
-    speedSlow.text = @"慢";
+    speedSlow.text = L(@"慢");
     speedSlow.font = CMTextFont13;
     speedSlow.textColor = CMColorFromRGB(0x8E92A3);
     speedSlow.textAlignment = NSTextAlignmentLeft;
@@ -341,7 +343,7 @@
     self.speedLow = speedSlow;
     
     UILabel *speedMid = [[UILabel alloc] init];
-    speedMid.text = @"最佳";
+    speedMid.text = L(@"最佳");
     speedMid.font = CMTextFont13;
     speedMid.textColor = CMColorFromRGB(0x8E92A3);
     speedMid.textAlignment = NSTextAlignmentCenter;
@@ -349,7 +351,7 @@
     self.speedMid = speedMid;
     
     UILabel *speedHigh = [[UILabel alloc] init];
-    speedHigh.text = @"快";
+    speedHigh.text = L(@"快");
     speedHigh.font = CMTextFont13;
     speedHigh.textColor = CMColorFromRGB(0x8E92A3);
     speedHigh.textAlignment = NSTextAlignmentRight;
@@ -391,7 +393,7 @@
     self.textField = textField;
     
     
-    if ([_topTitle isEqualToString:@"请输入密聊密码"  ]) {
+    if ([_topTitle isEqualToString:L(@"请输入密聊密码")]) {
         textField.keyboardType = UIKeyboardTypeDefault;
         textField.secureTextEntry = true;
         if (@available(iOS 11.0, *)) {
@@ -400,10 +402,10 @@
     }
     else
     {
-        if ([self.topTitle isEqualToString:@"请输入转币数量"  ])
+        if ([self.topTitle isEqualToString:L(@"请输入转币数量")])
         {
             textField.keyboardType = UIKeyboardTypeDecimalPad;
-            textField.placeholder = @"请输入转币数量"  ;
+            textField.placeholder = L(@"请输入转币数量");
         }
         else
         {
@@ -600,7 +602,7 @@
     
     self.whiteView.alpha = 0;
     self.whiteView.transform = CGAffineTransformMakeScale(0, 0);
-    if ([self.topTitle isEqualToString:@"手续费"  ])
+    if ([self.topTitle isEqualToString:L(@"手续费")])
     {
         self.textField.hidden = YES;
         leftBtn.backgroundColor = SGColorRGBA(113, 144, 255, 1);
@@ -639,22 +641,22 @@
     NSDecimalNumber *internalMinFee = [[NSDecimalNumber alloc] initWithDouble:self.feeConfig.internalMinFee];
     NSDecimalNumber *externalFee = [[NSDecimalNumber alloc] initWithDouble:self.feeConfig.externalFee];
     NSDecimalNumber *externalMinFee = [[NSDecimalNumber alloc] initWithDouble:self.feeConfig.externalMinFee];
-    NSString *internalStr = [NSString stringWithFormat:@"内部转账:%@%@",internalFee,coinName];
+    NSString *internalStr = [NSString stringWithFormat:@"%@:%@%@",L(@"内部转账"),internalFee,coinName];
     if (self.feeConfig.internalType == 2)
     {
         // 百分比
         
         NSString *coinMoneyStr = [NSString stringWithFormat:@"%.f%%",self.feeConfig.internalFee * 100];
-        internalStr = [NSString stringWithFormat:@"内部转账:转账金额x%@,最低%@%@",coinMoneyStr,internalMinFee,coinName];
+        internalStr = [NSString stringWithFormat:@"%@:%@x%@,%@%@%@",L(@"内部转账"),L(@"转账金额"),coinMoneyStr,internalMinFee,L(@"最低"),coinName];
     }
     
     // 外部提币
-    NSString *externalStr = [NSString stringWithFormat:@"外部提币:%@%@",externalFee,coinName];
+    NSString *externalStr = [NSString stringWithFormat:@"%@:%@%@",L(@"外部提币"),externalFee,coinName];
     if (self.feeConfig.externalType == 2)
     {
         // 百分比
         NSString *coinMoneyStr = [NSString stringWithFormat:@"%.f%%",self.feeConfig.externalFee * 100];
-        externalStr = [NSString stringWithFormat:@"外部提币:转账金额x%@,最低%@%@",coinMoneyStr,externalMinFee,coinName];
+        externalStr =  [NSString stringWithFormat:@"%@:%@x%@,%@%@%@",L(@"外部提币"),L(@"转账金额"),coinMoneyStr,internalMinFee,L(@"最低"),coinName];
     }
     
     textlab.text = [NSString stringWithFormat:@"%@\n%@",internalStr,externalStr];

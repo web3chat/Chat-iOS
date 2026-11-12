@@ -2,8 +2,8 @@
 //  FZMLocalFileClient.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/12.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/12.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -91,7 +91,12 @@ public class FZMLocalFileClient: NSObject {
             FZMLog("文件不存在 创建路径\(path)")
             //不存在则创建
             //withIntermediateDirectories为ture表示路径中间如果有不存在的文件夹都会创建
-            try! fileManager.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
+            // 磁盘满 / 权限异常时 createDirectory 会 throw：原来 try! 直接闪退，改成记录日志
+            do {
+                try fileManager.createDirectory(atPath: path, withIntermediateDirectories: true, attributes: nil)
+            } catch {
+                FZMLog("创建目录失败 \(path)：\(error)")
+            }
         }
     }
     

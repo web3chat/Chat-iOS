@@ -47,9 +47,9 @@ class FZMGroupCtrlMemberVC: FZMGroupMemberListVC {
         var text = ""
         switch showType {
         case .delete:
-            text = "确认删除"
+            text = L("确认删除")
         default:
-            text = "确定"
+            text = L("确定")
         }
         let btn = UIButton.getNormalBtn(with: text)
         return btn
@@ -62,7 +62,7 @@ class FZMGroupCtrlMemberVC: FZMGroupMemberListVC {
         return view
     }()
     lazy var selectAllTitleView : UILabel = {
-        let lab = UILabel.getLab(font: UIFont.mediumFont(16), textColor: Color_8A97A5, textAlignment: .center, text: "全选")
+        let lab = UILabel.getLab(font: UIFont.mediumFont(16), textColor: Color_8A97A5, textAlignment: .center, text: L("全选"))
         lab.isUserInteractionEnabled = true
         lab.enlargeClickEdge(.init(top: 20, left: 20, bottom: 20, right: 20))
         return lab
@@ -106,7 +106,7 @@ class FZMGroupCtrlMemberVC: FZMGroupMemberListVC {
         
         let cancelBtn = UIButton.init(type: .custom)
         cancelBtn.enlargeClickEdge(10, 10, 10, 15)
-        cancelBtn.setTitle("完成", for: .normal)
+        cancelBtn.setTitle(L("完成"), for: .normal)
         cancelBtn.setTitleColor(Color_32B2F7, for: .normal)
         cancelBtn.titleLabel?.font = UIFont.boldFont(16)
         cancelBtn.addTarget(self, action: #selector(hideSearchView), for: .touchUpInside)
@@ -138,7 +138,7 @@ class FZMGroupCtrlMemberVC: FZMGroupMemberListVC {
         input.textAlignment = .left
         input.font = UIFont.regularFont(16)
         input.textColor = Color_24374E
-        input.attributedPlaceholder = NSAttributedString(string: "搜索群成员", attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("搜索群成员"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])
         input.returnKeyType = .search
         input.addTarget(self, action: #selector(textFiledEditChanged(_:)), for: .editingChanged)
         return input
@@ -157,7 +157,7 @@ class FZMGroupCtrlMemberVC: FZMGroupMemberListVC {
         let v = UIView.init()
         v.isHidden = true
         v.backgroundColor = Color_FAFBFC
-        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: "没有匹配的对象", btnTitle: nil, clickBlock: nil)
+        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: L("没有匹配的对象"), btnTitle: nil, clickBlock: nil)
         v.addSubview(imgView)
         imgView.snp.makeConstraints({ (m) in
             m.top.equalToSuperview().offset(65)
@@ -177,7 +177,7 @@ class FZMGroupCtrlMemberVC: FZMGroupMemberListVC {
     init(with gid: Group, ctrlType: FZMGroupCtrlMemberVCShowType) {
         group = gid
         showType = ctrlType
-        super.init()
+        super.init(nibName: nil, bundle: nil)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -190,11 +190,11 @@ class FZMGroupCtrlMemberVC: FZMGroupMemberListVC {
         // Do any additional setup after loading the view.
         switch showType {
         case .delete:
-            self.navigationItem.title = "删除成员"
+            self.navigationItem.title = L("删除成员")
         case .whiteMap:
-            self.navigationItem.title = "发言名单"
+            self.navigationItem.title = L("发言名单")
         case .blackMap:
-            self.navigationItem.title = "禁言名单"
+            self.navigationItem.title = L("禁言名单")
         }
         
         self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: #imageLiteral(resourceName: "tool_search"), style: .plain, target: self, action: #selector(showSearchView))

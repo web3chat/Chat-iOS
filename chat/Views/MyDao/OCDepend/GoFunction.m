@@ -3,11 +3,12 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/6/19.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "GoFunction.h"
 #import "PWDataBaseManager.h"
+#import "PWContractRequest.h"
 #import "CoinPrice.h"
 #import <sys/utsname.h>
 #import "Depend.h"
@@ -238,10 +239,6 @@
     CoinPrice *coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:coinType platform:platStr andTreaty:treaty];
     NSString *tokenSybmol = BLANK;
     WalletapiWalletQueryByTxid *querybytxid = [[WalletapiWalletQueryByTxid alloc] init];
-    if ([coinPrice.coinprice_platform isEqualToString:@"wwchain"]) {
-        tokenSybmol = [NSString stringWithFormat:@"ww.%@",coinPrice.coinprice_heyueAddress];
-    }
-    
     [querybytxid setCointype:coinType];
     [querybytxid setTxid:txid];
     [querybytxid setTokenSymbol:tokenSybmol];
@@ -274,66 +271,47 @@
    
     CoinPrice *coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:coinType platform:platStr andTreaty:treaty];
     NSString *realCoinType = coinPrice.coinprice_chain;
-    if(coinPrice == nil || [coinPrice isEqual:[NSNull null]])
-    {
-        return array;
-    }
     
     NSData *data;
     
-    if (coinPrice.treaty == 2)
+    if (coinPrice == nil || [coinPrice isEqual:[NSNull null]])
     {
-        if ([coinType isEqualToString:@"WW"] &&( [coinPrice.coinprice_chain isEqualToString:ETH] || [coinPrice.coinprice_chain isEqualToString:BTY])) {
-            tokenSymbol =  @"ww.coins";
-            realCoinType = BTY;
-        }else{
-            tokenSymbol = [NSString stringWithFormat:@"%@.coins",coinPrice.coinprice_platform];
-        }
-       
+        // 行情表里还没有这条币时也必须能查账单（以前这里直接 return 空数组 ⇒ 账单页永远空白）。
+        // 主链币的 tokensymbol 传空，让节点按原生币查；传币种名会被当成「同名代币」而查不到。
+        realCoinType = coinType;
+        tokenSymbol = BLANK;
     }
     else
     {
-        if ([coinPrice.coinprice_chain isEqualToString:BTY] && ![coinPrice.coinprice_platform isEqualToString:BTY]) {
-            NSString *platformStr = coinPrice.coinprice_platform;
-            tokenSymbol = [NSString stringWithFormat:@"%@.%@",platformStr,coinType];
-        }
-        if ([coinPrice.coinprice_platform isEqualToString:@"wwchain"]){
-            realCoinType = BTY;
-            tokenSymbol = [NSString stringWithFormat:@"ww.%@",coinPrice.coinprice_heyueAddress];
-        }
-    }
-    
-    if ([coinPrice.coinprice_chain isEqualToString:coinType]) {
-        tokenSymbol = BLANK;
-    }
-
-    // eth地址和BTC地址的YCC要特殊处理
-    if (([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:ETH])
-        ||([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:BTC])) {
-        tokenSymbol = BLANK;
-        realCoinType = YCC;
-    }
-    
-    if ([coinType isEqualToString:BTY] && [coinPrice.coinprice_chain isEqualToString:ETH]) {
-        tokenSymbol = BLANK;
-        realCoinType = BTY;
-    }
-    // ybf的币特殊处理
-    if([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"yhchain"]){
         if (coinPrice.treaty == 2)
         {
-            NSString *platformStr = coinPrice.coinprice_platform;
-            tokenSymbol = [NSString stringWithFormat:@"%@.coins",platformStr];
-            realCoinType = BTY;
+            tokenSymbol = [NSString stringWithFormat:@"%@.coins",coinPrice.coinprice_platform];
         }
         else
         {
-            NSString *platformStr = coinPrice.coinprice_platform;
-            tokenSymbol = [NSString stringWithFormat:@"%@.%@",platformStr,coinType];
+            if ([coinPrice.coinprice_chain isEqualToString:BTY] && ![coinPrice.coinprice_platform isEqualToString:BTY]) {
+                NSString *platformStr = coinPrice.coinprice_platform;
+                tokenSymbol = [NSString stringWithFormat:@"%@.%@",platformStr,coinType];
+            }
+        }
+        
+        if ([coinPrice.coinprice_chain isEqualToString:coinType]) {
+            tokenSymbol = BLANK;
+        }
+
+        // eth地址和BTC地址的YCC要特殊处理
+        if (([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:ETH])
+            ||([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:BTC])) {
+            tokenSymbol = BLANK;
+            realCoinType = YCC;
+        }
+        
+        if ([coinType isEqualToString:BTY] && [coinPrice.coinprice_chain isEqualToString:ETH]) {
+            tokenSymbol = BLANK;
             realCoinType = BTY;
         }
     }
-    
+   
     WalletapiQueryByPage *queryByPage = [[WalletapiQueryByPage alloc] init];
     [queryByPage setCointype:realCoinType];
     [queryByPage setAddress:coinAddress];
@@ -351,8 +329,6 @@
     WalletapiWalletQueryByAddr *walletQueryByAddr = [[WalletapiWalletQueryByAddr alloc] init];
     [walletQueryByAddr setQueryByPage:queryByPage];
     WalletapiUtil *util = [[WalletapiUtil alloc] init];
-    BlockchainTool *tool = [[BlockchainTool alloc] init];
-    NSString *chain = [tool getBlockChain];
     [util setNode:GoNodeUrl];
 //    [util setNode:@"https://112.74.59.221:8084"]; // 账单类型测试
     [walletQueryByAddr setUtil:util];
@@ -419,71 +395,60 @@
     CoinPrice *coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:coinType platform:platStr andTreaty:treaty];
     NSString *realCoinType = coinPrice.coinprice_chain;
     
-    if (coinPrice.treaty == 2)
+    if (coinPrice == nil || [coinPrice isEqual:[NSNull null]])
     {
-        NSString *platformStr = coinPrice.coinprice_platform;
-        if ([platformStr isEqualToString:@"wwchain"]) {
-            tokenSymbols = [NSString stringWithFormat:@"%@.coins",[coinType lowercaseString]];
-            realCoinType = BTY;
-        }else{
-            tokenSymbols = [NSString stringWithFormat:@"%@.coins",platformStr];
-        }
+        // 行情表里还没有这条币（行情接口不可用 / 还没拉到 coin-index）。
+        // ⚠️ 这里以前会把 tokenSymbols 留成 coinType，节点会按「同名代币」去查，
+        //    查不到直接返回 0 ⇒ 资产页 ETH 余额显示 0。主链币的 tokensymbol 必须传空。
+        realCoinType = coinType;
+        tokenSymbols = BLANK;
     }
     else
     {
-        if ([coinPrice.coinprice_chain isEqualToString:BTY] && ![coinPrice.coinprice_platform isEqualToString:BTY]) {
-            
-            NSString *platformStr = coinPrice.coinprice_platform;
-            if ([platformStr isEqualToString:@"wwchain"]) {
-                tokenSymbols = [NSString stringWithFormat:@"%@.coins",[coinType lowercaseString]];
-                realCoinType = BTY;
-            }else{
-                tokenSymbols = [NSString stringWithFormat:@"%@.%@",platformStr,coinType];
-            }
-            
-        }else if ([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"wwchain"]){
-            realCoinType = BTY;
-            tokenSymbols = [NSString stringWithFormat:@"%@.%@",@"WW",coinPrice.coinprice_heyueAddress];
-        }
-    }
-    
-    if ([coinPrice.coinprice_chain isEqualToString:coinType]) {
-        tokenSymbols = BLANK;
-    }
-    if (([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:ETH])
-        || ([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:BTC])) {
-        tokenSymbols = BLANK;
-        realCoinType = YCC;
-    }
-    
-    if([coinType isEqualToString:BTY] && [coinPrice.coinprice_chain isEqualToString:ETH]){
-        tokenSymbols = BLANK;
-        realCoinType = BTY;
-    }
-    
-    // ybf的币特殊处理
-    if([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"yhchain"]){
         if (coinPrice.treaty == 2)
         {
             NSString *platformStr = coinPrice.coinprice_platform;
-            tokenSymbols = [NSString stringWithFormat:@"%@.coins",platformStr];
-            realCoinType = BTY;
+            if ([platformStr isEqualToString:@"Benefy"]) {
+                tokenSymbols = [NSString stringWithFormat:@"%@.coins",coinType];
+                realCoinType = BTY;
+            }else{
+                tokenSymbols = [NSString stringWithFormat:@"%@.coins",platformStr];
+            }
         }
-        else
-        {
-            NSString *platformStr = coinPrice.coinprice_platform;
-            tokenSymbols = [NSString stringWithFormat:@"%@.%@",platformStr,coinType];
+        
+        if ([coinPrice.coinprice_chain isEqualToString:coinType]) {
+            tokenSymbols = BLANK;
+        }
+        if (([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:ETH])
+            || ([coinType isEqualToString:YCC] && [coinPrice.coinprice_chain isEqualToString:BTC])) {
+            tokenSymbols = BLANK;
+            realCoinType = YCC;
+        }
+        
+        if([coinType isEqualToString:BTY] && [coinPrice.coinprice_chain isEqualToString:ETH]){
+            tokenSymbols = BLANK;
             realCoinType = BTY;
         }
     }
-    
-    
+
+    // ETH 原生币：直接问公网 RPC 的 eth_getBalance（自建节点在 tokensymbol 非空时会返回 0，
+    // 且这条链路对 ETH 的表现不稳定）。同步调用只能在后台线程做，失败了再回退到节点。
+    if (![NSThread isMainThread]
+        && [coinType isEqualToString:ETH]
+        && [realCoinType isEqualToString:ETH]
+        && [tokenSymbols isEqualToString:BLANK]) {
+        double rpcBalance = 0;
+        if ([PWContractRequest getETHNativeBalanceSync:address balance:&rpcBalance]) {
+            return rpcBalance;
+        }
+    }
+
     WalletapiWalletBalance *walletbalance = [[WalletapiWalletBalance alloc] init];
     [walletbalance setCointype:realCoinType];
     [walletbalance setAddress:address];
     [walletbalance setTokenSymbol:tokenSymbols];
     WalletapiUtil *util = [[WalletapiUtil alloc] init];
-    BlockchainTool *tool = [[BlockchainTool alloc] init];
+//    BlockchainTool *tool = [[BlockchainTool alloc] init];
 //    NSString *chain = [tool getBlockChain];
     [util setNode:GoNodeUrl];
     [walletbalance setUtil:util];
@@ -576,10 +541,10 @@
     }
     
     // 平行链2.0
-    if ([coinPrice.coinprice_platform isEqualToString:@"wwchain"] && [coinPrice.coinprice_chain isEqualToString:@"ETH"]) {
-        realCointype = @"WW";
-        tokenSymbol = [NSString stringWithFormat:@"ww.%@",coinPrice.coinprice_heyueAddress];
-    }
+//    if ([coinPrice.coinprice_platform isEqualToString:@"dtm"] && [coinPrice.coinprice_chain isEqualToString:@"ETH"]) {
+//        realCointype = @"DTM";
+//        tokenSymbol = [NSString stringWithFormat:@"dtm.%@",coinPrice.coinprice_heyueAddress];
+//    }
     
     WalletapiWalletTx *walletTx = [[WalletapiWalletTx alloc] init];
     [walletTx setCointype:realCointype];
@@ -637,19 +602,11 @@
         signData.addressID = 2;
     }
     
-    // ybf的币特殊处理
-    if([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"yhchain"]){
-        realCointype = BTY;
-        signData.addressID = 2;
-    }
-    // 平行链2.0
-    if([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"wwchain"]){
+    if (coinPrice == nil && [coinType isEqualToString:@"BTY"]) {
         realCointype = ETH;
         signData.addressID = 2;
-        signData.chainID = 5188;// 5188;
+        signData.chainID = 2999;
     }
-    
-    
     signData.cointype = realCointype;
     signData.data = data;
     signData.privKey = prive;
@@ -670,7 +627,6 @@
     NSError *error;
     NSData *resultData;
     NSString *tokenSymbol = coinType;
-    
     if ([coinType containsString:@"$"]) {
         NSArray *arr = [coinType componentsSeparatedByString:@"$"];
         tokenSymbol = arr[1];
@@ -692,35 +648,14 @@
         realCointype = BTY;
         tokenSymbol = BLANK;
     }
-    if ([coinType isEqualToString:@"WW"] && ([coinPrice.coinprice_chain isEqualToString:BTY] || [coinPrice.coinprice_chain isEqualToString:@"ETH"])) {
-        realCointype = BTY;
-        tokenSymbol = [NSString stringWithFormat:@"%@.coins",[coinType lowercaseString]];
-    }
-    
     // ybf的币特殊处理
-    if([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"yhchain"]){
+    if([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"Benefy"]){
         if (coinPrice.treaty == 2)
         {
-            NSString *platformStr = coinPrice.coinprice_platform;
-            tokenSymbol = [NSString stringWithFormat:@"%@.coins",platformStr];
-            realCointype = BTY;
-        }
-        else
-        {
-            NSString *platformStr = coinPrice.coinprice_platform;
-            tokenSymbol = [NSString stringWithFormat:@"%@.%@",platformStr,coinType];
+            tokenSymbol = [NSString stringWithFormat:@"%@.coins",coinType];
             realCointype = BTY;
         }
     }
-    
-    // ww的币特殊处理
-    if([coinPrice.coinprice_chain isEqualToString:ETH] && [coinPrice.coinprice_platform isEqualToString:@"wwchain"]){
-       
-        tokenSymbol = [NSString stringWithFormat:@"ww.%@",coinPrice.coinprice_heyueAddress];
-        realCointype = @"WW";
-    }
-    
-    
     WalletapiWalletSendTx *sendTx = [[WalletapiWalletSendTx alloc] init];
     [sendTx setCointype:realCointype];
     [sendTx setSignedTx:signTx];
@@ -783,7 +718,8 @@
     NSDictionary *signDic = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingMutableLeaves error:&error2];
     if ([signDic[@"result"] isEqual:[NSNull null]] || signDic[@"result"] == nil) {
         return BLANK;
-    }else
+    }
+    else
     {
         return resp.txId;
     }
@@ -1087,7 +1023,7 @@
     WalletapiUtil *util = [[WalletapiUtil alloc] init];
     BlockchainTool *tool = [[BlockchainTool alloc] init];
     NSString *chain = [tool getBlockChain];
-    [util setNode:GoNodeUrl];//https://183.129.226.77:8083
+    [util setNode:GoNodeUrl];
     [muladdr setUtil:util];
     if (WalletapiImortMulAddress(muladdr)) {
         NSLog(@"success add");

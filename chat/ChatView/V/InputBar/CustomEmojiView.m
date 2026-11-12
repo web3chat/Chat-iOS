@@ -6,7 +6,9 @@
 //
 
 #import "CustomEmojiView.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 #define color_Theme 0x32B2F7
 
 #define UIColorFromRGB(rgbValue) [UIColor                       \
@@ -65,7 +67,7 @@ alpha:1.0]
     [self addSubview:emojiFooter];
     
     UIButton *sendEmojiBtn = [[UIButton alloc]initWithFrame:CGRectMake(emojiFooter.frame.size.width - 60, 0, 50, 50)];
-    [sendEmojiBtn setTitle:@"发送" forState:UIControlStateNormal];
+    [sendEmojiBtn setTitle:L(@"发送") forState:UIControlStateNormal];
     [sendEmojiBtn setTitleColor:UIColorFromRGB(color_Theme) forState:UIControlStateNormal];
     sendEmojiBtn.backgroundColor = UIColor.whiteColor;
     sendEmojiBtn.titleLabel.font = [UIFont boldSystemFontOfSize:15];
@@ -116,7 +118,7 @@ alpha:1.0]
 
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
     NSString *emojiStr = emojiArray[indexPath.row];
-    //NSLog(@"表情 %@", emojiStr);
+    //FZMLog(@"表情 %@", emojiStr);
     if (self.delegate && [self.delegate respondsToSelector:@selector(didClickEmojiLabel:)]) {
         [self.delegate didClickEmojiLabel:emojiStr];
     }

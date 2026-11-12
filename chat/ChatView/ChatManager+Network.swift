@@ -47,28 +47,23 @@ extension ChatManager {
             FZMLog("暂不支持")
         }
         guard !uploadData.isEmpty else {
-            failure?("文件内容为空")
+            failure?(L("文件内容为空"))
             return
         }
         
-        // 需要加密的消息内容
+        // 需要加密的消息内容 —— 加密移到后台线程执行，主线程不再阻塞等待（发送消息不卡 UI）
         if isNeedEncrypt {
-            //wjhTEST
-            let semaphore = DispatchSemaphore.init(value: 0)
-            FZMLog("文件加密开始")
-            DispatchQueue.global().async {
-                uploadData = ChatManager.encryptUploadData(fileData, publickey: publickey, isEncryptPersionChatData: msg.sessionId.isPersonChat)
-                semaphore.signal()
+            FZMLog("文件加密开始(后台)")
+            DispatchQueue.global(qos: .userInitiated).async {
+                let encrypted = ChatManager.encryptUploadData(fileData, publickey: publickey, isEncryptPersionChatData: msg.sessionId.isPersonChat)
+                // 如果加密则文件名拼上特殊字符串 "$ENC$"，解密时判断文件名是否包含此字符串以判断是否为加密上传的文件
+                let enc = encrypted.count > fileData.count
+                self.uploadRequest(fileData: encrypted, type: fileType, isEncrypt: enc, success: success, failure: failure)
+                FZMLog("文件加密结束，继续下一步操作(后台)")
             }
-            semaphore.wait()//等待异步任务执行完成才可以继续执行
-            FZMLog("文件加密结束，继续下一步操作")
+        } else {
+            self.uploadRequest(fileData: uploadData, type: fileType, isEncrypt: isEncrypt, success: success, failure: failure)
         }
-        
-        if uploadData.count > fileData.count {// 如果加密则文件名拼上特殊字符串 "$ENC$"，解密时判断文件名是否包含此字符串以判断是否为加密上传的文件
-            isEncrypt = true
-        }
-        
-        self.uploadRequest(fileData: uploadData, type: fileType, isEncrypt: isEncrypt, success: success, failure: failure)
     }
     
     // 文件上传请求
@@ -104,7 +99,10 @@ extension ChatManager {
         }
         let uid = LoginUser.shared().address
         
-        let filepath =  fileData.count > fileData.count ? "chatList/\(fileType)/\(str1)/$ENC$\(str2)_\(uid)\(fileEndName)" : "chatList/\(fileType)/\(str1)/\(str2)_\(uid)\(fileEndName)"
+        // ⚠️ 原来这里写的是 `fileData.count > fileData.count ? ".../$ENC$\(str2)..." : ".../\(str2)..."`——
+        //    自己跟自己比**恒为 false**，是个恒走 false 分支的死代码；`$ENC$` 实际是在上面拼进 `str2` 的。
+        //    去掉死分支，行为与线上保持一致（即原来的 false 分支）。
+        let filepath = "chatList/\(fileType)/\(str1)/\(str2)_\(uid)\(fileEndName)"
         
         var headers: HTTPHeaders {
             let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
@@ -127,37 +125,40 @@ extension ChatManager {
         
         AF.upload(multipartFormData: multipartFormData, to: BackUpOSSURL, headers: headers).response { resp in
             response = resp
-            if response?.result.isSuccess == true {// 上传成功
-                FZMLog("上传文件请求成功 - response data -- \(String(describing: response?.data))")
+            // ⚠️ 上传失败时服务端可能返回**非 JSON**（413 / 网关错误页），
+            //    原来只打一句「json 解析失败」根本查不出原因 ⇒ 这里把状态码和响应体原文打出来。
+            let statusCode = resp.response?.statusCode ?? -1
+            let bodyText = resp.data.flatMap { String(data: $0, encoding: .utf8) } ?? "<无响应体>"
+            if response?.result.isSuccess == true, let jsonData = resp.data, !jsonData.isEmpty {// 上传成功
+                FZMLog("上传文件请求成功 - status=\(statusCode) 响应体=\(bodyText)")
                 do{
-                    if let jsonData = resp.data{
-                        
-                        let json = try JSON.init(data: jsonData)
-                        FZMLog("response json -- \(json)")
-                        guard let code = json["result"].int, code == 0 else {// code == 0为消息发送成功，其他则报错
-                            let error = NSError.init(domain: "", code: json["result"].intValue, userInfo: [NSLocalizedDescriptionKey: json["message"].stringValue])
-                            FZMLog("上传文件失败 -- error \(error)")
-                            // 上传失败
-                            failure?("上传文件失败")
-                            return
-                        }
-                        
-//                        let uri = json["data"]["uri"].stringValue
-                        let url = json["data"]["url"].stringValue
-                        FZMLog("上传文件成功！！！！！！！！url: \(url)")
-                        
-                        // 上传成功
-                        success?(url)
+                    let json = try JSON.init(data: jsonData)
+                    FZMLog("response json -- \(json)")
+                    guard let code = json["result"].int, code == 0 else {// code == 0为消息发送成功，其他则报错
+                        let error = NSError.init(domain: "", code: json["result"].intValue, userInfo: [NSLocalizedDescriptionKey: json["message"].stringValue])
+                        FZMLog("上传文件失败 -- error \(error)")
+                        // 上传失败
+                        failure?(L("上传文件失败"))
+                        return
                     }
+
+//                        let uri = json["data"]["uri"].stringValue
+                    let url = json["data"]["url"].stringValue
+                    FZMLog("上传文件成功！！！！！！！！url: \(url)")
+
+                    // 上传成功
+                    success?(url)
                 }catch{
-                    FZMLog("文件上传失败 -- error message json 解析失败")
+                    FZMLog("文件上传失败 -- status=\(statusCode) 响应体不是 JSON：\(bodyText)")
                     // 发送消息失败
-                    failure?("发送消息失败")
+                    failure?(L("发送消息失败"))
                 }
             } else {// 上传失败（消息发送失败）
-                FZMLog("文件上传失败 - response data -- \(String(describing: resp.error))")
+                FZMLog(
+                    "文件上传失败 - status=\(statusCode) error=\(String(describing: resp.error)) "
+                        + "响应体=\(bodyText)")
                 // 发送消息失败
-                failure?("文件上传失败")
+                failure?(L("上传文件失败"))
             }
         }
     }

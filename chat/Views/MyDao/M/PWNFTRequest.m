@@ -260,7 +260,7 @@
 
 + (void)requestTxsByAddrWithCoinType:(NSString *)coinType address:(NSString *)address contractAddr:(NSString *)contractAddr index:(NSInteger)index count:(NSInteger)count direction:(NSInteger)direction type:(NSInteger)type success:(requestSuccessBlock)successBlock failure:(requestFailuresBlock)failureBlock
 {
-    if (contractAddr == nil) {
+    if (contractAddr == nil || address == nil || coinType == nil) {
         return;
     }
     NSDictionary *payload = @{@"address":address,
@@ -382,7 +382,7 @@
 
 + (void)requstSLGTxsByCoinType:(NSString *)coinType address:(NSString *)address contractAddr:(NSString *)contractAddr index:(NSInteger)index count:(NSInteger)count direction:(NSInteger)direction type:(NSInteger)type success:(requestSuccessBlock)successBlock failure:(requestFailuresBlock)failureBlock
 {
-    if (contractAddr == nil) {
+    if (contractAddr == nil || address == nil || coinType == nil) {
         return;
     }
     NSDictionary *payload = @{@"address":address,

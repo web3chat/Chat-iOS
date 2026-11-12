@@ -2,8 +2,8 @@
 //  SectorProgress.swift
 //  SectorProgress
 //
-//  Created by 陈健 on 2019/2/15.
-//  Copyright © 2019年 陈健. All rights reserved.
+//  Created by fzm on 2019/2/15.
+//  Copyright © 2019年 fzm. All rights reserved.
 //
 
 import UIKit

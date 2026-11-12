@@ -2,7 +2,7 @@
 //  MessageSizeCalculator.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/23.
+//  Created by fzm on 2020/12/23.
 //
 
 let NameViewMaxWidth = k_ScreenWidth - (10 + 35 + 10)*2
@@ -93,9 +93,32 @@ class MessageSizeCalculator: CellSizeCalculator {
         attributes.namePosition = self.nameViewPosition(for: message)
         attributes.nameViewLeadingTrailingPadding = self.nameViewLeadingTrailingPadding
         
+        // 引用消息：气泡下方要留出引用条的高度。
+        // ⚠️ 只**加高**容器、不改宽度 —— 各 Cell 仍按原来的气泡尺寸布局，
+        //    多出来的这段高度由 `MessageContentCell.layoutQuoteBlockView` 拿去放引用条。
+        // 引用消息：引用条画在气泡**下方**。
+        // ⚠️ 这里**不加** `messageContainerSize` 的高度（那会让气泡被压矮 / 正文被裁），
+        //    只在 `cellContentHeight` 里把整行加高 46pt —— 气泡尺寸永远保持原样。
+        let quote = self.quotePreview(for: message, at: indexPath)
+        let quoteHeight: CGFloat = quote == nil ? 0 : QuoteBlockMetrics.totalHeight
         let messageContainerSize = self.messageContainerSize(for: message, at: indexPath)
+        attributes.quotePreview = quote
+        attributes.quoteHeight = quoteHeight
+        // 引用条宽度只按引用文字算（上限 = 气泡最大可用宽度），和气泡实际宽度解耦
+        if let quote = quote {
+            let maxQuoteWidth = self.messageContainerMaxWidth(for: message, at: indexPath)
+            attributes.quoteWidth = QuoteBlockMetrics.width(for: quote, maxWidth: maxQuoteWidth)
+        } else {
+            attributes.quoteWidth = 0
+        }
         attributes.messageContainerPadding = self.messageContainerPadding(for: message)
         attributes.messageContainerSize = messageContainerSize
+
+        // 气泡下方的「译文 / 转写」卡片：和引用条同一套做法 —— 只加高整行，不挤压气泡
+        let extra = self.extraBlockLayout(for: message, at: indexPath)
+        attributes.extraBlock = extra.block
+        attributes.extraBlockWidth = extra.width
+        attributes.extraBlockHeight = extra.height
         
         attributes.cellTopLabelSize = self.cellTopLabelSize(for: message, at: indexPath)
         attributes.cellTopLabelAlignment = self.cellTopLabelAlignment(for: message)
@@ -133,7 +156,12 @@ class MessageSizeCalculator: CellSizeCalculator {
     }
     
     func cellContentHeight(for message: Message, at indexPath: IndexPath) -> CGFloat {
-        let messageContainerHeight = self.messageContainerSize(for: message, at: indexPath).height
+        // ⚠️ 必须与 `configure(attributes:)` 加上的是同一份高度，否则行高和气泡会对不上
+        let quoteHeight: CGFloat = self.quotePreview(for: message, at: indexPath) == nil ? 0 : QuoteBlockMetrics.totalHeight
+        // 译文 / 转写卡片：卡片高度 + 与气泡（或引用条）的间距
+        let extra = self.extraBlockLayout(for: message, at: indexPath)
+        let extraHeight: CGFloat = extra.block == nil ? 0 : extra.height + MessageExtraBlockMetrics.gap
+        let messageContainerHeight = self.messageContainerSize(for: message, at: indexPath).height + quoteHeight + extraHeight
         let cellBottomLabelHeight = self.cellBottomLabelSize(for: message, at: indexPath).height
         let messageBottomLabelHeight = self.messageBottomLabelSize(for: message, at: indexPath).height
         let cellTopLabelHeight = self.cellTopLabelSize(for: message, at: indexPath).height
@@ -153,6 +181,52 @@ class MessageSizeCalculator: CellSizeCalculator {
         }
     }
     
+    // MARK: - 引用消息
+
+    /// 这条消息要显示的引用条内容（由数据源决定；默认 nil = 不显示）
+    func quotePreview(for message: Message, at indexPath: IndexPath) -> QuotePreview? {
+        return self.layout.messageDataSource.quotePreview(for: message, at: indexPath)
+    }
+
+    // MARK: - 译文 / 转写卡片
+
+    /// 这条消息要显示的附加卡片（纯本地字段，不走数据源）
+    /// - 文本消息：有译文才显示
+    /// - 语音消息：有转写才显示
+    func extraBlock(for message: Message) -> MessageExtraBlock? {
+        switch message.kind {
+        case .text:
+            if let translation = message.translation, !translation.isBlank {
+                return MessageExtraBlock(kind: .translation, text: translation)
+            }
+        case .audio:
+            if let transcript = message.transcript, !transcript.isBlank {
+                return MessageExtraBlock(kind: .transcript, text: transcript)
+            }
+        default:
+            break
+        }
+        return nil
+    }
+
+    /// 卡片的宽度与高度（宽度 = 气泡最大可用宽度；高度由 `MessageExtraBlockMetrics` 统一算）
+    func extraBlockLayout(
+        for message: Message,
+        at indexPath: IndexPath
+    ) -> (block: MessageExtraBlock?, width: CGFloat, height: CGFloat) {
+        guard let block = self.extraBlock(for: message) else {
+            return (nil, 0, 0)
+        }
+        let width = self.extraBlockMaxWidth(for: message, at: indexPath)
+        let height = MessageExtraBlockMetrics.height(for: block, width: width)
+        return (block, width, height)
+    }
+
+    /// 卡片的最大可用宽度（默认与气泡一致；文本消息覆写成「气泡整体宽度」，少折一行）
+    func extraBlockMaxWidth(for message: Message, at indexPath: IndexPath) -> CGFloat {
+        return self.messageContainerMaxWidth(for: message, at: indexPath)
+    }
+
     // MARK: - Leading View
     
     func leadingViewWidth(for message: MessageType, at indexPath: IndexPath) -> CGFloat {

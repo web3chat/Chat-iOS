@@ -60,7 +60,7 @@ class FZMGroupInfoVC: FZMBaseViewController {
     
     
     lazy var addBtn : UIButton = {
-        let btn = UIButton.getNormalBtn(with: "申请入群")
+        let btn = UIButton.getNormalBtn(with: L("申请入群"))
         return btn
     }()
     
@@ -68,7 +68,7 @@ class FZMGroupInfoVC: FZMBaseViewController {
     init(with group: IMSearchInfoModel, type: FZMApplyEntrance) {
         self.group = group
         self.type = type
-        super.init()
+        super.init(nibName: nil, bundle: nil)
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -79,7 +79,7 @@ class FZMGroupInfoVC: FZMBaseViewController {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view.
-        self.navigationItem.title = "群信息"
+        self.navigationItem.title = L("群信息")
         self.createUI()
         self.setupActions()
         self.refreshView()
@@ -131,7 +131,7 @@ class FZMGroupInfoVC: FZMBaseViewController {
             if IMSDK.shared().isEncyptChat &&
                 strongSelf.group.isEncrypt &&
                 ((IMLoginUser.shared().currentUser?.privateKey.isEmpty ?? true) ||  (IMLoginUser.shared().currentUser?.publicKey.isEmpty ?? true)) {
-                let alert = FZMAlertView.init(attributedTitle: NSAttributedString.init(string:"提示"), attributedText: NSAttributedString.init(string: "你尚未设置密聊私钥，无法加密群聊发送消息，请先设置密聊私钥。", attributes: [NSAttributedString.Key.foregroundColor: Color_24374E]), btnTitle: "设置") {
+                let alert = FZMAlertView.init(attributedTitle: NSAttributedString.init(string: L("提示")), attributedText: NSAttributedString.init(string: L("你尚未设置密聊私钥，无法加密群聊发送消息，请先设置密聊私钥。"), attributes: [NSAttributedString.Key.foregroundColor: Color_24374E]), btnTitle: L("设置")) {
                     FZMUIMediator.shared().pushVC(.goImportSeed(isHideBackBtn: false))
                 }
                 alert.show()
@@ -159,11 +159,11 @@ class FZMGroupInfoVC: FZMBaseViewController {
                 }
                 if strongSelf.group.needConfirm {
                     FZMUIMediator.shared().pushVC(.inputAddAuthInfo(type: .group(groupId: strongSelf.group.uid, source: useSource), completeBlock: {
-                        strongSelf.showToast(with: "验证申请已提交")
+                        strongSelf.showToast(with: L("验证申请已提交"))
                         strongSelf.addBtn.isHidden = true
                     }))
                 }else {
-                    strongSelf.showProgress(with: "正在申请")
+                    strongSelf.showProgress(with: L("正在申请"))
                     IMConversationManager.shared().applyJoinGroup(groupId: strongSelf.group.uid, source: useSource, completionBlock: { (response) in
                         strongSelf.hideProgress()
                         guard response.success else {
@@ -171,7 +171,7 @@ class FZMGroupInfoVC: FZMBaseViewController {
                             return
                         }
                         FZNEncryptKeyManager.shared().updataGroupKey(groupId: strongSelf.group.uid)
-                        strongSelf.showToast(with: "添加成功")
+                        strongSelf.showToast(with: L("添加成功"))
                         strongSelf.addBtn.isHidden = true
                         
                     })
@@ -189,13 +189,13 @@ class FZMGroupInfoVC: FZMBaseViewController {
     
     private func refreshView() {
         nameLab.text = group.name
-        desLab.text = "群号 \(group.showId)"
-        nickNameLab.text = "群成员 \(group.memberNumber)人"
+        desLab.text = String(format: L("群号 %@"), group.showId)
+        nickNameLab.text = String(format: L("群成员 %d人"), group.memberNumber)
 
         headerImageView.loadNetworkImage(with: group.avatar.getDownloadUrlString(width: 50), placeImage: GetBundleImage("chat_group_head"))
         if group.identification == true {
             self.identificationImageView.isHidden = false
-            let att = NSMutableAttributedString.init(string: "\(IMSDK.shared().shareTitle ?? "")认证： \(group.identificationInfo)", attributes: [NSAttributedString.Key.font : UIFont.regularFont(14),NSAttributedString.Key.foregroundColor : Color_8A97A5])
+            let att = NSMutableAttributedString.init(string: (IMSDK.shared().shareTitle ?? "") + L("认证： ") + group.identificationInfo), attributes: [NSAttributedString.Key.font : UIFont.regularFont(14),NSAttributedString.Key.foregroundColor : Color_8A97A5])
             att.yy_lineSpacing = 4
             self.identificationInfoLab.attributedText = att
         } else {
@@ -216,7 +216,7 @@ class FZMGroupInfoVC: FZMBaseViewController {
                 return
             }
             if isInGroup {
-                self.addBtn.setAttributedTitle(NSAttributedString(string: "进入群聊", attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
+                self.addBtn.setAttributedTitle(NSAttributedString(string: L("进入群聊"), attributes: [.foregroundColor:UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
                 self.inGroup = true
             }else {
                 self.addBtn.isHidden = !self.group.canAdd

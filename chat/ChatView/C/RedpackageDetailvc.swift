@@ -25,7 +25,7 @@ class RedpackageDetailvc: UIViewController ,ViewControllerProtocol {
         return lab
     }()
     lazy var titleLab : UILabel = {
-        return UILabel.getLab(font: UIFont.boldFont(24), textColor: Color_FFFFFF, textAlignment: .center, text: "恭喜发财 大吉大利！")
+        return UILabel.getLab(font: UIFont.boldFont(24), textColor: Color_FFFFFF, textAlignment: .center, text: L("恭喜发财 大吉大利！"))
     }()
     // 时间
     lazy var timeLab : UILabel = {
@@ -52,18 +52,22 @@ class RedpackageDetailvc: UIViewController ,ViewControllerProtocol {
         super.viewDidLoad()
         
         self.createUI()
-        self.title = "红包领取详情"
+        self.title = L("红包领取详情")
         self.view.backgroundColor = Color_DD5F5F
         
     }
     
     private func createUI() {
        
-        let redArr = self.detail.split(separator: ",").map(String.init)
+        // ⚠️ 原来只判 `count > 0` 却直接取 `redArr[2]`：csv 少于 3 段时**数组越界崩溃**。
+        // 这条通道已被「进我们的红包详情页（本地只读模式）」取代，这里只做防御性修好，当兼容兑底。
+        let redArr = self.detail.split(separator: ",").map {
+            $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         if redArr.count > 0 {
             let addr = redArr[0]
-            let time = redArr[2]
-            let balance = redArr[1]
+            let balance = redArr.count > 1 ? redArr[1] : ""
+            let time = redArr.count > 2 ? redArr[2] : ""
             nameLab.text = addr.shortAddress
             timeLab.text = time
             balanceLab.text = balance

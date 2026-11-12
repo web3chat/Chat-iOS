@@ -110,9 +110,19 @@ extension Group {
         self.muteType = groupTable.muteType
         self.name = groupTable.name
         let ownerDic = groupTable.owner.toDictionary()
-        self.owner = GroupMember.init(memberId: ownerDic["memberId"] as! String, memberMuteTime: (ownerDic["memberMuteTime"] as! String).intEncoded, memberName: (ownerDic["memberName"] as! String), memberType: (ownerDic["memberType"]! as! String).intEncoded, groupId: (ownerDic["groupId"] as! String).intEncoded)
+        let ownerMemberId = ownerDic["memberId"] as? String ?? ""
+        let ownerMuteTime = (ownerDic["memberMuteTime"] as? String ?? "0").intEncoded
+        let ownerName = ownerDic["memberName"] as? String
+        let ownerType = (ownerDic["memberType"] as? String ?? "0").intEncoded
+        let ownerGroupId = (ownerDic["groupId"] as? String ?? "0").intEncoded
+        self.owner = GroupMember.init(memberId: ownerMemberId, memberMuteTime: ownerMuteTime, memberName: ownerName, memberType: ownerType, groupId: ownerGroupId)
         if let personDic = groupTable.person?.toDictionary() {
-            self.person = GroupMember.init(memberId: personDic["memberId"] as! String, memberMuteTime: (personDic["memberMuteTime"] as! String).intEncoded, memberName: (personDic["memberName"] as! String), memberType: (personDic["memberType"]! as! String).intEncoded, groupId: (personDic["groupId"] as! String).intEncoded)
+            let personMemberId = personDic["memberId"] as? String ?? ""
+            let personMuteTime = (personDic["memberMuteTime"] as? String ?? "0").intEncoded
+            let personName = personDic["memberName"] as? String
+            let personType = (personDic["memberType"] as? String ?? "0").intEncoded
+            let personGroupId = (personDic["groupId"] as? String ?? "0").intEncoded
+            self.person = GroupMember.init(memberId: personMemberId, memberMuteTime: personMuteTime, memberName: personName, memberType: personType, groupId: personGroupId)
         }
         self.status = groupTable.status
         self.isOnTop = groupTable.isOnTop

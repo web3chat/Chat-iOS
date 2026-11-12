@@ -2,7 +2,7 @@
 //  BackupSeedVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/6.
+//  Created by fzm on 2021/1/6.
 //
 
 import UIKit
@@ -11,11 +11,11 @@ import SnapKit
 @objc class BackupSeedVC: UIViewController, ViewControllerProtocol {
     
     private let bag = DisposeBag.init()
-    
+   
     private lazy var backBtn: UIButton = {
         let btn = UIButton.init()
         btn.setImage(UIImage.init(named: "nav_back")?.withRenderingMode(.alwaysTemplate), for: .normal)
-        btn.tintColor = .white
+        btn.tintColor = Color_24374E
         btn.enlargeClickEdge(UIEdgeInsets.init(top: 10, left: 10, bottom: 10, right: 10))
         btn.rx.controlEvent(.touchUpInside).subscribe(onNext: {[weak self] (_) in
             self?.navigationController?.popViewController(animated: true)
@@ -24,12 +24,12 @@ import SnapKit
     }()
     
     private lazy var topLab: UILabel = {
-        let lab = UILabel.getLab(font: .systemFont(ofSize: 14), textColor: UIColor.init(hexString: "#8E92A3"), textAlignment: .center, text: "验证您备份的助记词")
+        let lab = UILabel.getLab(font: .systemFont(ofSize: 14), textColor: UIColor.init(hexString: "#8E92A3"), textAlignment: .center, text: L("验证您备份的助记词"))
         return lab
     }()
     
     private lazy var bottomLab: UILabel = {
-        let lab = UILabel.getLab(font: .systemFont(ofSize: 13), textColor: UIColor.white, textAlignment: .left, text: "请按照正确的顺序点击每个单词")
+        let lab = UILabel.getLab(font: .systemFont(ofSize: 13), textColor: Color_24374E, textAlignment: .left, text: L("请按照正确的顺序点击每个单词"))
         return lab
     }()
     
@@ -57,7 +57,7 @@ import SnapKit
     
     lazy var okBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
-        btn.setTitle("确定", for: .normal)
+        btn.setTitle(L("确定"), for: .normal)
         btn.layer.cornerRadius = 6
         btn.backgroundColor = UIColor.init(hexString: "#5D6377")
         btn.addTarget(self, action: #selector(okBtnTouch), for: .touchUpInside)
@@ -66,6 +66,7 @@ import SnapKit
     }()
     
    @objc let seed: String
+    @objc let pwd : String
     private let disorderSeed: [String]
     private let isChinese: Bool
     
@@ -77,8 +78,9 @@ import SnapKit
         }
     }
     
-    init(seed: String, isChinese: Bool) {
+    init(seed: String, isChinese: Bool,pwd:String) {
         self.seed = seed
+        self.pwd = pwd
         var disorderSeed = self.seed.components(separatedBy: " ")
         for i in 0..<disorderSeed.count {
             let index = Int.random(in: 0..<disorderSeed.count)
@@ -97,7 +99,8 @@ import SnapKit
         super.viewDidLoad()
         
         self.xls_isNavigationBarHidden = true
-        self.view.backgroundColor = UIColor.init(hexString: "#333649")
+        // 与上一步（`CreateSeedVC` 生成助记词页）保持同一套白底样式
+        self.view.backgroundColor = UIColor.init(hexString: "#ffffff")
 
         self.setupViews()
                 
@@ -130,7 +133,8 @@ import SnapKit
         }
         
         let bottomBgView = UIView.init()
-        bottomBgView.backgroundColor = UIColor.init(hexString: "#2B292F")
+        // 原来这里是深色面板（#2B292F）分隔上下两区；白底后跟着页面一起变白，否则白色背景上会压一块深色
+        bottomBgView.backgroundColor = UIColor.init(hexString: "#ffffff")
         self.view.addSubview(bottomBgView)
         bottomBgView.snp.makeConstraints { (m) in
             m.left.right.bottom.equalToSuperview()
@@ -170,23 +174,26 @@ import SnapKit
         let backupSeedString = self.backupSeed.joined(separator: " ")
         let seedString = self.seed
         guard backupSeedString == seedString else {
-            self.showToast("助记词错误")
+            self.showToast(L("助记词错误"))
             return
         }
         guard let keys = SeedManager.keyBy(seed: self.seed),
               !keys.priKey.isEmpty,
               !keys.pubKey.isEmpty,
               !EncryptManager.publicKeyToAddress(publicKey: keys.pubKey).isEmpty else {
-            self.showToast("助记词解析错误, 请更换助记词")
+            self.showToast(L("助记词解析错误, 请更换助记词"))
             return
         }
         let address = EncryptManager.publicKeyToAddress(publicKey: keys.pubKey)
-        LoginUser.shared().login(seed: self.seed, priKey: keys.priKey, pubKey: keys.pubKey, address: address)
+        let encrypasswd = GoFunction.passwordhash(self.pwd)
+        let encryMnemonic = GoFunction.enckey(seed, password: self.pwd)
+        ChooseAccountVC.logoutCurrentSessionIfNeededBeforeNewAccountLogin()
+        LoginUser.shared().login(seed: seed,encSeed: encryMnemonic!, priKey: keys.priKey, pubKey: keys.pubKey, address: address,encPasswd: encrypasswd!)
         
         APP.shared().reloadView()
         let precoin = PreCoin.init()
         let seedstrr: NSString = seedString as NSString
-        precoin.add(intoW: seedString)
+        precoin.add(intoW: seedString,passwd: self.pwd)
     }
     
 }

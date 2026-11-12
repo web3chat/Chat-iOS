@@ -72,11 +72,11 @@ class FZMGroupMembersView: UIView {
                 view.nameLab.text = item.name
                 view.nameLab.textColor = Color_8A97A5
             case .invite:
-                view.nameLab.text = "邀请"
+                view.nameLab.text = L("邀请")
                 view.nameLab.textColor = Color_Theme
                 view.headImageView.image = #imageLiteral(resourceName: "group_add_user")
             case .remove:
-                view.nameLab.text = "移除"
+                view.nameLab.text = L("移除")
                 view.nameLab.textColor = Color_Theme
                 view.headImageView.image = #imageLiteral(resourceName: "group_remove_user")
             }

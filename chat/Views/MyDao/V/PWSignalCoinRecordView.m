@@ -3,11 +3,14 @@
 //  PWallet
 //
 //  Created by 郑晨 on 2021/7/12.
-//  Copyright © 2021 陈健. All rights reserved.
+//  Copyright © 2021 fzm. All rights reserved.
 //
 
 #import "PWSignalCoinRecordView.h"
 #import "Depend.h"
+#import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @implementation PWSignalCoinRecordView
 
 - (instancetype)init
@@ -37,7 +40,7 @@
     [self addSubview:self.recordCountLab];
     
     self.recordBtn = [[UIButton alloc] init];
-    [self.recordBtn setTitle:@"查看历史转账记录" forState:UIControlStateNormal];
+    [self.recordBtn setTitle:L(@"查看历史转账记录") forState:UIControlStateNormal];
     [self.recordBtn setTitleColor:CMColorFromRGB(0x37aec4) forState:UIControlStateNormal];
     [self.recordBtn.titleLabel setFont:[UIFont systemFontOfSize:12]];
     [self.recordBtn addTarget:self action:@selector(clickBtn:) forControlEvents:UIControlEventTouchUpInside];
@@ -63,7 +66,7 @@
 - (void)setRecordCount:(NSInteger)recordCount
 {
     _recordCount = recordCount;
-    self.recordCountLab.text = [NSString stringWithFormat:@"   已转%li次",recordCount];
+    self.recordCountLab.text = [NSString stringWithFormat:L(@"   已转%li次"),recordCount];
     NSTextAttachment *attach = [[NSTextAttachment alloc] init];
     attach.image = [UIImage imageNamed:@"trans_safe"];
     attach.bounds = CGRectMake(0, -4, 12, 14);

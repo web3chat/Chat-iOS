@@ -38,6 +38,13 @@ class BlackListVC: UIViewController,ViewControllerProtocol {
         if #available(iOS 15.0, *) {   ///  standardAppearance 这个api其实是 13以上就可以使用的 ，这里写 15 其实主要是iOS15上出现的这个死样子
             let naba = UINavigationBarAppearance.init()
             naba.configureWithOpaqueBackground()
+            // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+            naba.buttonAppearance.normal.backgroundImage = UIImage()
+            naba.buttonAppearance.highlighted.backgroundImage = UIImage()
+            naba.doneButtonAppearance.normal.backgroundImage = UIImage()
+            naba.doneButtonAppearance.highlighted.backgroundImage = UIImage()
+            naba.backButtonAppearance.normal.backgroundImage = UIImage()
+            naba.backButtonAppearance.highlighted.backgroundImage = UIImage()
             naba.backgroundColor = Color_F6F7F8
             naba.shadowColor = UIColor.lightGray
             self.navigationController?.navigationBar.standardAppearance = naba
@@ -48,7 +55,7 @@ class BlackListVC: UIViewController,ViewControllerProtocol {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-        self.title = "黑名单"
+        self.title = L("黑名单")
         
         self.setupViews()
         
@@ -63,7 +70,7 @@ class BlackListVC: UIViewController,ViewControllerProtocol {
             strongSelf.divideShieldUsers(shieldUsers)
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
-            strongSelf.showToast("获取黑名单列表失败 \(error.localizedDescription)")
+            strongSelf.showToast(L("获取黑名单列表失败") + "\(error.localizedDescription)")
         }
     }
     

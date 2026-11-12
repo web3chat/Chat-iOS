@@ -2,8 +2,8 @@
 //  UIViewController+ShowInfo.m
 //  PWallet
 //
-//  Created by 陈健 on 2018/5/17.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Created by fzm on 2018/5/17.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "UIViewController+ShowInfo.h"
@@ -79,7 +79,7 @@
     hud.mode = MBProgressHUDModeIndeterminate;
     hud.label.text = message;
     hud.label.numberOfLines = 0;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [hud showAnimated:true];
     });
 }
@@ -96,7 +96,7 @@
     hud.mode = MBProgressHUDModeIndeterminate;
     hud.label.text = message;
     hud.label.numberOfLines = 0;
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
         [hud showAnimated:true];
     });
 }

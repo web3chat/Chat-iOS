@@ -2,7 +2,7 @@
 //  InfoAlertView.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/28.
+//  Created by fzm on 2021/1/28.
 //
 
 import UIKit
@@ -40,7 +40,7 @@ class InfoAlertView: UIView {
         btn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.layer.cornerRadius = 20
-        btn.setTitle("确定", for: .normal)
+        btn.setTitle(L("确定"), for: .normal)
         btn.addTarget(self, action: #selector(confirmClick), for: .touchUpInside)
         return btn
     }()

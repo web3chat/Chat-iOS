@@ -2,7 +2,7 @@
 //  MessageCollectionViewLayout.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/21.
+//  Created by fzm on 2020/12/21.
 //
 
 import UIKit
@@ -74,6 +74,8 @@ class MessageCollectionViewLayout: UICollectionViewFlowLayout {
     lazy var transferMeessageSizeCalculator = TransferMeessageSizeCalculator(layout: self)
     lazy var contactCardMessageSizeCalculator = ContactCardMessageSizeCalculator(layout: self)
     lazy var systemMessageSizeCalculator = SystemMessageSizeCalculator(layout: self)
+    lazy var redPacketMessageSizeCalculator = RedPacketMessageSizeCalculator(layout: self)
+    lazy var forwardMessageSizeCalculator = ForwardMessageSizeCalculator(layout: self)
     override init() {
         super.init()
         self.setupView()
@@ -127,14 +129,19 @@ class MessageCollectionViewLayout: UICollectionViewFlowLayout {
         case .notification:
             return self.textMessageSizeCalculator
         case .forward:
-            return self.textMessageSizeCalculator
+            return self.forwardMessageSizeCalculator
         case .RTCCall(_):
             return self.textMessageSizeCalculator
         case .collect(_):
             return self.textMessageSizeCalculator
         case .redPacket(_):
-            return self.textMessageSizeCalculator
-        case .contactCard(_):
+            return self.redPacketMessageSizeCalculator
+        case .contactCard(let card):
+            // 安卓端的「专属红包」（名片消息 type == -1）用红包气泡的尺寸，
+            // 否则外框（240×100）和气泡实际内容（224×76）对不上
+            if card.contactType == -1 {
+                return self.redPacketMessageSizeCalculator
+            }
             return self.contactCardMessageSizeCalculator
         case .UNRECOGNIZED:
             return self.textMessageSizeCalculator

@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/29.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "CoinDetailViewController.h"
@@ -19,11 +19,12 @@
 #import "chat-Swift.h"
 #import "PWContractRequest.h"
 
-#define BROWSER_ETH @"https://etherscan.io/tx/"
-#define BROWSER_BNB @"https://bscscan.com/tx/"
-#define BROWSER_TRX @"https://tronscan.org/#/transaction/"
-#define BROWSER_BTY @"https://mainnet.bityuan.com/tx/"
-#define BROWSER_YCC @"https://yuan.org/tradeHash?hash="
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
+#define BROWSER_ETH @"https://etherscan.io/address/"
+#define BROWSER_BNB @"https://bscscan.com/address/"
+#define BROWSER_TRX @"https://tronscan.org/#/address/"
+#define BROWSER_BTY @"https://mainnet.bityuan.com/address/"
+#define BROWSER_YCC @"https://yuan.org/address?address="
 
 @interface CoinDetailViewController ()<UITableViewDelegate,UITableViewDataSource>
 {
@@ -71,7 +72,7 @@
     self.view.backgroundColor = SGColorFromRGB(0xFCFCFF);
     self.page = 0;
     _transactionArray = [[NSMutableArray alloc] init];
-    _coinTypeArray = @[@"全部"  ,@"转账"  ,@"收款"  ];
+    _coinTypeArray = @[L(@"全部"), L(@"转账"), L(@"收款")];
    
     
     _coinListType = CoinListTypeAll;
@@ -96,11 +97,27 @@
 - (void)viewWillAppear:(BOOL)animated
 {
     [super viewWillAppear:animated];
+    // 兜底：从隐层导航栏的页面（AI 客服、扫码…）过来时，保证本页导航栏是显示的
+    [self.navigationController setNavigationBarHidden:NO animated:animated];
     
     if (@available(iOS 15, *))
     {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        appearance.backgroundColor = SGColorFromRGB(0xEBAE44);
+        // iOS 26/27：不显式 opaque 会被画成「液态玻璃」，backgroundColor 只作用于状态栏区域
+        [appearance configureWithOpaqueBackground];
+        // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+        appearance.buttonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.buttonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backgroundColor = ThemeBlueColor;
+        // iOS 26/27：只设 backgroundColor 时系统只把颜色画到状态栏那一条，导航栏本体仍是玻璃/白色；
+        // 必须再给一张纯色 backgroundImage 才会真的整条变色。
+        appearance.backgroundImage = [CommonFunction createImageWithColor:ThemeBlueColor];
+        appearance.backgroundImageContentMode = UIViewContentModeScaleToFill;
+        self.navigationController.navigationBar.barTintColor = ThemeBlueColor;
         appearance.backgroundEffect = nil;
         appearance.shadowColor = UIColor.clearColor;
         appearance.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : SGColorFromRGB(0x333649)};
@@ -110,7 +127,7 @@
     else
     {
         self.navigationController.navigationBar.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : SGColorFromRGB(0x333649)};
-        [self.navigationController.navigationBar setBackgroundImage:[CommonFunction createImageWithColor:SGColorFromRGB(0xEBAE44)] forBarMetrics:UIBarMetricsDefault];
+        [self.navigationController.navigationBar setBackgroundImage:[CommonFunction createImageWithColor:ThemeBlueColor] forBarMetrics:UIBarMetricsDefault];
 
     }
     UIBarButtonItem *backItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"nav_back"]
@@ -142,7 +159,19 @@
     if (@available(iOS 15, *))
     {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+        // iOS 26/27：不显式 opaque 会被画成「液态玻璃」，backgroundColor 只作用于状态栏区域
+        [appearance configureWithOpaqueBackground];
+        // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+        appearance.buttonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.buttonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.highlighted.backgroundImage = [UIImage new];
         appearance.backgroundColor = SGColorFromRGB(0xffffff);
+        appearance.backgroundImage = [CommonFunction createImageWithColor:SGColorFromRGB(0xffffff)];
+        appearance.backgroundImageContentMode = UIViewContentModeScaleToFill;
+        self.navigationController.navigationBar.barTintColor = SGColorFromRGB(0xffffff);
         appearance.backgroundEffect = nil;
         appearance.shadowColor = UIColor.clearColor;
         appearance.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : [UIColor whiteColor]};
@@ -170,7 +199,7 @@
     UIImageView *blackView = [[UIImageView alloc]init];
     [self.view addSubview:blackView];
     self.blackView = blackView;
-    blackView.backgroundColor = SGColorFromRGB(0xEBAE44);
+    blackView.backgroundColor = ThemeBlueColor;
     
     CoinDetailView *titleView = [[CoinDetailView alloc] init];
     [self.view addSubview:titleView];
@@ -183,7 +212,7 @@
         }
         UIPasteboard *pboard = [UIPasteboard generalPasteboard];
         pboard.string = address;
-        [weakSelf showCustomMessage:@"地址复制成功"   hideAfterDelay:1];
+        [weakSelf showCustomMessage:L(@"地址复制成功") hideAfterDelay:1];
     };
     self.titleView.qrCodeBlock = ^(UIImageView *imageView) {
     
@@ -193,7 +222,7 @@
         if (weakSelf.nftUrl != nil) {
             [weakSelf openSafariWithuRL:weakSelf.nftUrl];
         }else{
-            [weakSelf showCustomMessage:@"未获取到对应的NFT地址 请稍后再试"   hideAfterDelay:2.f];
+            [weakSelf showCustomMessage:L(@"未获取到对应的NFT地址 请稍后再试") hideAfterDelay:2.f];
         }
         
     };
@@ -207,7 +236,7 @@
     BlueButton *outBtn = [[BlueButton alloc] init];
     outBtn.backgroundColor = [UIColor clearColor];
     outBtn.titleLabel.font = [UIFont boldSystemFontOfSize:18];
-    [outBtn setTitle:@"转账"   forState:UIControlStateNormal];
+    [outBtn setTitle:L(@"转账") forState:UIControlStateNormal];
     
     [outBtn setBackgroundImage:[UIImage imageNamed:@"转账"] forState:UIControlStateNormal];
     [btnBgView addSubview:outBtn];
@@ -218,7 +247,7 @@
     BlueButton *inBtn = [[BlueButton alloc] init];
     inBtn.backgroundColor = [UIColor clearColor];
     inBtn.titleLabel.font = [UIFont boldSystemFontOfSize:18];
-    [inBtn setTitle:@"收款"   forState:UIControlStateNormal];
+    [inBtn setTitle:L(@"收款") forState:UIControlStateNormal];
     [inBtn setBackgroundImage:[UIImage imageNamed:@"收款"] forState:UIControlStateNormal];
     [btnBgView addSubview:inBtn];
     self.inBtn = inBtn;
@@ -235,7 +264,7 @@
     
     //交易记录
     UIButton *tradeTitle = [[UIButton alloc] init];
-    [tradeTitle setTitle:[NSString stringWithFormat:@"  %@",@"交易记录"  ] forState:UIControlStateNormal];
+    [tradeTitle setTitle:[NSString stringWithFormat:@"  %@", L(@"交易记录")] forState:UIControlStateNormal];
     [tradeTitle setTitleColor:TextColor51 forState:UIControlStateNormal];
     tradeTitle.titleLabel.font = [UIFont boldSystemFontOfSize:14];
     tradeTitle.contentHorizontalAlignment = UIControlContentHorizontalAlignmentLeft;
@@ -276,13 +305,13 @@
         }
     }
     
-    UIButton *toBroswerBtn = [[UIButton alloc] init];
-    [toBroswerBtn setTitle:@"前往区块链浏览器"   forState:UIControlStateNormal];
-    [toBroswerBtn setTitleColor:SGColorFromRGB(0x7190FF) forState:UIControlStateNormal];
-    [toBroswerBtn.titleLabel setFont:[UIFont systemFontOfSize:15]];
-    [toBroswerBtn addTarget:self action:@selector(toBroswer:) forControlEvents:UIControlEventTouchUpInside];
-    self.toBroswerBtn = toBroswerBtn;
-    [self.view addSubview:self.toBroswerBtn];
+    // ⚠️ 「前往区块链浏览器」入口已下线（产品要求不再提供）：
+    // 不再创建/添加该按钮，也不再为它装约束 —— 视图不在层级里时给它装约束会直接崩（no common ancestor）。
+    // `toBroswer:` 保留但已无人调用。
+    //
+    // UIButton *toBroswerBtn = [[UIButton alloc] init];
+    // [toBroswerBtn setTitle:L(@"前往区块链浏览器") forState:UIControlStateNormal];
+    // …（原实现）
     
     
     
@@ -319,7 +348,7 @@
     
     
     //没有交易记录
-    NoRecordView *noRecordView = [[NoRecordView alloc] initWithImage:[UIImage imageNamed:@"notraderecord"] title:@"暂无交易记录"  ];
+    NoRecordView *noRecordView = [[NoRecordView alloc] initWithImage:[UIImage imageNamed:@"notraderecord"] title:L(@"暂无交易记录")];
     [self.tradeList addSubview:noRecordView];
     noRecordView.hidden = true;
     self.noRecordView = noRecordView;
@@ -369,7 +398,7 @@
     }
     
     if (urlStr.length == 0) {
-        [self showCustomMessage:@"暂未支持" hideAfterDelay:2.f];
+        [self showCustomMessage:L(@"暂未支持") hideAfterDelay:2.f];
     }
 }
 
@@ -423,10 +452,7 @@
         make.right.equalTo(self.view).offset(-200);
     }];
     
-    [self.toBroswerBtn mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.right.equalTo(self.view).offset(-20);
-        make.top.height.equalTo(self.coinTypeView);
-    }];
+    // 「前往区块链浏览器」按钮已下线，不再为它装约束（原来在这里）
     
     [self.tradeList mas_makeConstraints:^(MASConstraintMaker *make) {
         make.top.equalTo(self.coinTypeView.mas_bottom).with.offset(1);
@@ -595,6 +621,7 @@
             [PWContractRequest queryTransactionByAddress:self.selectedCoin.coin_address
                                                 coinType:self.selectedCoin.coin_chain
                                             contractAddr:self.selectedCoin.coin_pubkey
+                                             tokenSymbol:self.selectedCoin.coin_type
                                                    index:self.page
                                                    count:20
                                                direction:0
@@ -708,6 +735,7 @@
             [PWContractRequest queryTransactionByAddress:self.selectedCoin.coin_address
                                                 coinType:self.selectedCoin.coin_chain
                                             contractAddr:self.selectedCoin.coin_pubkey
+                                             tokenSymbol:self.selectedCoin.coin_type
                                                    index:self.page
                                                    count:20
                                                direction:0
@@ -893,7 +921,7 @@
 - (void)openGCDBalance
 {
     WEAKSELF
-    NSTimeInterval period = 5.0; //设置时间间隔
+    NSTimeInterval period = 3.0; //设置时间间隔
     dispatch_queue_t queue = dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0);
     _timer = dispatch_source_create(DISPATCH_SOURCE_TYPE_TIMER, 0, 0, queue);
     dispatch_time_t start = dispatch_time(DISPATCH_TIME_NOW, 0);
@@ -977,28 +1005,54 @@
                 
             }];
         }else if (self.selectedCoin.coin_type_nft == 10){
-            [PWContractRequest getBalancewithCoinType:self.selectedCoin.coin_chain
-                                              address:self.selectedCoin.coin_address
-                                               execer:self.selectedCoin.coin_pubkey
-                                              success:^(id  _Nonnull object) {
-                NSError *error;
-                NSDictionary *result = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingAllowFragments error:&error];
-                NSLog(@"result %@",result);
-                if (![result[@"result"] isKindOfClass:[NSNull class]]) {
-                    CGFloat balance = [result[@"result"][@"balance"] doubleValue];
-                    if (balance != -1)
-                    {
-                        // 有余额
-                        weakSelf.selectedCoin.coin_balance = balance;
-                        [[PWDataBaseManager shared] updateCoin:self.selectedCoin];
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            weakSelf.titleView.coin = weakSelf.selectedCoin;
-                        });
+            if([self.selectedCoin.coin_chain isEqualToString:@"BTY"]){
+                [PWContractRequest getBalanceWithChain:self.selectedCoin.coin_chain
+                                               address:self.selectedCoin.coin_address
+                                           tokenSymbol:self.selectedCoin.coin_pubkey
+                                               success:^(id  _Nonnull object) {
+                    NSError *error;
+                    NSDictionary *result = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingAllowFragments error:&error];
+                    NSLog(@"result %@",result);
+                    if (![result[@"result"] isKindOfClass:[NSNull class]]) {
+                        CGFloat balance = [result[@"result"][@"balance"] doubleValue];
+                        if (balance != -1)
+                        {
+                            // 有余额
+                            weakSelf.selectedCoin.coin_balance = balance;
+                            [[PWDataBaseManager shared] updateCoin:self.selectedCoin];
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                weakSelf.titleView.coin = weakSelf.selectedCoin;
+                            });
+                        }
                     }
-                }
-            } failure:^(NSString * _Nonnull errorMsg) {
-                
-            }];
+                } failure:^(NSString * _Nonnull errorMsg) {
+                    
+                }];
+            }else{
+                [PWContractRequest getBalancewithCoinType:self.selectedCoin.coin_chain
+                                                  address:self.selectedCoin.coin_address
+                                                   execer:self.selectedCoin.coin_pubkey
+                                                  success:^(id  _Nonnull object) {
+                    NSError *error;
+                    NSDictionary *result = [NSJSONSerialization JSONObjectWithData:object options:NSJSONReadingAllowFragments error:&error];
+                    NSLog(@"result %@",result);
+                    if (![result[@"result"] isKindOfClass:[NSNull class]]) {
+                        CGFloat balance = [result[@"result"][@"balance"] doubleValue];
+                        if (balance != -1)
+                        {
+                            // 有余额
+                            weakSelf.selectedCoin.coin_balance = balance;
+                            [[PWDataBaseManager shared] updateCoin:self.selectedCoin];
+                            dispatch_async(dispatch_get_main_queue(), ^{
+                                weakSelf.titleView.coin = weakSelf.selectedCoin;
+                            });
+                        }
+                    }
+                } failure:^(NSString * _Nonnull errorMsg) {
+                    
+                }];
+            }
+            
         }
         else{
             CGFloat balance = [GoFunction goGetBalance:weakSelf.selectedCoin.coin_type platform:weakSelf.selectedCoin.coin_platform address:weakSelf.selectedCoin.coin_address andTreaty:self.selectedCoin.treaty];
@@ -1055,7 +1109,7 @@
 - (void)imageZoomAction:(UIImageView *)imageView
 {
     
-    PWImageAlertView *imageAlerView = [[PWImageAlertView alloc]initWithTitle:@"收款地址"   image:imageView.image address:self.selectedCoin.coin_address];
+    PWImageAlertView *imageAlerView = [[PWImageAlertView alloc]initWithTitle:L(@"收款地址") image:imageView.image address:self.selectedCoin.coin_address];
     WEAKSELF
     typeof(imageAlerView) __weak weakImageAlertView = imageAlerView;
     imageAlerView.cancelBlock = ^(id obj) {
@@ -1065,7 +1119,7 @@
         NSString *str = obj;
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = str;
-        [self showCustomMessage:@"复制成功"   hideAfterDelay:2.0];
+        [self showCustomMessage:L(@"复制成功") hideAfterDelay:2.0];
     };
     [self animationShowImageAlertView:imageAlerView fromView:imageView];
     
@@ -1159,24 +1213,13 @@
 #pragma mark - 重写父类方法
 - (UIBarButtonItem *)rt_customBackItemWithTarget:(id)target
                                           action:(SEL)action {
-    UIButton *button = [UIButton buttonWithType:UIButtonTypeCustom];
-    [button setImage:[UIImage imageNamed:@"返回箭头"] forState:UIControlStateNormal];
-    
-    if (@available(iOS 11.0, *)) {
-        
-    }else{
-        button.imageEdgeInsets = UIEdgeInsetsMake(0,10, 0, -10);
-    }
-    
-    //添加空格字符串 增加点击面积
-    [button setTitle:@"    " forState:UIControlStateNormal];
-    button.titleLabel.font = [UIFont systemFontOfSize:44];
-    [button sizeToFit];
-    [button addTarget:self
-               action:@selector(backAction)
-     forControlEvents:UIControlEventTouchUpInside];
-    
-    return [[UIBarButtonItem alloc] initWithCustomView:button];
+    // 使用系统 UIBarButtonItem，左内边距由系统给，不会偏左
+    UIBarButtonItem *item = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"nav_back"]
+                                                             style:UIBarButtonItemStylePlain
+                                                            target:target
+                                                            action:action];
+    item.tintColor = SGColorFromRGB(0x333649);
+    return item;
 }
 
 

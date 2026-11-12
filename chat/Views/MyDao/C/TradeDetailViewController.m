@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/31.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "TradeDetailViewController.h"
@@ -14,6 +14,9 @@
 #import "PWNewInfoAlertView.h"
 #import "Depend.h"
 #import "PWContractRequest.h"
+#import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface TradeDetailViewController ()
 @property (nonatomic,strong) UIScrollView *scrollView;
 @property (nonatomic,strong) UIView *midView;
@@ -93,7 +96,7 @@
                 });
             }else{
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    [self showCustomMessage:@"网络请求失败"   hideAfterDelay:1];
+                    [self showCustomMessage:L(@"网络请求失败") hideAfterDelay:1];
                     [self.navigationController popViewControllerAnimated:true];
                 });
             }
@@ -115,7 +118,7 @@
     //        self.coin = coin;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (dic == nil) {
-                    [self showCustomMessage:@"网络请求失败"   hideAfterDelay:1];
+                    [self showCustomMessage:L(@"网络请求失败") hideAfterDelay:1];
                 } else {
                     [self createView];
                     [self setViewValue];
@@ -132,7 +135,16 @@
     if (@available(iOS 15, *))
     {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
-        appearance.backgroundColor = SGColorFromRGB(0xEBAE44);
+        // iOS 26/27：不显式 opaque 会被画成「液态玻璃」，backgroundColor 只作用于状态栏区域
+        [appearance configureWithOpaqueBackground];
+        // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+        appearance.buttonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.buttonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backgroundColor = ThemeBlueColor;
         appearance.backgroundEffect = nil;
         appearance.shadowColor = UIColor.clearColor;
         appearance.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : SGColorFromRGB(0x333649)};
@@ -142,7 +154,7 @@
     else
     {
         self.navigationController.navigationBar.titleTextAttributes = @{NSFontAttributeName : [UIFont boldSystemFontOfSize:18], NSForegroundColorAttributeName : SGColorFromRGB(0x333649)};
-        [self.navigationController.navigationBar setBackgroundImage:[CommonFunction createImageWithColor:SGColorFromRGB(0xEBAE44)] forBarMetrics:UIBarMetricsDefault];
+        [self.navigationController.navigationBar setBackgroundImage:[CommonFunction createImageWithColor:ThemeBlueColor] forBarMetrics:UIBarMetricsDefault];
 
     }
     UIBarButtonItem *backItem = [[UIBarButtonItem alloc] initWithImage:[UIImage imageNamed:@"nav_back"]
@@ -164,6 +176,15 @@
     if (@available(iOS 15, *))
     {
         UINavigationBarAppearance *appearance = [[UINavigationBarAppearance alloc] init];
+        // iOS 26/27：不显式 opaque 会被画成「液态玻璃」，backgroundColor 只作用于状态栏区域
+        [appearance configureWithOpaqueBackground];
+        // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+        appearance.buttonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.buttonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.doneButtonAppearance.highlighted.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.normal.backgroundImage = [UIImage new];
+        appearance.backButtonAppearance.highlighted.backgroundImage = [UIImage new];
         appearance.backgroundColor = SGColorFromRGB(0xffffff);
         appearance.backgroundEffect = nil;
         appearance.shadowColor = UIColor.clearColor;
@@ -216,7 +237,7 @@
     stateLab.textColor = TextColor51;
     stateLab.font = CMTextFont15;
     stateLab.textAlignment = NSTextAlignmentCenter;
-    stateLab.text = @"确认中"  ;
+    stateLab.text = L(@"确认中");
     [midView addSubview:stateLab];
     self.stateLab = stateLab;
     
@@ -227,7 +248,7 @@
 
     //转账地址
     UILabel *fromLab = [[UILabel alloc] init];
-    NSString *title = @"转账地址"  ;
+    NSString *title = L(@"转账地址");
     fromLab.text = title;
     fromLab.textColor = SGColorRGBA(142, 146, 163, 1);
     fromLab.font = CMTextFont15;
@@ -255,7 +276,7 @@
     
     //收款地址
     UILabel *toLab = [[UILabel alloc] init];
-    toLab.text = @"收款地址"  ;
+    toLab.text = L(@"收款地址");
     toLab.textColor = SGColorRGBA(142, 146, 163, 1);
     toLab.font = CMTextFont15;
     toLab.textAlignment = NSTextAlignmentLeft;
@@ -280,7 +301,7 @@
     
     //矿工费
     UILabel *feeLab = [[UILabel alloc] init];
-    feeLab.text = @"矿工费"  ;
+    feeLab.text = L(@"矿工费");
     feeLab.textColor = SGColorRGBA(142, 146, 163, 1);
     feeLab.font = CMTextFont15;
     feeLab.textAlignment = NSTextAlignmentLeft;
@@ -303,7 +324,7 @@
     
     //区块信息
     UILabel *blockInfoLab = [[UILabel alloc] init];
-    blockInfoLab.text = @"区块信息"  ;
+    blockInfoLab.text = L(@"区块信息");
     blockInfoLab.textColor = SGColorRGBA(142, 146, 163, 1);
     blockInfoLab.font = CMTextFont15;
     blockInfoLab.textAlignment = NSTextAlignmentLeft;
@@ -319,7 +340,7 @@
     
     //交易哈希
     UILabel *hashLab = [[UILabel alloc] init];
-    hashLab.text = @"交易哈希"  ;
+    hashLab.text = L(@"交易哈希");
     hashLab.textColor = SGColorRGBA(142, 146, 163, 1);
     hashLab.font = CMTextFont15;
     hashLab.textAlignment = NSTextAlignmentLeft;
@@ -342,7 +363,7 @@
     
     //交易时间
     UILabel *timeLab = [[UILabel alloc] init];
-    timeLab.text = @"交易时间"  ;
+    timeLab.text = L(@"交易时间");
     timeLab.textColor = SGColorRGBA(142, 146, 163, 1);
     timeLab.font = CMTextFont15;
     timeLab.textAlignment = NSTextAlignmentLeft;
@@ -356,31 +377,31 @@
     [midView addSubview:timeValueLab];
     self.timeValueLab = timeValueLab;
     
-    //上链备注
-    UILabel *remarksLab = [[UILabel alloc] init];
-    remarksLab.text = @"上链备注"  ;
-    remarksLab.textColor = SGColorRGBA(142, 146, 163, 1);
-    remarksLab.font = CMTextFont15;
-    remarksLab.textAlignment = NSTextAlignmentLeft;
-    [midView addSubview:remarksLab];
-    self.remarksLab = remarksLab;
-    
-    UILabel *remarksValueLab = [[UILabel alloc] init];
-    remarksValueLab.text = IS_BLANK(self.orderModel.note) ? @"无"   : self.orderModel.note;
-    remarksValueLab.textAlignment = NSTextAlignmentRight;
-    remarksValueLab.textColor = SGColorRGBA(51, 54, 73, 1);
-    remarksValueLab.font = CMTextFont15;
-    remarksValueLab.numberOfLines = 0;
-    [midView addSubview:remarksValueLab];
-    self.remarksValueLab = remarksValueLab;
-    if([_coin.coin_type isEqualToString:@"ZWGYBA"])
-    {
-        self.remarksValueLab.text = @"无"  ;
-    }
-   
+//    //上链备注
+//    UILabel *remarksLab = [[UILabel alloc] init];
+//    remarksLab.text = @"上链备注"  ;
+//    remarksLab.textColor = SGColorRGBA(142, 146, 163, 1);
+//    remarksLab.font = CMTextFont15;
+//    remarksLab.textAlignment = NSTextAlignmentLeft;
+//    [midView addSubview:remarksLab];
+//    self.remarksLab = remarksLab;
+//    
+//    UILabel *remarksValueLab = [[UILabel alloc] init];
+//    remarksValueLab.text = IS_BLANK(self.orderModel.note) ? @"无"   : self.orderModel.note;
+//    remarksValueLab.textAlignment = NSTextAlignmentRight;
+//    remarksValueLab.textColor = SGColorRGBA(51, 54, 73, 1);
+//    remarksValueLab.font = CMTextFont15;
+//    remarksValueLab.numberOfLines = 0;
+//    [midView addSubview:remarksValueLab];
+//    self.remarksValueLab = remarksValueLab;
+//    if([_coin.coin_type isEqualToString:@"ZWGYBA"])
+//    {
+//        self.remarksValueLab.text = @"无"  ;
+//    }
+//   
     //添加联系人
     UIButton *addContactBtn = [[UIButton alloc] init];
-    [addContactBtn setTitle:@"添加联系人"   forState:UIControlStateNormal];
+    [addContactBtn setTitle:L(@"添加联系人") forState:UIControlStateNormal];
     addContactBtn.titleLabel.font = CMTextFont15;
     addContactBtn.backgroundColor = SGColorRGBA(51, 54, 73, 1);
     addContactBtn.layer.cornerRadius = 6;
@@ -562,21 +583,21 @@
         make.centerY.equalTo(self.timeLab);
     }];
     
-    CGRect rect = [self.remarksLab.text boundingRectWithSize:CGSizeMake(kScreenWidth - 100, MAXFLOAT)
-                                                     options:NSStringDrawingUsesLineFragmentOrigin
-                                                  attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:15.f]}
-                                                     context:nil];
-    [self.remarksLab mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.timeLab);
-        make.height.equalTo(self.timeLab);
-        make.width.mas_equalTo(rect.size.width + 5);
-        make.top.equalTo(self.timeLab.mas_bottom).with.offset(17);
-    }];
-    
-    [self.remarksValueLab mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.right.equalTo(self.hashValueLab);
-        make.top.equalTo(self.remarksLab);
-    }];
+//    CGRect rect = [self.remarksLab.text boundingRectWithSize:CGSizeMake(kScreenWidth - 100, MAXFLOAT)
+//                                                     options:NSStringDrawingUsesLineFragmentOrigin
+//                                                  attributes:@{NSFontAttributeName:[UIFont systemFontOfSize:15.f]}
+//                                                     context:nil];
+//    [self.remarksLab mas_makeConstraints:^(MASConstraintMaker *make) {
+//        make.left.equalTo(self.timeLab);
+//        make.height.equalTo(self.timeLab);
+//        make.width.mas_equalTo(rect.size.width + 5);
+//        make.top.equalTo(self.timeLab.mas_bottom).with.offset(17);
+//    }];
+//    
+//    [self.remarksValueLab mas_makeConstraints:^(MASConstraintMaker *make) {
+//        make.left.right.equalTo(self.hashValueLab);
+//        make.top.equalTo(self.remarksLab);
+//    }];
     
 //    [self.localRemarksLab mas_makeConstraints:^(MASConstraintMaker *make) {
 //        make.left.equalTo(self.remarksLab);
@@ -631,7 +652,7 @@
     if (sender.state == UIGestureRecognizerStateBegan) {
         UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
         pasteboard.string = self.hashValueLab.text;
-        [self showCustomMessage:@"复制成功"   hideAfterDelay:2.0];
+        [self showCustomMessage:L(@"复制成功") hideAfterDelay:2.0];
     }
 }
 
@@ -647,7 +668,7 @@
     UILabel *label=(UILabel*)recognizer.view;
     UIPasteboard *pasteboard = [UIPasteboard generalPasteboard];
     pasteboard.string = label.text;
-    [self showCustomMessage:@"复制成功"   hideAfterDelay:2.0];
+    [self showCustomMessage:L(@"复制成功") hideAfterDelay:2.0];
 }
 
 - (void)setViewValue
@@ -658,7 +679,7 @@
     }
     
     
-    self.title = [NSString stringWithFormat:@"%@%@",self.coin.optional_name,@"交易详情"  ];
+    self.title = [NSString stringWithFormat:@"%@%@", self.coin.optional_name, L(@"交易详情")];
     
     NSString *feeStr = [CommonFunction removeZeroFromMoney:[NSString stringWithFormat:@"%f",_orderModel.fee]];
     
@@ -742,9 +763,20 @@
     
     NSString *numStr = [CommonFunction removeZeroFromMoney:[NSString stringWithFormat:@"%f",_orderModel.coinNum]];
     NSString *str;
+    BOOL sendToSelfWallet = NO;
     if ([_orderModel.type isEqualToString:@"send"]) {
-        
-        str = [NSString stringWithFormat:@"-%@%@",numStr,_coin.optional_name];
+        NSString *toAddr = [_orderModel.toAddress  stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        NSString *myAddr = [[[PWDataBaseManager shared]queryAddressBasedOnChain:@"ETH"] stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+        if (toAddr.length > 0 && myAddr.length > 0) {
+            sendToSelfWallet = [toAddr compare:myAddr options:NSCaseInsensitiveSearch] == NSOrderedSame;
+        }
+    }
+    if ([_orderModel.type isEqualToString:@"send"]) {
+        if (sendToSelfWallet) {
+            str = [NSString stringWithFormat:@"+%@%@",numStr,_coin.optional_name];
+        } else {
+            str = [NSString stringWithFormat:@"-%@%@",numStr,_coin.optional_name];
+        }
     } else {
         str = [NSString stringWithFormat:@"+%@%@",numStr,_coin.optional_name];
     }
@@ -836,8 +868,8 @@
     self.hashValueLab.text = self.orderModel.blockHash;
     
     //隐藏本地备注
-    self.localRemarksLab.alpha = 0;
-    self.localRemarksValueLab.alpha = 0;
+//    self.localRemarksLab.alpha = 0;
+//    self.localRemarksValueLab.alpha = 0;
     self.editLocalRemarksBtn.alpha = 0;
     BOOL need = false;
     if (self.addContactBtn.alpha == 1) {
@@ -858,8 +890,8 @@
     UIGraphicsEndImageContext();
     
     //恢复
-    self.localRemarksLab.alpha = 1;
-    self.localRemarksValueLab.alpha = 1;
+//    self.localRemarksLab.alpha = 1;
+//    self.localRemarksValueLab.alpha = 1;
     self.editLocalRemarksBtn.alpha = 1;
     
     if (need) {
@@ -876,17 +908,17 @@
 {
     if (orderModel.state == TransferFromStatusFailure) {
         self.stateLab.textColor = TipRedColor;
-        self.stateLab.text = [@"交易失败"   stringByAppendingString:@""];
+        self.stateLab.text = [L(@"交易失败") stringByAppendingString:@""];
         [self.stateImg setImage:[UIImage imageNamed:@"tradeFailure"]];
     }else if(orderModel.state == TransferFromStatusEnsureing)
     {
         self.stateLab.textColor = MainColor;
-        self.stateLab.text = [@"确认中"   stringByAppendingString:@""];
+        self.stateLab.text = [L(@"确认中") stringByAppendingString:@""];
         [self.stateImg setImage:[UIImage imageNamed:@"icon_ensuring"]];
     }else if (orderModel.state == TransferFromStatusSuccess)
     {
         self.stateLab.textColor = PlaceHolderColor;
-        self.stateLab.text = [@"交易成功"   stringByAppendingString:@""];
+        self.stateLab.text = [L(@"交易成功") stringByAppendingString:@""];
         [self.stateImg setImage:[UIImage imageNamed:@"icon_check"]];
     }
 }

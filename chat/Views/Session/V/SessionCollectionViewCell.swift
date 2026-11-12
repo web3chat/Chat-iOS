@@ -2,7 +2,7 @@
 //  SessionCollectionViewCell.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/11.
+//  Created by fzm on 2021/1/11.
 //
 
 import UIKit
@@ -102,6 +102,18 @@ class SessionCollectionViewCell: UICollectionViewCell {
     private var isMuteNotification = false
     
     private var isOnTop = false
+
+    /// 当前是否为「小Y」（AI 客服）入口行（虚拟行：菜单里不提供删除聊天 / 免打扰）
+    private var isAIEntry = false
+
+    /// 「小Y」入口行长按菜单里点「置顶 / 取消置顶」的回调（由列表设置；其它行不设）
+    var onToggleAIPin: (() -> Void)?
+
+    /// AI 客服入口头像用的图标（SF Symbol 模板图，不占用图片资源）
+    private static let aiAvatarImage: UIImage? = {
+        let config = UIImage.SymbolConfiguration(pointSize: 21, weight: .medium)
+        return UIImage(systemName: "headphones", withConfiguration: config)?.withRenderingMode(.alwaysTemplate)
+    }()
     
     var statusType: SocketConnectStatus = .unConnected {
         didSet {
@@ -129,7 +141,12 @@ class SessionCollectionViewCell: UICollectionViewCell {
     override func prepareForReuse() {
         super.prepareForReuse()
         self.bgView.backgroundColor = Color_FFFFFF
+        self.isAIEntry = false
+        self.onToggleAIPin = nil
         self.avatarView.image = nil
+        // AI 客服入口行把头像设成了主题色底 + .center 图标，复用回真实会话时要还原
+        self.avatarView.backgroundColor = .clear
+        self.avatarView.contentMode = .scaleAspectFill
         self.unreadCountView.unreadCount = 0
         self.unreadCountView.isMuteNotification = false
         self.sessionNameLab.text = nil
@@ -153,7 +170,10 @@ class SessionCollectionViewCell: UICollectionViewCell {
         self.isOnTop = isOnTop
         
         let placeholderImg = session.isPrivateChat ?  #imageLiteral(resourceName: "friend_chat_avatar") : #imageLiteral(resourceName: "group_chat_avatar")
-        self.avatarView.kf.setImage(with: URL.init(string: session.imageURLStr), placeholder: placeholderImg)
+        // 头像 Downsampling 降采样，避免大图全尺寸解码（会话列表滚动更流畅）
+        let avatarSize = CGSize(width: 60 * UIScreen.main.scale, height: 60 * UIScreen.main.scale)
+        self.avatarView.kf.setImage(with: URL.init(string: session.imageURLStr), placeholder: placeholderImg,
+                                    options: [.processor(DownsamplingImageProcessor(size: avatarSize))])
         
         self.unreadCountView.isMuteNotification = isMuteNotification
         self.unreadCountView.unreadCount = session.unreadCount
@@ -180,9 +200,9 @@ class SessionCollectionViewCell: UICollectionViewCell {
             var typeStr = ""
             switch session.groupType {// 群类型 (0: 普通群, 1: 全员群, 2: 部门群)
             case 1:
-                typeStr = "全员"
+                typeStr = L("全员")
             case 2:
-                typeStr = "部门"
+                typeStr = L("部门")
             default:
                 typeStr = ""
             }
@@ -212,7 +232,7 @@ class SessionCollectionViewCell: UICollectionViewCell {
         
         if self.isMuteNotification == true{
             if session.unreadCount > 0 {
-                let attText = "[" + session.unreadCount.string + "条]"
+                let attText = "[" + session.unreadCount.string + L("条]")
                 self.latestInfoLab.attributedText = NSAttributedString.init(string: attText) + session.latestInfo
             }else{
                 self.latestInfoLab.attributedText = session.latestInfo
@@ -259,16 +279,49 @@ class SessionCollectionViewCell: UICollectionViewCell {
             self.latestInfoLab.snp.updateConstraints { (m) in
                 m.right.equalToSuperview().offset(-15)
             }
+            // 红点宽度随文案变（`99+` 比 16 宽）。
+            // ⚠️ 向右变宽会压到会话名（会话名 left = 头像右边 + 10 ≈ 69），
+            //    所以保持**右边缘不动**（51 + 16 = 67）、向左长，1~2 位数时宽度仍为 16 位置不变。
+            let badgeWidth = self.unreadCountView.fittedWidth
             self.unreadCountView.snp.updateConstraints { (m) in
-                m.size.equalTo(CGSize.init(width: 16, height: 16))
+                m.size.equalTo(CGSize.init(width: badgeWidth, height: 16))
                 m.top.equalToSuperview().offset(5)
-                m.left.equalToSuperview().offset(51)
+                m.left.equalToSuperview().offset(67 - badgeWidth)
             }
         }
         
         if isOnTop {// 置顶会话改变背景色
             self.bgView.backgroundColor = Color_F6F7F8
         }
+    }
+
+    /// 配置「小Y」（AI 客服）入口行（虚拟行，不是真实好友会话）。
+    ///
+    /// 排版全复用 `configure`：借一个假 `Session` 走「私聊」分支，
+    /// 顺便把群类型/连接状态/免打扰/发送失败/置顶背景这些都归位；
+    /// 只覆盖与真实会话不同的三处：头像、消息预览（引导文案）、时间（留空）。
+    /// - Parameter isOnTop: 「小Y」自己的置顶状态（置顶时与置顶会话一样带底色）
+    func configureAIEntry(name: String, subtitle: String, isOnTop: Bool) {
+        var virtual = Session(id: .person(AICustomerStore.entrySessionID))
+        virtual.sessionName = name
+        virtual.imageURLStr = ""
+        // 0 → `sessionTimeString` 返回 nil，时间列自然留空，也不占名称宽度
+        virtual.timestamp = 0
+        self.configure(virtual, isMuteNotification: false, isOnTop: isOnTop)
+
+        self.isAIEntry = true
+
+        // 头像：模板图标 + `.center`（不能用 .scaleAspectFill，会把图标拉伸铺满）
+        self.avatarView.kf.cancelDownloadTask()
+        self.avatarView.image = Self.aiAvatarImage
+        self.avatarView.contentMode = .center
+        self.avatarView.tintColor = Color_FFFFFF
+        self.avatarView.backgroundColor = Color_Theme
+
+        self.latestInfoLab.attributedText = NSAttributedString(string: subtitle, attributes: [
+            .font: UIFont.regularFont(14),
+            .foregroundColor: Color_8A97A5
+        ])
     }
     
     private func setupViews() {
@@ -370,8 +423,22 @@ class SessionCollectionViewCell: UICollectionViewCell {
         var tempColor = Color_FFFFFF
         tempColor = self.bgView.backgroundColor!
         self.bgView.backgroundColor = UIColor.init(hexString: "#DCDCDC")!
+
+        // 「小Y」（AI 客服）入口行：只提供置顶/取消置顶（隐藏删除聊天与免打扰 ——
+        // 它没有真实好友/群可改，也没有聊天记录可删）
+        if self.isAIEntry {
+            let onTopItem = FZMMenuItem(title: self.isOnTop ? L("取消置顶") : L("置顶"), block: { [weak self] in
+                self?.onToggleAIPin?()
+            })
+            let view = FZMMenuView(with: [onTopItem])
+            view.show(in: point)
+            view.hideBlock = { [weak self] in
+                self?.bgView.backgroundColor = tempColor
+            }
+            return
+        }
         
-        let onTopItem = FZMMenuItem(title: self.isOnTop ? "取消置顶" : "置顶", block: {
+        let onTopItem = FZMMenuItem(title: self.isOnTop ? L("取消置顶") : L("置顶"), block: {
             if model.isPrivateChat {
                 guard let user = UserManager.shared().user(by: model.id.idValue) else { return }
                 // 更新本地用户信息
@@ -384,11 +451,11 @@ class SessionCollectionViewCell: UICollectionViewCell {
             }
         })
         
-        let deleteItem = FZMMenuItem(title: "删除聊天", block: {
+        let deleteItem = FZMMenuItem(title: L("删除聊天"), block: {
             SessionManager.shared().deleteSession(id: model.id)
         })
         
-        let muteNofiItem = FZMMenuItem(title: self.isMuteNotification ? "取消免打扰" : "免打扰", block: {
+        let muteNofiItem = FZMMenuItem(title: self.isMuteNotification ? L("取消免打扰") : L("免打扰"), block: {
             if model.isPrivateChat {
                 guard let user = UserManager.shared().user(by: model.id.idValue) else { return }
                 // 更新本地用户信息

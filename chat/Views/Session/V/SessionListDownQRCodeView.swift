@@ -15,15 +15,15 @@ class SessionListDownQRCodeView: UIView{
     
     private var showWallet = false
     
-    private var textColor = APPNAME.contains("公安") ? .white : Color_24374E
+    private var textColor = APPNAME.contains(L("公安")) ? .white : Color_24374E
     
     lazy var titleLabel : UILabel = {
-        let label = UILabel.getLab(font: .boldFont(17), textColor: textColor, textAlignment: .center, text: "我的二维码")
+        let label = UILabel.getLab(font: .boldFont(17), textColor: textColor, textAlignment: .center, text: L("我的二维码"))
         return label
     }()
     
     lazy var detailLabel : UILabel = {
-        let label = UILabel.getLab(font: .regularFont(14), textColor: textColor, textAlignment: .center, text: "扫二维码加我好友")
+        let label = UILabel.getLab(font: .regularFont(14), textColor: textColor, textAlignment: .center, text: L("扫二维码加我好友"))
         return label
     }()
     
@@ -50,7 +50,7 @@ class SessionListDownQRCodeView: UIView{
             guard ges.state == .ended else { return }
             guard !LoginUser.shared().address.isEmpty else { return }
             UIPasteboard.general.string = LoginUser.shared().address
-            self.showToast("地址已复制")
+            self.showToast(L("地址已复制"))
         }).disposed(by: self.bag)
         return lab
     }()
@@ -72,7 +72,7 @@ class SessionListDownQRCodeView: UIView{
     
     
     lazy var transLabel : UILabel = {
-        let label = UILabel.getLab(font: .boldFont(16), textColor: textColor, textAlignment: .left, text: "转账")
+        let label = UILabel.getLab(font: .boldFont(16), textColor: textColor, textAlignment: .left, text: L("转账"))
         label.isUserInteractionEnabled = true
         label.tag = 1
         return label
@@ -102,7 +102,7 @@ class SessionListDownQRCodeView: UIView{
     
     
     lazy var piaoLabel : UILabel = {
-        let label = UILabel.getLab(font: .boldFont(16), textColor: textColor, textAlignment: .left, text: "票券")
+        let label = UILabel.getLab(font: .boldFont(16), textColor: textColor, textAlignment: .left, text: L("票券"))
         label.isUserInteractionEnabled = true
         label.tag = 2
         return label
@@ -141,7 +141,7 @@ class SessionListDownQRCodeView: UIView{
         self.setSubViews()
         
 //        self.detailLabel.text = showWallet ? "扫二维码向我转账、加我好友" : "扫二维码加我好友"
-        self.detailLabel.text = "扫二维码加我好友"
+        self.detailLabel.text = L("扫二维码加我好友")
         
         self.setData()
         

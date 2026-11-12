@@ -2,7 +2,7 @@
 //  AudioMessageCell.swift
 //  chat
 //
-//  Created by 陈健 on 2020/12/28.
+//  Created by fzm on 2020/12/28.
 //
 
 import UIKit
@@ -112,7 +112,8 @@ class AudioMessageCell: MessageContentCell {
         super.configure(with: message, at: indexPath, and: messageCollectionView)
         
         guard let displayDelegate = messageCollectionView.messagesDisplayDelegate else {
-            fatalError("nilMessagesDisplayDelegate")
+            FZMLog("AudioMessageCell：messagesDisplayDelegate 为空，跳过配置")
+            return
         }
         
         switch message.kind {
@@ -144,7 +145,7 @@ class AudioMessageCell: MessageContentCell {
                 strongSelf.voiceImageView.stopAnimating()
             } else if state == .failed {
                 strongSelf.voiceImageView.stopAnimating()
-                APP.shared().showToast("播放失败")
+                APP.shared().showToast(L("播放失败"))
             }
         }.disposed(by: voiceDisposeBag)
     }

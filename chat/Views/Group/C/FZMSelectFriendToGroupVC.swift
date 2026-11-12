@@ -2,8 +2,8 @@
 //  FZMSelectFriendToGroupVC.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/18.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/18.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -73,11 +73,11 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
 //    }()
     
     lazy var encryptGroup : UIButton = {
-        var title = "跳过"
+        var title = L("跳过")
         if case .exclude = showType {
-            title = "邀请"
+            title = L("邀请")
         } else if case .allMember = showType {
-            title = "移除"
+            title = L("移除")
         }
         let btn = UIButton.getNormalBtn(with: title)
         btn.isEnabled = true
@@ -136,7 +136,7 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         
         let cancelBtn = UIButton.init(type: .custom)
         cancelBtn.enlargeClickEdge(10, 10, 10, 15)
-        cancelBtn.setTitle("完成", for: .normal)
+        cancelBtn.setTitle(L("完成"), for: .normal)
         cancelBtn.setTitleColor(Color_Theme, for: .normal)
         cancelBtn.titleLabel?.font = UIFont.boldFont(16)
         cancelBtn.addTarget(self, action: #selector(hideSearchView), for: .touchUpInside)
@@ -144,7 +144,12 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         cancelBtn.snp.makeConstraints({ (m) in
             m.centerY.equalTo(circleView)
             m.right.equalToSuperview().offset(-15)
-            m.size.equalTo(CGSize(width: 40, height: 25))
+            if LanguageManager.shared.isChinese{
+                m.size.equalTo(CGSize(width: 40, height: 25))
+            }else{
+                m.size.equalTo(CGSize(width: 60, height: 25))
+            }
+            
         })
         
         let imageV = UIImageView(image: #imageLiteral(resourceName: "tool_search").withRenderingMode(.alwaysTemplate))
@@ -168,7 +173,7 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         input.textAlignment = .left
         input.font = UIFont.regularFont(16)
         input.textColor = Color_24374E
-        input.attributedPlaceholder = NSAttributedString(string: "搜索好友", attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])
+        input.attributedPlaceholder = NSAttributedString(string: L("搜索好友"), attributes: [.foregroundColor:Color_8A97A5,.font:UIFont.regularFont(16)])
         input.returnKeyType = .search
         input.addTarget(self, action: #selector(textFiledEditChanged(_:)), for: .editingChanged)
         return input
@@ -186,7 +191,7 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         let v = UIView.init()
         v.isHidden = true
         v.backgroundColor = Color_FAFBFC
-        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: "没有匹配的对象", btnTitle: nil, clickBlock: nil)
+        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: L("没有匹配的对象"), btnTitle: nil, clickBlock: nil)
         v.addSubview(imgView)
         imgView.snp.makeConstraints({ (m) in
             m.top.equalToSuperview().offset(65)
@@ -219,7 +224,7 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         
         switch showType {
         case .exclude(let groupId):
-            self.navigationItem.title = "选择好友"
+            self.navigationItem.title = L("选择好友")
             // 除已在本群的所有好友
             self.group = GroupManager.shared().getDBGroup(by: groupId)
             
@@ -238,14 +243,14 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
             self.listView.originDataSource = friendDataSource
             
         case .allFriend:
-            self.navigationItem.title =  "创建群聊"
+            self.navigationItem.title =  L("创建群聊")
             // 所有好友列表
             self.friendArrayForSearch = UserManager.shared().friends
             let friendDataSource = UserManager.shared().divideUser(self.friendArrayForSearch)
             self.listView.originDataSource = friendDataSource
             
         case .allMember(let groupId):
-            self.navigationItem.title = "选择好友"
+            self.navigationItem.title = L("选择好友")
             
             self.group = GroupManager.shared().getDBGroup(by: groupId)
             
@@ -271,13 +276,13 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         self.xls_navigationBarTintColor = Color_24374E
         
         let backBtn = UIButton.init(type: .custom)
-        backBtn.frame = CGRect.init(x: 0, y: 0, width: 45, height: 44)
-        backBtn.setTitle("取消", for: .normal)
+        backBtn.frame = CGRect.init(x: 0, y: 0, width: LanguageManager.shared.isChinese ? 45 : 60, height: 44)
+        backBtn.setTitle(L("取消"), for: .normal)
         backBtn.setTitleColor(Color_Theme, for: .normal)
         backBtn.titleLabel?.font = .systemFont(ofSize: 16)
         backBtn.contentHorizontalAlignment = .left
         backBtn.addTarget(self, action: #selector(cancelBtnPress), for: .touchUpInside)
-        let v = UIView.init(frame: CGRect.init(x: 0, y: 0, width: 45, height: 44))
+        let v = UIView.init(frame: CGRect.init(x: 0, y: 0, width: LanguageManager.shared.isChinese ? 45 : 60, height: 44))
         v.addSubview(backBtn)
         let leftbarItem = UIBarButtonItem.init(customView: v)
         self.navigationItem.leftBarButtonItem = leftbarItem
@@ -326,7 +331,7 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("获取群成员列表失败")
+            strongSelf.showToast(L("获取群成员列表失败"))
         }
     }
     
@@ -470,12 +475,12 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
             }
         }
         if case .allMember = showType {
-            self.encryptGroup.setAttributedTitle(NSAttributedString(string: "移除", attributes: [.foregroundColor: UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
+            self.encryptGroup.setAttributedTitle(NSAttributedString(string: L("移除"), attributes: [.foregroundColor: UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
             self.encryptGroup.isEnabled = selectArr.count > 0
         } else if case .allFriend = showType {
-            self.encryptGroup.setAttributedTitle(NSAttributedString(string: selectArr.count > 0 ? "创建" : "跳过", attributes: [.foregroundColor: UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
+            self.encryptGroup.setAttributedTitle(NSAttributedString(string: selectArr.count > 0 ? L("创建") : L("跳过"), attributes: [.foregroundColor: UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
         } else if case .exclude = showType {
-            self.encryptGroup.setAttributedTitle(NSAttributedString(string: "邀请", attributes: [.foregroundColor: UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
+            self.encryptGroup.setAttributedTitle(NSAttributedString(string: L("邀请"), attributes: [.foregroundColor: UIColor.white,.font:UIFont.regularFont(16)]), for: .normal)
             self.encryptGroup.isEnabled = selectArr.count > 0
         }
     }
@@ -494,23 +499,29 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         }
 
         if users.isEmpty {
-            self.showToast("请选择好友")
+            self.showToast(L("请选择好友"))
             return
         }
         FZMLog("users --- \(users)")
         self.showProgress()
         
         // 邀请新群成员请求
+        // 注意：joinType == 2（入群需审核）且自己是普通成员时，也调这个接口，
+        // 后端生成待审申请；HTTP 成功不代表对方已进群（等管理员通过后的 SignInGroup）
         GroupManager.shared().inviteGroupMembers(serverUrl: serverUrl, groupId: groupId, memberIds: users) { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            APP.shared().showToast("邀请成功")
+            if let group = strongSelf.group, group.joinType == 2, !group.isCurrentUserManager {
+                APP.shared().showToast(L("已提交管理员审核"))
+            } else {
+                APP.shared().showToast(L("邀请成功"))
+            }
             strongSelf.reloadBlock?()
             strongSelf.navigationController?.popViewController()
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("邀请失败")
+            strongSelf.showToast(GroupManager.inviteFailureMessage(error, joinType: strongSelf.group?.joinType ?? 0))
         }
     }
     
@@ -527,7 +538,7 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         }
 
         if users.isEmpty {
-            self.showToast("请选择好友")
+            self.showToast(L("请选择好友"))
             return
         }
         FZMLog("users --- \(users)")
@@ -537,13 +548,13 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         GroupManager.shared().groupRemoveMembers(serverUrl: serverUrl, groupId: groupId, memberIds: users) { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            APP.shared().showToast("移除成功")
+            APP.shared().showToast(L("移除成功"))
             strongSelf.reloadBlock?()
             strongSelf.navigationController?.popViewController()
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("移除失败")
+            strongSelf.showToast(L("移除失败"))
         }
     }
     
@@ -555,14 +566,14 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
         if let nickname = LoginUser.shared().nickName?.value, !nickname.isBlank {
             groupName = nickname
         }
-        groupName = groupName + "创建的群聊"
+        groupName = groupName + L("创建的群聊")
         
         var memberIds = [String]()
         memberIds = selectArr.compactMap { (item) -> String in
             return item.sessionIDStr
         }
         guard let serverUrl = self.chatServerUrl else {
-            self.showToast("未选择创建群聊的服务器地址")
+            self.showToast(L("未选择创建群聊的服务器地址"))
             return
         }
         if isCreateGroupRequesting {
@@ -581,7 +592,7 @@ class FZMSelectFriendToGroupVC: UIViewController, ViewControllerProtocol {
             guard let strongSelf = self else { return }
             strongSelf.isCreateGroupRequesting = false
             strongSelf.hideProgress()
-            strongSelf.showToast("创建群失败")
+            strongSelf.showToast(L("创建群失败"))
         }
     }
 }

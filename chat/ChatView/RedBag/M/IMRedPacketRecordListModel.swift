@@ -2,7 +2,7 @@
 //  IMRedPacketRecordListModel.swift
 //  IM_SocketIO_Demo
 //
-//  Created by 吴文拼 on 2018/9/13.
+//  Created by fzm on 2018/9/13.
 //  Copyright © 2018年 Wang. All rights reserved.
 //
 

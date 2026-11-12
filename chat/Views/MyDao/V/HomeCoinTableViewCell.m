@@ -3,13 +3,17 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/22.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "HomeCoinTableViewCell.h"
 #import "Depend.h"
 #import "CommonFunction.h"
+// sd_cancelCurrentImageLoad 声明在 UIView+WebCache.h（SDWebImage 4.0 的 UIImageView+WebCache.h 不会引它，必须显式引）
+#import "UIView+WebCache.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 
 @interface HomeCoinTableViewCell()
 @property (nonatomic,strong) UIImageView *coinIcon;
@@ -21,6 +25,9 @@
 @property (nonatomic,strong) UIView *cellBgView;
 @property (nonatomic,strong) UILabel *platformLab;
 @property (nonatomic, strong) UIImageView *chainImageView;
+@property (nonatomic, strong) UIView *lineView;
+/** 约束只装一次（见 layoutSubviews 里的说明） */
+@property (nonatomic, assign) BOOL didInstallConstraints;
 
 @end
 
@@ -31,7 +38,7 @@
     self = [super initWithStyle:style reuseIdentifier:reuseIdentifier];
     if (self) {
         [self createView];
-        self.backgroundColor = SGColorFromRGB(0xFCFCFF);
+        self.backgroundColor = SGColorFromRGB(0xFFFFFF);
     }
     return self;
 }
@@ -40,16 +47,16 @@
 {
     UIView *cellBgView = [[UIView alloc] init];
     cellBgView.backgroundColor = [UIColor whiteColor];
-    cellBgView.layer.cornerRadius = 6;
-    cellBgView.layer.shadowRadius = 2;
-    cellBgView.layer.shadowOpacity = 1;
-    cellBgView.layer.shadowColor = SGColorRGBA(217, 220, 233, 0.4).CGColor;
-    cellBgView.layer.shadowOffset = CGSizeMake(0, 0);
+//    cellBgView.layer.cornerRadius = 6;
+//    cellBgView.layer.shadowRadius = 2;
+//    cellBgView.layer.shadowOpacity = 1;
+//    cellBgView.layer.shadowColor = SGColorRGBA(217, 220, 233, 0.4).CGColor;
+//    cellBgView.layer.shadowOffset = CGSizeMake(0, 0);
     [self.contentView addSubview:cellBgView];
     self.cellBgView = cellBgView;
     
     UIButton *leftBtn = [[UIButton alloc] init];
-    [leftBtn setTitle:@"转账" forState:UIControlStateNormal];
+    [leftBtn setTitle:L(@"转账") forState:UIControlStateNormal];
     [leftBtn setBackgroundColor:SGColorFromRGB(0x333649)];
     [leftBtn setImage:[UIImage imageNamed:@"home_out"] forState:UIControlStateNormal];
     [leftBtn.layer setCornerRadius:6.f];
@@ -59,7 +66,7 @@
     self.leftBtn.hidden = YES;
 
     UIButton *rightBtn = [[UIButton alloc] init];
-    [rightBtn setTitle:@"收款" forState:UIControlStateNormal];
+    [rightBtn setTitle:L(@"收款") forState:UIControlStateNormal];
     [rightBtn setBackgroundColor:SGColorFromRGB(0x7190ff)];
     [rightBtn setImage:[UIImage imageNamed:@"home_in"] forState:UIControlStateNormal];
     [rightBtn.layer setCornerRadius:6.f];
@@ -134,8 +141,13 @@
     [self.cellBgView addSubview:chainImageView];
     self.chainImageView = chainImageView;
     
+    UIView *lineView = [[UIView alloc] init];
+    lineView.backgroundColor = SGColorFromRGB(0xf8f8f8);
+    self.lineView = lineView;
+    [self.cellBgView addSubview:self.lineView];
+    
     coinNameLab.text = @"BTC";
-    chineseNameLab.text = @"(比特币)";
+    chineseNameLab.text = L(@"(比特币)");
     lastValueLab.text = @"0.00";
     balanceLab.text = @"≈￥0.00";
     RMBLab.text = @"≈￥0.00";
@@ -147,11 +159,17 @@
 {
     [super layoutSubviews];
     
+    // ⚠️ 这里只能装一次：mas_makeConstraints 不会清理旧约束，写在 layoutSubviews 里每布局一次就新增一份，
+    // cell 反复复用时约束越堆越多，长列表会越来越卡。
+    if (self.didInstallConstraints) { return; }
+    self.didInstallConstraints = YES;
+    
     [self.cellBgView mas_makeConstraints:^(MASConstraintMaker *make) {
-        make.left.equalTo(self.contentView).with.offset(15);
-        make.right.equalTo(self.contentView).with.offset(-15);
-        make.top.equalTo(self.contentView);
-        make.bottom.equalTo(self.contentView);
+//        make.left.equalTo(self.contentView);
+//        make.right.equalTo(self.contentView);
+//        make.top.equalTo(self.contentView);
+//        make.bottom.equalTo(self.contentView);
+        make.edges.equalTo(self.contentView);
     }];
     
     [self.coinIcon mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -165,6 +183,11 @@
         make.centerY.equalTo(self.coinIcon);
     }];
 
+    [self.balanceLab mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.top.equalTo(self.coinNameLab.mas_bottom).offset(5);
+        make.left.equalTo(self.coinNameLab);
+    }];
+    
     [self.chineseNameLab mas_makeConstraints:^(MASConstraintMaker *make) {
         make.left.equalTo(self.coinNameLab.mas_right);
         make.centerY.equalTo(self.coinNameLab);
@@ -173,37 +196,91 @@
         make.centerY.equalTo(self.coinNameLab.mas_centerY);
         make.right.equalTo(self.cellBgView).with.offset(-13);
     }];
+    
+    [self.lineView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.right.equalTo(self.cellBgView);
+        make.left.equalTo(self.coinNameLab);
+        make.height.mas_equalTo(1);
+        make.bottom.equalTo(self.cellBgView);
+    }];
 }
 
 - (void)setCoin:(LocalCoin *)coin
 {
+    // 防御：数据源被并发替换时可能拿到 nil/半成品对象，这里直接清空而不是继续读属性
+    if (!coin) {
+        _coin = nil;
+        _coinPrice = nil;
+        self.coinNameLab.text = @"";
+        self.chineseNameLab.text = @"";
+        self.platformLab.text = @"";
+        self.lastValueLab.text = @"";
+        return;
+    }
+
     _coin = [coin copy];
     //如果没有可选名用币名
-    self.coinNameLab.text = coin.coin_type;
+    self.coinNameLab.text = coin.coin_type ?: @"";
 
 //    [self.coinIcon sd_setImageWithURL:[NSURL URLWithString:coin.icon]];
     self.lastValueLab.text = [CommonFunction removeZeroFromMoney:[CommonFunction removeZeroFromMoney:coin.coin_balance withMaxLength:6]];
 
-
+    // coin_type / coin_platform 可能是 nil（历史数据 / 服务端新币）：
+    // FMDB 对 nil 参数本身是安全的（会绑成 SQL NULL），但拿空 key 查出来的结果没意义，
+    // 而且下游 `%@` 拼接到 nil 会显示成 "(null)"，所以这里直接跳过查询。
+    CoinPrice *coinPrice = nil;
+    if (_coin.coin_type.length > 0 && _coin.coin_platform.length > 0) {
+        coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:_coin.coin_type platform:_coin.coin_platform andTreaty:_coin.treaty];
+    }
+    _coinPrice = coinPrice;
+    [self.platformLab setHidden:NO];
+    self.balanceLab.text = [NSString stringWithFormat:@"≈$%.2f", coinPrice ? coinPrice.coinprice_dollarPrice : 0];
+    [self.balanceLab setHidden:YES];
+//        self.RMBLab.text = [NSString stringWithFormat:@"≈￥%.2f",coinPrice.coinprice_price * _coin.coin_balance];
+    self.platformLab.text = coinPrice ? [NSString stringWithFormat:@" %@  ", coinPrice.coinprice_platform ?: @""] : @"";
+    NSString *nickname = coinPrice.coinprice_nickname;
+    if ([nickname isKindOfClass:[NSString class]] && nickname.length > 0) {
+        self.chineseNameLab.text = [NSString stringWithFormat:@"(%@)",nickname];
+    }else
+    {
+        self.chineseNameLab.text = [NSString stringWithFormat:@""];
+    }
     
+    // 图标：服务端没返回图标时用「币种名首字母 + 色底圆」占位（否则列表里是一排空白圆，像没加载出来）；
+    // 有图标时也用占位图垫底，避免加载完成前/失败后留下上一个币的图标（cell 复用）
+    NSString *iconURL = coinPrice.coinprice_icon;
+    UIImage *placeholderIcon = [CommonFunction coinPlaceholderImageWithName:self.coinNameLab.text diameter:32];
+    if ([iconURL isKindOfClass:[NSString class]] && iconURL.length > 0) {
+        [self.coinIcon sd_setImageWithURL:[NSURL URLWithString:iconURL] placeholderImage:placeholderIcon];
+    } else {
+        [self.coinIcon sd_cancelCurrentImageLoad];
+        self.coinIcon.image = placeholderIcon;
+    }
+    
+    if ([_coin.coin_type isEqualToString:@"PMM"]) {
+        self.coinIcon.image = [UIImage imageNamed:@"PMM"];
+    }
 }
 
 - (void)setCoinPrice:(CoinPrice *)coinPrice{
-    if(coinPrice == nil)
-    {
-        self.balanceLab.text = @"≈￥0.0";
-        self.RMBLab.text = @"≈￥0.0";
-        self.chineseNameLab.text = @"";
-        [self.platformLab setHidden:YES];
-        [self.coinIcon sd_setImageWithURL:[NSURL URLWithString:@""]];
-    }else{
+    return;
+//    if(coinPrice == nil)
+//    {
+//        self.balanceLab.text = @"≈￥0.0";
+//        self.RMBLab.text = @"≈￥0.0";
+//        self.chineseNameLab.text = @"";
+//        [self.platformLab setHidden:YES];
+//        [self.coinIcon sd_setImageWithURL:[NSURL URLWithString:@""]];
+//    }else{
+        coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:coinPrice.coinprice_name platform:coinPrice.coinprice_platform andTreaty:coinPrice.treaty];
         _coinPrice = coinPrice;
         [self.platformLab setHidden:NO];
-        self.balanceLab.text = [NSString stringWithFormat:@"≈￥%.2f",coinPrice.coinprice_price];
-        self.RMBLab.text = [NSString stringWithFormat:@"≈￥%.2f",coinPrice.coinprice_price * _coin.coin_balance];
+        self.balanceLab.text = [NSString stringWithFormat:@"≈$%.2f",coinPrice.coinprice_dollarPrice];
+        [self.balanceLab setHidden:YES];
+//        self.RMBLab.text = [NSString stringWithFormat:@"≈￥%.2f",coinPrice.coinprice_price * _coin.coin_balance];
         self.platformLab.text = [NSString stringWithFormat:@" %@  ",coinPrice.coinprice_platform];
-        if (![coinPrice.coinprice_nickname isEqualToString:@""]) {
-           self.chineseNameLab.text = [NSString stringWithFormat:@"(%@)",coinPrice.coinprice_nickname];
+        if (![coinPrice.coinprice_nickname isEqualToString:@""] || coinPrice.coinprice_nickname != nil) {
+            self.chineseNameLab.text = [NSString stringWithFormat:@"(%@)",coinPrice.coinprice_nickname];
         }else
         {
             self.chineseNameLab.text = [NSString stringWithFormat:@""];
@@ -212,6 +289,6 @@
         if (![coinPrice.coinprice_icon isEqual:[NSNull null]]) {
             [self.coinIcon sd_setImageWithURL:[NSURL URLWithString:coinPrice.coinprice_icon]];
         }
-    }
+//    }
 }
 @end

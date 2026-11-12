@@ -19,11 +19,11 @@ extension IMRecordType {
     var title: String  {
         switch self {
         case .recording:
-            return "手指上滑，取消发送"
+            return L("手指上滑，取消发送")
         case .cancel:
-            return "松开手指，取消发送"
+            return L("松开手指，取消发送")
         case .shortTime:
-            return "录音时间太短"
+            return L("录音时间太短")
         }
     }
     var titleColor: UIColor {
@@ -76,7 +76,7 @@ class IMRecordTipHub: UIView {
         lbl.textColor = UIColor.white
         lbl.font = UIFont.regularFont(16)
         lbl.textAlignment = .center
-        lbl.text = "还可以说10秒"
+        lbl.text = L("还可以说10秒")
         return lbl
     }()
     
@@ -108,9 +108,9 @@ class IMRecordTipHub: UIView {
     public func setCountDown(_ time: Int) {
         self.recordLbl.isHidden = false
         if time == 0 {
-            self.recordLbl.text = "录音结束,松开发送"
+            self.recordLbl.text = L("录音结束,松开发送")
         } else {
-            self.recordLbl.text = "还可以说\(time)秒"
+            self.recordLbl.text = L("还可以说")+"\(time)"+L("秒")
         }
     }
     

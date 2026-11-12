@@ -8,7 +8,9 @@
 
 #import "SGNetWork.h"
 #import "GoFunction.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface SGNetWork()
 @property (nonatomic, strong) AFHTTPSessionManager *sessionManager;
 @end
@@ -186,12 +188,12 @@ static SGNetWork *networkManager = nil;
     // 这里可以直接设定错误反馈，也可以利用AFN 的error信息直接解析展示
     NSData * _Nullable afNetworking_errorMsg = [error.userInfo objectForKey:AFNetworkingOperationFailingURLResponseDataErrorKey];
     if (!afNetworking_errorMsg) {
-        message = @"网络不给力，请稍后重试";
+        message = L(@"网络不给力，请稍后重试");
     }
     NSHTTPURLResponse *response = (NSHTTPURLResponse *)task.response;
     NSInteger responseStatue = response.statusCode;
     if (responseStatue >= 500) {  // 网络错误
-        message = @"服务器维护升级中,请耐心等待";
+        message = L(@"服务器维护升级中,请耐心等待");
     } else if (responseStatue >= 400) {
         // 错误信息
         NSDictionary *responseObject = [NSJSONSerialization JSONObjectWithData:afNetworking_errorMsg options:NSJSONReadingAllowFragments error:nil];

@@ -18,7 +18,7 @@ enum TeamAPI {
 extension TeamAPI: XLSTargetType {
     
     var baseURL: URL {
-        return URL.init(string: TeamOAServerUrl)!
+        return URL.init(string: TeamOAServerUrl) ?? UNCONFIGURED_SERVER_URL
     }
     
     var parameters: [String : Any] {

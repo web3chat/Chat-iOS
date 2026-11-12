@@ -91,6 +91,27 @@ extension Group: Equatable {
     }
 }
 
+extension Group {
+    /// 指定成员是否是本群的群主/管理员（用户角色：2=群主 1=管理员 0=群员）
+    /// 本地群信息的 person 字段不一定存在，所以兼从 DB 群成员里查一次
+    func isManager(with memberId: String) -> Bool {
+        guard !memberId.isBlank else { return false }
+        if self.owner.memberId == memberId { return true }
+        if let person = self.person, person.memberId == memberId, person.memberType == 1 || person.memberType == 2 {
+            return true
+        }
+        if let member = GroupManager.shared().getDBGroupMember(with: self.id, memberId: memberId), member.memberType == 1 || member.memberType == 2 {
+            return true
+        }
+        return false
+    }
+    
+    /// 当前登录用户是否是本群群主/管理员
+    var isCurrentUserManager: Bool {
+        return self.isManager(with: LoginUser.shared().address)
+    }
+}
+
 extension Group: Codable {
     private enum CodingKeys: CodingKey {
         case adminNum, avatar, createTime, friendType, groupType, id, idStr, introduce, joinType, markId, maximum, memberNum, members, muteNum, muteType, name, owner, person, status, key, publicName

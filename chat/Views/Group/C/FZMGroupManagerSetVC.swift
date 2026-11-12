@@ -2,8 +2,8 @@
 //  FZMGroupManagerSetVC.swift
 //  Chat33
 //
-//  Created by 吴文拼 on 2018/10/30.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/10/30.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 import UIKit
@@ -34,12 +34,12 @@ class FZMGroupManagerSetVC: UIViewController, ViewControllerProtocol {
     
     lazy var bottomView : UIView = {
         let view = UIView(frame: CGRect(x: 0, y: 0, width: k_ScreenWidth, height: 50))
-        let lab = UILabel.getLab(font: UIFont.regularFont(16), textColor: Color_Theme, textAlignment: .center, text: "添加管理员")
+        let lab = UILabel.getLab(font: UIFont.regularFont(16), textColor: Color_Theme, textAlignment: .center, text: L("添加管理员"))
         view.addSubview(lab)
         lab.snp.makeConstraints({ (m) in
             m.centerY.equalToSuperview()
             m.centerX.equalToSuperview().offset(10)
-            m.size.equalTo(CGSize(width: 86, height: 23))
+            m.size.equalTo(CGSize(width: LanguageManager.shared.isChinese ? 86 : 150, height: 23))
         })
         lab.isUserInteractionEnabled = true
         let imageView = UIImageView(image: #imageLiteral(resourceName: "tool_more").withRenderingMode(.alwaysTemplate))
@@ -90,7 +90,7 @@ class FZMGroupManagerSetVC: UIViewController, ViewControllerProtocol {
         super.viewDidLoad()
         
         // Do any additional setup after loading the view.
-        self.navigationItem.title = "管理员设置"
+        self.navigationItem.title = L("管理员设置")
         self.createUI()
         
         if let members = group.members {
@@ -141,9 +141,9 @@ extension FZMGroupManagerSetVC: UITableViewDelegate, UITableViewDataSource {
     func tableView(_ tableView: UITableView, viewForHeaderInSection section: Int) -> UIView? {
         let view = UIView()
         view.backgroundColor = Color_FAFBFC
-        let lab = UILabel.getLab(font: UIFont.regularFont(12), textColor: Color_8A97A5, textAlignment: .left, text:"管理员(\(managerList.count)/10)")
+        let lab = UILabel.getLab(font: UIFont.regularFont(12), textColor: Color_8A97A5, textAlignment: .left, text: L("管理员") + "(\(managerList.count)/10)")
         if section == 0 {
-            lab.text = "群主"
+            lab.text = L("群主")
         }
         view.addSubview(lab)
         lab.snp.makeConstraints { (m) in
@@ -205,7 +205,7 @@ extension FZMGroupManagerSetVC: UITableViewDelegate, UITableViewDataSource {
         } failureBlock: { [weak self] _ in
             guard let strongSelf = self else { return }
             strongSelf.hideProgress()
-            strongSelf.showToast("管理员移除失败")
+            strongSelf.showToast(L("管理员移除失败"))
         }
     }
 }

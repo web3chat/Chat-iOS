@@ -407,6 +407,9 @@ enum PbMsg_ActionType: SwiftProtobuf.Enum {
   ///撤回
   case revoke // = 1
 
+  ///删除聊天记录（多端同步）
+  case deleteMessages // = 2
+
   ///加群
   case signInGroup // = 10
 
@@ -453,6 +456,7 @@ enum PbMsg_ActionType: SwiftProtobuf.Enum {
     switch rawValue {
     case 0: self = .received
     case 1: self = .revoke
+    case 2: self = .deleteMessages
     case 10: self = .signInGroup
     case 11: self = .signOutGroup
     case 12: self = .deleteGroup
@@ -476,6 +480,7 @@ enum PbMsg_ActionType: SwiftProtobuf.Enum {
     switch self {
     case .received: return 0
     case .revoke: return 1
+    case .deleteMessages: return 2
     case .signInGroup: return 10
     case .signOutGroup: return 11
     case .deleteGroup: return 12
@@ -504,6 +509,7 @@ extension PbMsg_ActionType: CaseIterable {
   static var allCases: [PbMsg_ActionType] = [
     .received,
     .revoke,
+    .deleteMessages,
     .signInGroup,
     .signOutGroup,
     .deleteGroup,
@@ -918,6 +924,9 @@ struct PbMsg_Source {
   /// Clears the value of `target`. Subsequent reads from it will return its default value.
   mutating func clearTarget() {self._target = nil}
 
+  ///阅后即焚标记
+  var burn: Bool = false
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
@@ -1308,6 +1317,32 @@ struct PbMsg_ActionReceived {
   init() {}
 }
 
+struct PbMsg_ActionDeleteMessages {
+  // SwiftProtobuf.Message conformance is added in an extension below. See the
+  // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
+  // methods supported on all messages.
+
+  var sessionId: String = String()
+
+  var msgIds: [String] = []
+
+  var before: Int64 = 0
+
+  var time: UInt64 = 0
+
+  var clearAll: Bool = false
+
+  var channelType: Int32 = 0
+
+  var fromId: String = String()
+
+  var targetId: String = String()
+
+  var unknownFields = SwiftProtobuf.UnknownStorage()
+
+  init() {}
+}
+
 struct PbMsg_ActionSignInGroup {
   // SwiftProtobuf.Message conformance is added in an extension below. See the
   // `Message` and `Message+*Additions` files in the SwiftProtobuf library for
@@ -1567,10 +1602,57 @@ struct PbMsg_ActionRevoke {
 
   var self_p: Bool = false
 
+  ///焚毁原因：0=普通撤回 1=阅后即焚焚毁
+  var reason: PbMsg_RevokeReason = .revoked
+
   var unknownFields = SwiftProtobuf.UnknownStorage()
 
   init() {}
 }
+
+enum PbMsg_RevokeReason: SwiftProtobuf.Enum {
+  typealias RawValue = Int
+
+  ///普通撤回
+  case revoked // = 0
+
+  ///阅后即焚焚毁
+  case burned // = 1
+  case UNRECOGNIZED(Int)
+
+  init() {
+    self = .revoked
+  }
+
+  init?(rawValue: Int) {
+    switch rawValue {
+    case 0: self = .revoked
+    case 1: self = .burned
+    default: self = .UNRECOGNIZED(rawValue)
+    }
+  }
+
+  var rawValue: Int {
+    switch self {
+    case .revoked: return 0
+    case .burned: return 1
+    case .UNRECOGNIZED(let i): return i
+    }
+  }
+
+}
+
+#if swift(>=4.2)
+
+extension PbMsg_RevokeReason: CaseIterable {
+  // The compiler won't synthesize support with the UNRECOGNIZED case.
+  static var allCases: [PbMsg_RevokeReason] = [
+    .revoked,
+    .burned,
+  ]
+}
+
+#endif  // swift(>=4.2)
 
 // MARK: - Code below here is support for the SwiftProtobuf runtime.
 
@@ -1661,6 +1743,13 @@ extension PbMsg_ActionType: SwiftProtobuf._ProtoNameProviding {
     31: .same(proto: "StartCall"),
     32: .same(proto: "AcceptCall"),
     33: .same(proto: "StopCall"),
+  ]
+}
+
+extension PbMsg_RevokeReason: SwiftProtobuf._ProtoNameProviding {
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    0: .same(proto: "Revoked"),
+    1: .same(proto: "Burned"),
   ]
 }
 
@@ -1941,6 +2030,7 @@ extension PbMsg_Source: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementat
     1: .same(proto: "channelType"),
     2: .same(proto: "from"),
     3: .same(proto: "target"),
+    4: .same(proto: "burn"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -1952,6 +2042,7 @@ extension PbMsg_Source: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementat
       case 1: try { try decoder.decodeSingularInt32Field(value: &self.channelType) }()
       case 2: try { try decoder.decodeSingularMessageField(value: &self._from) }()
       case 3: try { try decoder.decodeSingularMessageField(value: &self._target) }()
+      case 4: try { try decoder.decodeSingularBoolField(value: &self.burn) }()
       default: break
       }
     }
@@ -1967,6 +2058,9 @@ extension PbMsg_Source: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementat
     if let v = self._target {
       try visitor.visitSingularMessageField(value: v, fieldNumber: 3)
     }
+    if self.burn != false {
+      try visitor.visitSingularBoolField(value: self.burn, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -1974,6 +2068,7 @@ extension PbMsg_Source: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementat
     if lhs.channelType != rhs.channelType {return false}
     if lhs._from != rhs._from {return false}
     if lhs._target != rhs._target {return false}
+    if lhs.burn != rhs.burn {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }
@@ -3005,6 +3100,80 @@ extension PbMsg_ActionReceived: SwiftProtobuf.Message, SwiftProtobuf._MessageImp
   }
 }
 
+extension PbMsg_ActionDeleteMessages: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
+  static let protoMessageName: String = _protobuf_package + ".ActionDeleteMessages"
+  static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
+    1: .same(proto: "sessionId"),
+    2: .same(proto: "msgIds"),
+    3: .same(proto: "before"),
+    4: .same(proto: "time"),
+    5: .same(proto: "clearAll"),
+    6: .same(proto: "channelType"),
+    7: .same(proto: "fromId"),
+    8: .same(proto: "targetId"),
+  ]
+
+  mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
+    while let fieldNumber = try decoder.nextFieldNumber() {
+      // The use of inline closures is to circumvent an issue where the compiler
+      // allocates stack space for every case branch when no optimizations are
+      // enabled. https://github.com/apple/swift-protobuf/issues/1034
+      switch fieldNumber {
+      case 1: try { try decoder.decodeSingularStringField(value: &self.sessionId) }()
+      case 2: try { try decoder.decodeRepeatedStringField(value: &self.msgIds) }()
+      case 3: try { try decoder.decodeSingularInt64Field(value: &self.before) }()
+      case 4: try { try decoder.decodeSingularUInt64Field(value: &self.time) }()
+      case 5: try { try decoder.decodeSingularBoolField(value: &self.clearAll) }()
+      case 6: try { try decoder.decodeSingularInt32Field(value: &self.channelType) }()
+      case 7: try { try decoder.decodeSingularStringField(value: &self.fromId) }()
+      case 8: try { try decoder.decodeSingularStringField(value: &self.targetId) }()
+      default: break
+      }
+    }
+  }
+
+  func traverse<V: SwiftProtobuf.Visitor>(visitor: inout V) throws {
+    if !self.sessionId.isEmpty {
+      try visitor.visitSingularStringField(value: self.sessionId, fieldNumber: 1)
+    }
+    if !self.msgIds.isEmpty {
+      try visitor.visitRepeatedStringField(value: self.msgIds, fieldNumber: 2)
+    }
+    if self.before != 0 {
+      try visitor.visitSingularInt64Field(value: self.before, fieldNumber: 3)
+    }
+    if self.time != 0 {
+      try visitor.visitSingularUInt64Field(value: self.time, fieldNumber: 4)
+    }
+    if self.clearAll != false {
+      try visitor.visitSingularBoolField(value: self.clearAll, fieldNumber: 5)
+    }
+    if self.channelType != 0 {
+      try visitor.visitSingularInt32Field(value: self.channelType, fieldNumber: 6)
+    }
+    if !self.fromId.isEmpty {
+      try visitor.visitSingularStringField(value: self.fromId, fieldNumber: 7)
+    }
+    if !self.targetId.isEmpty {
+      try visitor.visitSingularStringField(value: self.targetId, fieldNumber: 8)
+    }
+    try unknownFields.traverse(visitor: &visitor)
+  }
+
+  static func ==(lhs: PbMsg_ActionDeleteMessages, rhs: PbMsg_ActionDeleteMessages) -> Bool {
+    if lhs.sessionId != rhs.sessionId {return false}
+    if lhs.msgIds != rhs.msgIds {return false}
+    if lhs.before != rhs.before {return false}
+    if lhs.time != rhs.time {return false}
+    if lhs.clearAll != rhs.clearAll {return false}
+    if lhs.channelType != rhs.channelType {return false}
+    if lhs.fromId != rhs.fromId {return false}
+    if lhs.targetId != rhs.targetId {return false}
+    if lhs.unknownFields != rhs.unknownFields {return false}
+    return true
+  }
+}
+
 extension PbMsg_ActionSignInGroup: SwiftProtobuf.Message, SwiftProtobuf._MessageImplementationBase, SwiftProtobuf._ProtoNameProviding {
   static let protoMessageName: String = _protobuf_package + ".ActionSignInGroup"
   static let _protobuf_nameMap: SwiftProtobuf._NameMap = [
@@ -3689,6 +3858,7 @@ extension PbMsg_ActionRevoke: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
     1: .same(proto: "logId"),
     2: .same(proto: "operator"),
     3: .same(proto: "self"),
+    4: .same(proto: "reason"),
   ]
 
   mutating func decodeMessage<D: SwiftProtobuf.Decoder>(decoder: inout D) throws {
@@ -3700,6 +3870,7 @@ extension PbMsg_ActionRevoke: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
       case 1: try { try decoder.decodeSingularInt64Field(value: &self.logID) }()
       case 2: try { try decoder.decodeSingularStringField(value: &self.`operator`) }()
       case 3: try { try decoder.decodeSingularBoolField(value: &self.self_p) }()
+      case 4: try { try decoder.decodeSingularEnumField(value: &self.reason) }()
       default: break
       }
     }
@@ -3715,6 +3886,9 @@ extension PbMsg_ActionRevoke: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
     if self.self_p != false {
       try visitor.visitSingularBoolField(value: self.self_p, fieldNumber: 3)
     }
+    if self.reason != .revoked {
+      try visitor.visitSingularEnumField(value: self.reason, fieldNumber: 4)
+    }
     try unknownFields.traverse(visitor: &visitor)
   }
 
@@ -3722,6 +3896,7 @@ extension PbMsg_ActionRevoke: SwiftProtobuf.Message, SwiftProtobuf._MessageImple
     if lhs.logID != rhs.logID {return false}
     if lhs.`operator` != rhs.`operator` {return false}
     if lhs.self_p != rhs.self_p {return false}
+    if lhs.reason != rhs.reason {return false}
     if lhs.unknownFields != rhs.unknownFields {return false}
     return true
   }

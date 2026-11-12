@@ -2,7 +2,7 @@
 //  FZMFullTextSearchVC.swift
 //  IMSDK
 //
-//  Created by 陈健 on 2019/9/20.
+//  Created by fzm on 2019/9/20.
 //
 
 import UIKit
@@ -19,11 +19,11 @@ enum FZMFullTextSearchType: Equatable {
     var titit: String {
         switch self {
         case .friend:
-            return "联系人"
+            return L("联系人")
         case .group:
-            return "群聊"
+            return L("群聊")
         case .chatRecord:
-            return "聊天记录"
+            return L("聊天记录")
         case .all:
             return ""
         }
@@ -92,7 +92,7 @@ class FZMFullTextSearchVC: UIViewController, ViewControllerProtocol {
         let v = UIView.init(frame: CGRect.init(x: 0, y: 0, width: k_ScreenWidth, height: k_ScreenHeight))
         v.isHidden = true
         v.backgroundColor = Color_FAFBFC
-        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: "没有匹配的对象", btnTitle: nil, clickBlock: nil)
+        var imgView = FZMNoDataView(image: #imageLiteral(resourceName: "nodata_search"), imageSize: CGSize(width: 250, height: 200), desText: L("没有匹配的对象"), btnTitle: nil, clickBlock: nil)
         v.addSubview(imgView)
         imgView.snp.makeConstraints({ (m) in
             m.top.equalToSuperview().offset(65)
@@ -104,7 +104,7 @@ class FZMFullTextSearchVC: UIViewController, ViewControllerProtocol {
     
     private lazy var cancelBtn : UIButton = {
         let btn = UIButton()
-        btn.setAttributedTitle(NSAttributedString(string: "取消", attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(16)]), for: .normal)
+        btn.setAttributedTitle(NSAttributedString(string: L("取消"), attributes: [.foregroundColor:Color_Theme,.font:UIFont.regularFont(16)]), for: .normal)
         return btn
     }()
     
@@ -224,13 +224,13 @@ class FZMFullTextSearchVC: UIViewController, ViewControllerProtocol {
     private func getSearchPlaceholder(with searchType: FZMFullTextSearchType) -> String {
         switch searchType {
         case .friend:
-            return "搜索联系人"
+            return L("搜索联系人")
         case .group:
-            return "搜索群聊"
+            return L("搜索群聊")
         case .chatRecord:
-            return "搜索聊天记录"
+            return L("搜索聊天记录")
         case .all:
-            return "搜索联系人、群、聊天记录"
+            return L("搜索联系人、群、聊天记录")
         }
     }
     
@@ -306,19 +306,22 @@ extension FZMFullTextSearchVC {
     
     private func refreshSearchTableView(searchString: String?) {
         self.refreshQueue.async {
-            self.dataSource.removeAll()
+            // ⚠️ 后台线程不要直接改 dataSource：主线程的表格代理同时会读它，数组竞争会崩。
+            // 先在后台算出局部结果，再回主线程一次性赋值。
+            var newDataSource = [[IMFullTextSearchVM]]()
             if let searchString = searchString, !searchString.isEmpty {
                 if let friendSearchModelList = self.searchFriend(searchString) {
-                     self.dataSource.append(friendSearchModelList)
+                     newDataSource.append(friendSearchModelList)
                 }
                 if let groupSearchModelList = self.searchGroup(searchString) {
-                    self.dataSource.append(groupSearchModelList)
+                    newDataSource.append(groupSearchModelList)
                 }
                 if let chatRecordSearchModelList = self.searchChatRecord(searchString) {
-                    self.dataSource.append(chatRecordSearchModelList)
+                    newDataSource.append(chatRecordSearchModelList)
                 }
             }
             DispatchQueue.main.sync {
+                self.dataSource = newDataSource
                 self.searchString = searchString
                 self.searchTableView.reloadData()
             }
@@ -402,9 +405,9 @@ extension FZMFullTextSearchVC {
             }
             if let sessionID = sessionID {
                 let session = SessionManager.shared().getOrCreateSession(id: sessionID)
-                lab.text = "\"\(session.sessionName)\"" + "的记录"
+                lab.text = "\"\(session.sessionName)\"" + L("的记录")
             } else {
-                lab.text = "\"\(specificId)\"" + "的记录"
+                lab.text = "\"\(specificId)\"" + L("的记录")
             }
         }
         view.addSubview(lab)
@@ -415,15 +418,17 @@ extension FZMFullTextSearchVC {
         }
         if isShowMore {
             let btn = UIButton.init(type: .custom)
-            btn.setTitle("查看更多", for: .normal)
+            btn.setTitle(L("查看更多"), for: .normal)
             btn.setTitleColor(Color_Theme, for: .normal)
             btn.titleLabel?.font = UIFont.systemFont(ofSize: 14)
             btn.titleLabel?.textAlignment = .right
             btn.enlargeClickEdge(5, 0, 0, 25)
             let moreData = self.dataSource[section]
             btn.rx.controlEvent(.touchUpInside).subscribe(onNext: {[weak self] (_) in
-                self?.showMore(searchType: moreData[0].type, dataSource: [moreData])
-                self?.view.endEditing(true)
+                // 空 section 时 moreData[0] 会越界崩，取首项失败就不响应
+                guard let self = self, let first = moreData.first else { return }
+                self.showMore(searchType: first.type, dataSource: [moreData])
+                self.view.endEditing(true)
             }).disposed(by: disposeBag)
             view.addSubview(btn)
             btn.snp.makeConstraints { (m) in

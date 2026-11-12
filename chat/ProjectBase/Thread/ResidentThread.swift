@@ -2,7 +2,7 @@
 //  ResidentThread.swift
 //  chat
 //
-//  Created by 陈健 on 2021/3/3.
+//  Created by fzm on 2021/3/3.
 //
 
 import Foundation

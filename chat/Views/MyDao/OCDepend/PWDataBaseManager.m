@@ -2,8 +2,8 @@
 //  PWDataBaseManager.m
 //  JTB
 //
-//  Created by 吴文拼 on 2018/1/2.
-//  Copyright © 2018年 吴文拼. All rights reserved.
+//  Created by fzm on 2018/1/2.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "PWDataBaseManager.h"
@@ -11,10 +11,14 @@
 
 //数据库存放路径
 #define JTBDataBasePath [[(NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES)) lastObject]stringByAppendingPathComponent:@"jtb_db"]
+static inline NSString *PWDBSafeString(NSString *value) {
+    return value ?: @"";
+}
 
 @interface PWDataBaseManager()
 
 @property (nonatomic, retain) FMDatabaseQueue *dbQueue;
+- (void)migrateUserInfoTableIfNeeded;
 
 
 @end
@@ -35,6 +39,8 @@
         [instance createTable:SQL_CREATE_WALLET];  //创建钱包表
         [instance createTable:SQL_CREATE_COIN];    //创建货币表
         [instance createTable:SQL_CREATE_COINPRICE]; //创建货币行情表
+        [instance createTable:SQL_CREATE_USERINFO]; //创建用户信息表
+        [instance migrateUserInfoTableIfNeeded];
 
         
     });
@@ -48,6 +54,13 @@
         NSString *filePath = [documentsPath stringByAppendingPathComponent:@"chatwallets.sqlite"];
    
         _dbQueue = [FMDatabaseQueue databaseQueueWithPath:filePath];
+        // 钱包库含加密助记词 / 密码哈希，排除出 iCloud/iTunes 备份，降低离线爆破面。
+        NSURL *dbURL = [NSURL fileURLWithPath:filePath];
+        [dbURL setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:nil];
+        NSURL *walPath = [NSURL fileURLWithPath:[filePath stringByAppendingString:@"-wal"]];
+        [walPath setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:nil];
+        NSURL *shmPath = [NSURL fileURLWithPath:[filePath stringByAppendingString:@"-shm"]];
+        [shmPath setResourceValue:@YES forKey:NSURLIsExcludedFromBackupKey error:nil];
     }
     return _dbQueue;
 }
@@ -64,6 +77,57 @@
         } else {
             NSLog(@"succ to creating db friend_list");
         }
+    }];
+}
+
+/**
+ * userinfo表结构迁移:
+ * 1. 删除userinfo_id
+ * 2. address作为主键
+ * 3. 新增0xaddress字段
+ */
+- (void)migrateUserInfoTableIfNeeded
+{
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *res = [db executeQuery:@"PRAGMA table_info(userinfo)"];
+        if (!res) {
+            return;
+        }
+
+        NSMutableSet<NSString *> *columnNames = [NSMutableSet set];
+        NSString *primaryKeyColumn = @"";
+        while ([res next]) {
+            NSString *columnName = [res stringForColumn:@"name"];
+            if (columnName.length > 0) {
+                [columnNames addObject:columnName];
+            }
+            if ([res intForColumn:@"pk"] == 1) {
+                primaryKeyColumn = columnName ?: @"";
+            }
+        }
+
+        BOOL hasLegacyColumn = [columnNames containsObject:@"userinfo_id"];
+        BOOL missing0xAddress = ![columnNames containsObject:@"0xaddress"];
+        BOOL primaryKeyIsAddress = [primaryKeyColumn isEqualToString:@"address"];
+        BOOL needMigrate = hasLegacyColumn || missing0xAddress || !primaryKeyIsAddress;
+        if (!needMigrate) {
+            return;
+        }
+
+        BOOL renameSuccess = [db executeUpdate:@"ALTER TABLE userinfo RENAME TO userinfo_temp_v2"];
+        if (!renameSuccess) {
+            NSLog(@"migrate userinfo failed when renaming table");
+            return;
+        }
+
+        BOOL createSuccess = [db executeUpdate:SQL_CREATE_USERINFO];
+        if (!createSuccess) {
+            NSLog(@"migrate userinfo failed when creating new table");
+            return;
+        }
+
+        [db executeUpdate:@"INSERT OR REPLACE INTO userinfo(phone,address,'0xaddress',avatarurl,name,encryptedRemembercode,encryptedPassword) SELECT phone,address,'' AS '0xaddress',avatarurl,name,encryptedRemembercode,encryptedPassword FROM userinfo_temp_v2"];
+        [db executeUpdate:@"DROP TABLE IF EXISTS userinfo_temp_v2"];
     }];
 }
 
@@ -314,6 +378,68 @@
     return wallet;
 }
 
+- (LocalWallet *)queryWalletByRememberCode:(NSString *)encryptedRememberCode
+{
+    if (encryptedRememberCode.length == 0) {
+        return nil;
+    }
+    __block LocalWallet *wallet = nil;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *res = [db executeQuery:@"SELECT * FROM wallet WHERE wallet_remembercode = ?", encryptedRememberCode];
+        while ([res next]) {
+            NSDictionary *dic = [res resultDictionary];
+            wallet = [LocalWallet yy_modelWithDictionary:dic];
+        }
+    }];
+    return wallet;
+}
+
+/**
+ * 根据币地址反查钱包：
+ *  - 0x 地址（ETH/BNB）不区分大小写比较（有的旧数据是小写、有的是 checksum 大小写）
+ *  - 其它（BTY 等 Base58）大小写敏感，必须精确比较
+ */
+- (LocalWallet *)queryWalletByCoinAddress:(NSString *)address
+{
+    NSString *addr = [(address ?: @"") stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (addr.length == 0) {
+        return nil;
+    }
+    BOOL isHexAddress = [addr.lowercaseString hasPrefix:@"0x"];
+    NSString *matchValue = isHexAddress ? addr.lowercaseString : addr;
+
+    __block NSInteger walletId = 0;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        NSString *sql = isHexAddress
+            ? @"SELECT wallet_id FROM coin WHERE LOWER(coin_address) = ? ORDER BY coin_walletid ASC LIMIT 1"
+            : @"SELECT wallet_id FROM coin WHERE coin_address = ? ORDER BY coin_walletid ASC LIMIT 1";
+        FMResultSet *res = [db executeQuery:sql, matchValue];
+        while ([res next]) {
+            walletId = [res longForColumn:@"wallet_id"];
+        }
+        [res close];
+    }];
+
+    if (walletId <= 0) {
+        return nil;
+    }
+    return [self queryWallet:walletId];
+}
+
+- (BOOL)selectWalletAsCurrent:(LocalWallet *)wallet
+{
+    if (wallet == nil) {
+        return NO;
+    }
+    __block BOOL ok = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        [db executeUpdate:@"UPDATE wallet SET wallet_isselected = 0"];
+        ok = [db executeUpdate:@"UPDATE wallet SET wallet_isselected = 1 WHERE wallet_id = ?", @(wallet.wallet_id)];
+    }];
+    wallet.wallet_isselected = 1;
+    return ok;
+}
+
 /**
  *  查询all Wallet
  */
@@ -501,11 +627,21 @@
     
     if(![self existCoin:coin])
     {
-        [self addCoin:coin];
-        return YES;
-        
-    }else{
-        
+        if(![self exsitContractCoin:coin]){
+            // ⚠️ 只有「从未落库过」的内存对象（`coin_id == 0`）才补插 ——
+            // 添加币种页（`CoinTableViewCell` 打开开关）依赖这个补插。
+            // 但 `coin_id > 0` 说明这行本来自库里（典型：刚从资产页左滑删除），
+            // 这里再 `addCoin:` 就会把删掉的币重新插入一条（新 coin_id）
+            // ⇒ 用户看到的就是「删了还在」。余额轮询回调会走到这里，必须只更新不插入。
+            if (coin.coin_id == 0) {
+                [self addCoin:coin];
+                return YES;
+            }
+            return NO;
+        }
+    }
+    else
+    {
         [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
             if (coin.coin_address)
             {
@@ -591,6 +727,54 @@
     
     return deleteSuccess;
     
+}
+
+/**
+ * 根据coin的合约地址删除对应的币
+ */
+
+- (BOOL)deleteCoinWithContractAddr:(NSString *)addr
+{
+    if ([addr isEqualToString:@""]) {
+        return NO;
+    }
+    
+    __block BOOL deleteSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        deleteSuccess = [db executeUpdate:@"DELETE FROM coin WHERE coin_pubkey = ?",addr];
+        // ⚠️ FMDB 的 executeUpdate 只代表「语句执行成功」，0 行也会返回 YES
+        // ⇒ 必须用 changes 判断是否真的删到了，否则调用方会以为删成功（表现为删了还在）
+        deleteSuccess = deleteSuccess && db.changes > 0;
+        if (deleteSuccess)
+        {
+            NSLog(@"delete success");
+        }
+        else
+        {
+            NSLog(@"");
+        }
+    }];
+    
+    return  deleteSuccess;
+}
+
+/**
+ * 根据主键 coin_id 精确删除一条币记录
+ */
+- (BOOL)deleteCoinWithId:(NSInteger)coinId
+{
+    if (coinId <= 0) {
+        return NO;
+    }
+    
+    __block BOOL deleteSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        deleteSuccess = [db executeUpdate:@"DELETE FROM coin WHERE coin_id = ?", @(coinId)];
+        // 同 `deleteCoinWithContractAddr:`：用 changes 判断真实删除结果
+        deleteSuccess = deleteSuccess && db.changes > 0;
+    }];
+    
+    return deleteSuccess;
 }
 
 /**
@@ -695,6 +879,23 @@
 - (LocalCoin *)queryCoinBasedOnChain:(NSString *)chainStr
 {
     NSArray *coinArray = [self queryCoinArrayBasedOnSelectedWalletID];
+    /// Web3 选中 BitYuan 时与 `GameGoFunction queryAddressByChain:` 一致：BTY+ETH（EVM 地址）
+    if ([chainStr isEqualToString:@"BTY"]) {
+        for (LocalCoin *coin in coinArray) {
+            if ([coin.coin_type isEqualToString:@"BTY"] && [coin.coin_chain isEqualToString:@"ETH"]) {
+                return coin;
+            }
+        }
+        return nil;
+    }
+    if ([chainStr isEqualToString:@"ETH"]) {
+        for (LocalCoin *coin in coinArray) {
+            if ([coin.coin_type isEqualToString:@"ETH"] && [coin.coin_chain isEqualToString:@"ETH"]) {
+                return coin;
+            }
+        }
+        return nil;
+    }
     for (int i = 0; i < coinArray.count; i ++) {
         LocalCoin *coin = [coinArray objectAtIndex:i];
         if ([coin.coin_type isEqualToString:chainStr]) {
@@ -739,6 +940,8 @@
     }];
     return [self coinArray:coinArray];
 }
+
+
 
 /**
  * 根据钱包ID查询NFT数组 coin_show = 1
@@ -925,6 +1128,230 @@
     NSLog(@"%f",coinPrice.coinprice_dollarPrice);
     
     return coinPrice;
+}
+
+#pragma mark - 用户信息UserInfo
+/**
+ * 检查用户信息是否存在
+ */
+- (BOOL)checkuserinfo:(LoginUserInfo *)userInfo
+{
+    if (userInfo == nil || PWDBSafeString(userInfo.address).length == 0) {
+        return NO;
+    }
+
+    __block int count = 0;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *res = [db executeQuery:@"SELECT COUNT(*) AS count FROM userinfo WHERE address = ?", PWDBSafeString(userInfo.address)];
+        while ([res next]) {
+            count = [res intForColumn:@"count"];
+        }
+    }];
+    return count > 0;
+}
+
+/**
+ * 添加用户信息
+ */
+- (BOOL)addUserInfo:(LoginUserInfo *)userInfo
+{
+    if (userInfo == nil || PWDBSafeString(userInfo.address).length == 0) {
+        return NO;
+    }
+
+    if ([self checkuserinfo:userInfo]) {
+        return [self updateUserInfo:userInfo];
+    }
+
+    __block BOOL insertSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        insertSuccess = [db executeUpdate:@"INSERT INTO userinfo(phone,address,'0xaddress',avatarurl,name,encryptedRemembercode,encryptedPassword) VALUES(?,?,?,?,?,?,?)",
+                         PWDBSafeString(userInfo.phone),
+                         PWDBSafeString(userInfo.address),
+                         PWDBSafeString(userInfo.address0x),
+                         PWDBSafeString(userInfo.avatarurl),
+                         PWDBSafeString(userInfo.name),
+                         PWDBSafeString(userInfo.encryptedRemembercode),
+                         PWDBSafeString(userInfo.encryptedPassword)];
+    }];
+    return insertSuccess;
+}
+
+/**
+ * Swift调用的新增用户信息方法
+ */
+- (BOOL)addUserInfoWithPhone:(NSString *)phone
+                     address:(NSString *)address
+                   address0x:(NSString *)address0x
+                   avatarurl:(NSString *)avatarurl
+                        name:(NSString *)name
+       encryptedRemembercode:(NSString *)encryptedRemembercode
+           encryptedPassword:(NSString *)encryptedPassword
+{
+    LoginUserInfo *userInfo = [[LoginUserInfo alloc] init];
+    userInfo.phone = PWDBSafeString(phone);
+    userInfo.address = PWDBSafeString(address);
+    userInfo.address0x = PWDBSafeString(address0x);
+    userInfo.avatarurl = PWDBSafeString(avatarurl);
+    userInfo.name = PWDBSafeString(name);
+    userInfo.encryptedRemembercode = PWDBSafeString(encryptedRemembercode);
+    userInfo.encryptedPassword = PWDBSafeString(encryptedPassword);
+    return [self addUserInfo:userInfo];
+}
+
+/**
+ * 更新用户信息
+ */
+- (BOOL)updateUserInfo:(LoginUserInfo *)userInfo
+{
+    if (userInfo == nil || PWDBSafeString(userInfo.address).length == 0) {
+        return NO;
+    }
+
+    __block BOOL updateSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        updateSuccess = [db executeUpdate:@"UPDATE 'userinfo' SET phone = ?, '0xaddress' = ?, avatarurl = ?, name = ?, encryptedRemembercode = ?, encryptedPassword = ? WHERE address = ?",
+                         PWDBSafeString(userInfo.phone),
+                         PWDBSafeString(userInfo.address0x),
+                         PWDBSafeString(userInfo.avatarurl),
+                         PWDBSafeString(userInfo.name),
+                         PWDBSafeString(userInfo.encryptedRemembercode),
+                         PWDBSafeString(userInfo.encryptedPassword),
+                         PWDBSafeString(userInfo.address)];
+    }];
+    return updateSuccess;
+}
+
+/**
+ * 更新用户密聊密码
+ */
+- (BOOL)updateUserInfoPasswordWithAddress:(NSString *)address
+                        encryptedPassword:(NSString *)encryptedPassword
+{
+    if (PWDBSafeString(address).length == 0) {
+        return NO;
+    }
+
+    __block BOOL updateSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        updateSuccess = [db executeUpdate:@"UPDATE 'userinfo' SET encryptedPassword = ? WHERE address = ?",
+                         PWDBSafeString(encryptedPassword),
+                         PWDBSafeString(address)];
+    }];
+    return updateSuccess;
+}
+
+/**
+ * 更新用户头像
+ */
+- (BOOL)updateUserInfoAvatarWithAddress:(NSString *)address
+                              avatarurl:(NSString *)avatarurl
+{
+    if (PWDBSafeString(address).length == 0) {
+        return NO;
+    }
+
+    __block BOOL updateSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        updateSuccess = [db executeUpdate:@"UPDATE 'userinfo' SET avatarurl = ? WHERE address = ?",
+                         PWDBSafeString(avatarurl),
+                         PWDBSafeString(address)];
+    }];
+    return updateSuccess;
+}
+
+/**
+ * 更新用户名
+ */
+- (BOOL)updateUserInfoNameWithAddress:(NSString *)address
+                                 name:(NSString *)name
+{
+    if (PWDBSafeString(address).length == 0) {
+        return NO;
+    }
+
+    __block BOOL updateSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        updateSuccess = [db executeUpdate:@"UPDATE 'userinfo' SET name = ? WHERE address = ?",
+                         PWDBSafeString(name),
+                         PWDBSafeString(address)];
+    }];
+    return updateSuccess;
+}
+
+/**
+ * 根据address查询用户信息
+ */
+- (LoginUserInfo *)queryUserInfoWithAddress:(NSString *)address
+{
+    if (PWDBSafeString(address).length == 0) {
+        return nil;
+    }
+
+    __block LoginUserInfo *userInfo = nil;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *res = [db executeQuery:@"SELECT * FROM userinfo WHERE address = ?", PWDBSafeString(address)];
+        while ([res next]) {
+            NSDictionary *dic = [res resultDictionary];
+            userInfo = [LoginUserInfo yy_modelWithDictionary:dic];
+        }
+    }];
+    return userInfo;
+}
+
+/**
+ * 查询全部用户信息
+ */
+- (NSArray<LoginUserInfo *> *)queryAllUserInfo
+{
+    __block NSMutableArray<LoginUserInfo *> *userInfoArray = [NSMutableArray new];
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *res = [db executeQuery:@"SELECT * FROM userinfo"];
+        while ([res next]) {
+            NSDictionary *dic = [res resultDictionary];
+            if (dic) {
+                LoginUserInfo *userInfo = [LoginUserInfo yy_modelWithDictionary:dic];
+                if (userInfo) {
+                    [userInfoArray addObject:userInfo];
+                }
+            }
+        }
+    }];
+    return userInfoArray;
+}
+
+/**
+ * Swift调用的用户信息列表查询方法（字典数组）
+ */
+- (NSArray<NSDictionary *> *)queryAllUserInfoData
+{
+    __block NSMutableArray<NSDictionary *> *userInfoArray = [NSMutableArray new];
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        FMResultSet *res = [db executeQuery:@"SELECT * FROM userinfo"];
+        while ([res next]) {
+            NSDictionary *dic = [res resultDictionary];
+            if (dic) {
+                [userInfoArray addObject:dic];
+            }
+        }
+    }];
+    return userInfoArray;
+}
+
+/**
+ * 删除用户信息
+ */
+- (BOOL)deleteUserInfoWithAddress:(NSString *)address
+{
+    if (PWDBSafeString(address).length == 0) {
+        return NO;
+    }
+
+    __block BOOL deleteSuccess = NO;
+    [self.dbQueue inDatabase:^(FMDatabase * _Nonnull db) {
+        deleteSuccess = [db executeUpdate:@"DELETE FROM userinfo WHERE address = ?", PWDBSafeString(address)];
+    }];
+    return deleteSuccess;
 }
 
 

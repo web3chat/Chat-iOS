@@ -2,7 +2,7 @@
 //  KeyboardNotification.swift
 //  chat
 //
-//  Created by 陈健 on 2021/2/3.
+//  Created by fzm on 2021/2/3.
 //
 
 import Foundation
@@ -86,13 +86,26 @@ private extension NSNotification {
         return TimeInterval(truncating: value)
     }
     
+    /// 键盘在通知里给的**原始**曲线值。⚠️ 系统键盘用的是 **7**，而 `UIView.AnimationCurve` 只有 0~3。
+    var rawAnimationCurveIndex: Int? {
+        return (userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? NSNumber)?.intValue
+    }
+    
     var animationCurve: UIView.AnimationCurve? {
-        guard let index = (userInfo?[UIResponder.keyboardAnimationCurveUserInfoKey] as? NSNumber)?.intValue else { return nil }
+        guard let index = rawAnimationCurveIndex else { return nil }
         guard index >= 0 && index <= 3 else { return .linear }
         return UIView.AnimationCurve.init(rawValue: index) ?? .linear
     }
     
     var animationOptions: UIView.AnimationOptions {
+        // ⚠️ 键盘的真实曲线是系统私有值 **7**（不在 0~3 里），只按 `animationCurve` 映射会被夹成
+        // `.curveLinear` —— 于是「拿通知自己做动画」的地方变成**匀速直线**跟随，和键盘的真实运动
+        // 对不上：键盘前半段跑得更快，它顶边那条深色描边就会穿过/扫过跟随的底栏
+        // （广场评论输入条上那条「跟着键盘一起弹出来、一秒左右消失」的半透明黑细线就是这么来的）。
+        // UIView 动画的曲线就存在 options 的高 16 位，把原始值原样搬过去即可，与键盘完全对齐。
+        if let index = rawAnimationCurveIndex, index > 3 {
+            return UIView.AnimationOptions(rawValue: UInt(index) << 16)
+        }
         guard let curve = animationCurve else { return [] }
         switch curve {
         case .easeIn:

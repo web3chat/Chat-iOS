@@ -3,12 +3,14 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/29.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "TradeCell.h"
 #import "Depend.h"
+#import "chat-Swift.h"
 
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface TradeCell()
 @property (nonatomic,strong) UILabel *moneyLab;
 @property (nonatomic,strong) UILabel *stateLab;
@@ -172,15 +174,15 @@
 
     if (orderModel.state == TransferFromStatusFailure) {
         self.stateLab.textColor = SGColorFromRGB(0xec5151);
-        self.stateLab.text = @"失败"  ;
+        self.stateLab.text = L(@"失败");
     }else if(orderModel.state == TransferFromStatusEnsureing)
     {
         self.stateLab.textColor = SGColorFromRGB(0x7190ff);
-        self.stateLab.text = @"确认中"  ;
+        self.stateLab.text = L(@"确认中");
     }else if (orderModel.state == TransferFromStatusSuccess || orderModel.state == TransferFromStatusSuccess2)
     {
         self.stateLab.textColor = SGColorFromRGB(0x37aec4);
-        self.stateLab.text = @"完成"  ;
+        self.stateLab.text = L(@"完成");
     }
     
 }

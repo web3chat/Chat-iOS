@@ -3,12 +3,15 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/29.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "TransferTopView.h"
 #import "YYUnitTextField.h"
 #import "Depend.h"
+#import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 @interface TransferTopView()<UITextFieldDelegate>
 @property (nonatomic,strong) UILabel *titleLab;
 @property (nonatomic,strong) UILabel *balanceLab;
@@ -35,7 +38,7 @@
 - (void)createView {
     
     UILabel *titleLab = [[UILabel alloc] init];
-    titleLab.text = [NSString stringWithFormat:@"  %@",@"发送数量"  ];
+    titleLab.text = [NSString stringWithFormat:@"  %@",L(@"发送数量")];
     titleLab.textAlignment = NSTextAlignmentLeft;
     titleLab.textColor = CMColorFromRGB(0x333333);
     titleLab.font = [UIFont boldSystemFontOfSize:14];
@@ -46,7 +49,7 @@
     balanceLab.font = [UIFont systemFontOfSize:14];
     balanceLab.textAlignment = NSTextAlignmentRight;
     balanceLab.textColor = CMColorFromRGB(0x7190FF);
-    balanceLab.text = @"余额：--BTC"  ;
+    balanceLab.text = L(@"余额：");
     [self addSubview:balanceLab];
     self.balanceLab = balanceLab;
     UITapGestureRecognizer *tap = [[UITapGestureRecognizer alloc] initWithTarget:self action:@selector(tapForTotal:)];
@@ -55,7 +58,7 @@
     [self.balanceLab addGestureRecognizer:tap];
     
     UIButton *btn = [[UIButton alloc] init];
-    [btn setTitle:@"请选择编号"   forState:UIControlStateNormal];
+    [btn setTitle:L(@"请选择编号")   forState:UIControlStateNormal];
     [btn setBackgroundColor:CMColorFromRGB(0xF8F8FA)];
     [btn setTitleColor:CMColorFromRGB(0x333649) forState:UIControlStateNormal];
     [btn.titleLabel setFont:[UIFont systemFontOfSize:18]];
@@ -70,7 +73,7 @@
     moneyText.textColor = CMColorFromRGB(0x333649);
     moneyText.textAlignment = NSTextAlignmentCenter;
     moneyText.layer.cornerRadius = 3.f;
-    moneyText.placeholder = @"请输入数量"  ;
+    moneyText.placeholder = L(@"请输入数量");
     [moneyText setValue:CMColorFromRGB(0xC8CEE5) forKeyPath:@"placeholderLabel.textColor"];
     
     moneyText.adjustsFontSizeToFitWidth = true;
@@ -133,8 +136,9 @@
         [self.moneyText mas_makeConstraints:^(MASConstraintMaker *make) {
             make.top.equalTo(self.titleLab.mas_bottom).with.offset(10);
             make.left.equalTo(self).with.offset(15);
+            make.right.equalTo(self).with.offset(-15);
             make.height.mas_equalTo(48);
-            make.width.mas_equalTo(width);
+//            make.width.mas_equalTo(width);
         }];
         
         [self.symbolLab mas_makeConstraints:^(MASConstraintMaker *make) {
@@ -196,7 +200,7 @@
         self.rmbUnitView.textField.enabled = YES;
     }
     NSString *balanceStr = [CommonFunction removeZeroFromMoney:[NSString stringWithFormat:@"%f",coin.coin_balance]];
-    self.balanceLab.text = [NSString stringWithFormat:@"%@:%@%@",@"余额"  ,balanceStr,coin.optional_name];
+    self.balanceLab.text = [NSString stringWithFormat:@"%@:%@%@",L(@"余额"),balanceStr,coin.optional_name];
     
     /**  */
     self.coinPrice = [[PWDataBaseManager shared] queryCoinPriceBasedOn:coin.coin_type platform:coin.coin_platform andTreaty:coin.treaty];

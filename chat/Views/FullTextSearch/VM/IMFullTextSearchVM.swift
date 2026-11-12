@@ -2,7 +2,7 @@
 //  IMFullTextSearchVM.swift
 //  IMSDK
 //
-//  Created by 陈健 on 2019/9/20.
+//  Created by fzm on 2019/9/20.
 //
 
 import UIKit
@@ -58,7 +58,7 @@ class IMFullTextSearchVM: NSObject {
     
     convenience init?(msgs: [Message], isDetailList: Bool = false) {
         guard let msg = msgs.first else { return nil }
-        let alias = msgs.count == 1 ? msg.mesPreview.string : "\(msgs.count)条相关聊天记录"
+        let alias = msgs.count == 1 ? msg.mesPreview.string : "\(msgs.count)"+L("条相关聊天记录")
         self.init(type: .chatRecord(specificId: nil), typeId: msg.sessionId.idValue, avatar: "", name: "" , alias: alias, msgs: msgs)
         if !isDetailList {
             if msg.channelType == .person {

@@ -3,7 +3,7 @@
 //  PWallet
 //
 //  Created by 宋刚 on 2018/5/23.
-//  Copyright © 2018年 陈健. All rights reserved.
+//  Copyright © 2018年 fzm. All rights reserved.
 //
 
 #import "CommonFunction.h"
@@ -12,6 +12,9 @@
 #import <YYText/YYText.h>
 
 #import "Depend.h"
+#import "chat-Swift.h"
+
+#define L(key) [[LanguageManager shared] localizedStringForKey:key]
 
 @implementation CommonFunction
 
@@ -19,7 +22,24 @@
  * 颜色转换为图片
  */
 + (UIImage*)createImageWithColor:(UIColor*)color{
-    
+    if (!color) { return nil; }
+    // ⚠️ 这个 1×1 纯色图被大量页面的 viewWillAppear / viewWillDisappear 里用来设导航栏背景，
+    // 每次转场都会调好几次；UIGraphics 那一套在主线程上不算免费。按 RGBA 缓存一份。
+    static NSCache<NSString *, UIImage *> *imageCache;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        imageCache = [[NSCache alloc] init];
+        imageCache.countLimit = 32;
+    });
+
+    CGFloat r = 0, g = 0, b = 0, a = 0;
+    NSString *key = nil;
+    if ([color getRed:&r green:&g blue:&b alpha:&a]) {
+        key = [NSString stringWithFormat:@"%.4f-%.4f-%.4f-%.4f", r, g, b, a];
+        UIImage *cached = [imageCache objectForKey:key];
+        if (cached) { return cached; }
+    }
+
     CGRect rect = CGRectMake(0.0f,0.0f,1.0f,1.0f);
     UIGraphicsBeginImageContext(rect.size);
     CGContextRef context = UIGraphicsGetCurrentContext();
@@ -27,6 +47,10 @@
     CGContextFillRect(context, rect);
     UIImage *theImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
+
+    if (key && theImage) {
+        [imageCache setObject:theImage forKey:key];
+    }
     return theImage;
 }
 
@@ -186,7 +210,7 @@
         NSDecimalNumber *s = [NSDecimalNumber decimalNumberWithString:@"1000000"];
         moneyStr = [NSString stringWithFormat:@"%.8f",floor([[decNumber decimalNumberByMultiplyingBy:s] doubleValue])/1000000];
     }else{
-        [NSException raise:@"位数切割出错" format:@"目前只支持0-6位"];
+        [NSException raise:L(@"位数切割出错") format:@"%@", L(@"目前只支持0-6位")];
     }
 
     if (money < 1) {
@@ -458,5 +482,71 @@
     gradientLayer.locations = @[@0.4,@1.0];
     
     return gradientLayer;
+}
+
+/**
+ 币种没有图标时的占位图：圆形色底 + 币种名首字母。
+ 颜色由币种名算出（同一个币永远同一个颜色），列表刷新/滚动时不会来回变色。
+ 生成结果按「名字 + 尺寸」缓存，列表里几十个币也只会画一次。
+ */
++ (UIImage *)coinPlaceholderImageWithName:(NSString *)name diameter:(CGFloat)diameter
+{
+    if (diameter <= 0) {
+        diameter = 32.0;
+    }
+
+    NSString *pureName = [(name ?: @"") stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    NSString *cacheKey = [NSString stringWithFormat:@"%@|%.1f", pureName, diameter];
+
+    static NSCache *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 300;
+    });
+
+    UIImage *cachedImage = [cache objectForKey:cacheKey];
+    if (cachedImage) {
+        return cachedImage;
+    }
+
+    // 首字母：按「组合字符」取第一个字，避免把 emoji / 组合字符截成半个
+    NSString *letter = @"?";
+    if (pureName.length > 0) {
+        NSRange firstRange = [pureName rangeOfComposedCharacterSequenceAtIndex:0];
+        letter = [[pureName substringWithRange:firstRange] uppercaseString];
+    }
+
+    // 色相由名字的字符累加得到：同一个币每次都是同一个颜色（随机但固定）
+    NSUInteger hash = 0;
+    for (NSUInteger i = 0; i < pureName.length; i++) {
+        hash = hash * 31 + [pureName characterAtIndex:i];
+    }
+    CGFloat hue = (CGFloat)(hash % 360) / 360.0;
+    UIColor *backgroundColor = [UIColor colorWithHue:hue saturation:0.55 brightness:0.85 alpha:1.0];
+
+    CGSize size = CGSizeMake(diameter, diameter);
+    UIGraphicsBeginImageContextWithOptions(size, NO, 0);
+
+    UIBezierPath *circlePath = [UIBezierPath bezierPathWithOvalInRect:CGRectMake(0, 0, diameter, diameter)];
+    [backgroundColor setFill];
+    [circlePath fill];
+
+    NSMutableParagraphStyle *paragraphStyle = [[NSMutableParagraphStyle alloc] init];
+    paragraphStyle.alignment = NSTextAlignmentCenter;
+    NSDictionary *attributes = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:diameter * 0.5],
+                                 NSForegroundColorAttributeName: [UIColor whiteColor],
+                                 NSParagraphStyleAttributeName: paragraphStyle};
+    CGSize textSize = [letter sizeWithAttributes:attributes];
+    [letter drawInRect:CGRectMake(0, (diameter - textSize.height) / 2.0, diameter, textSize.height)
+       withAttributes:attributes];
+
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+
+    if (image) {
+        [cache setObject:image forKey:cacheKey];
+    }
+    return image;
 }
 @end

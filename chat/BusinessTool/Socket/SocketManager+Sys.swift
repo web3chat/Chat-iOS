@@ -2,7 +2,7 @@
 //  SocketManager+Sys.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/17.
+//  Created by fzm on 2021/1/17.
 //
 
 import Foundation
@@ -23,6 +23,11 @@ extension SocketManager {
         self.isAuthSubject.subscribe(onNext: { (isAuth) in
             // 发送心跳包
             self.heartbeat(isAvailable: isAuth)
+            
+            // 定时删除聊天记录：Socket 重连鉴权成功后执行
+            if isAuth {
+                ChatManager.shared().autoDeleteExpiredMessages()
+            }
         }).disposed(by: self.bag)
     }
 }
@@ -35,13 +40,16 @@ extension SocketManager {
     
     private var _heartbeatTimer: Timer {
         get {
-            if (objc_getAssociatedObject(self, &AssociationSysKey.heartbeatTimer) as? Timer) == nil {
-                let timer = Timer.scheduledTimer(withTimeInterval: reConnectIntervalTime, repeats: true) {[weak self] (_) in
-                    self?.sendHeartbeat()
-                }
-                objc_setAssociatedObject(self, &AssociationSysKey.heartbeatTimer, timer, .OBJC_ASSOCIATION_RETAIN)
+            // 用 `as?` 兑底，不用 `as!`（关联对象为 nil / 类型不符时 `as!` 直接 trap）
+            if let timer = objc_getAssociatedObject(self, &AssociationSysKey.heartbeatTimer) as? Timer {
+                return timer
             }
-            return objc_getAssociatedObject(self, &AssociationSysKey.heartbeatTimer) as! Timer
+            let timer = Timer.scheduledTimer(withTimeInterval: reConnectIntervalTime, repeats: true) {[weak self] (_) in
+                self?.sendHeartbeat()
+            }
+            objc_setAssociatedObject(self, &AssociationSysKey.heartbeatTimer, timer, .OBJC_ASSOCIATION_RETAIN)
+            // 返回真正存进去的那个（并发时可能是别的线程先存的，避免多出一个计时器）
+            return (objc_getAssociatedObject(self, &AssociationSysKey.heartbeatTimer) as? Timer) ?? timer
         }
     }
     
@@ -77,7 +85,21 @@ extension SocketManager {
         guard let authBody = self.authBody() else { return }
         let data = SocketData.wrapData(with: PbSkt_Op.auth.rawValue, seq: 0, ack: 0, body: authBody)
         FZMLog("websocket \(self.url) 发送鉴权")
+        // 记下这次实际送出去的 token，供 refreshAuthForDeviceToken 判断是否需要补发
+        self.lastAuthedDeviceToken = APPDeviceToken
+        // 记下这次鉴权用的账号：之后账号一变，这条连接推来的消息一律丢弃
+        self.noteAuthAddress(LoginUser.shared().address)
         self.write(data: data)
+    }
+    
+    /// 推送 token 变化后补一次鉴权，让服务器拿到最新 token。
+    /// 首次安装时用户要先点「允许通知」才拿到 token，通常晚于登录 + 鉴权（那次上送的是空串），
+    /// 而服务器只会用最近一次鉴权里的 token 推送。
+    func refreshAuthForDeviceToken() {
+        guard LoginUser.shared().isLogin, self.isAvailable else { return }
+        guard self.lastAuthedDeviceToken != APPDeviceToken else { return }
+        FZMLog("websocket \(self.url) 推送 token 变化，补发一次鉴权")
+        self.auth()
     }
     
     private func authBody() -> Data? {

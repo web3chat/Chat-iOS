@@ -2,7 +2,7 @@
 //  ImagePickerVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/3/3.
+//  Created by fzm on 2021/3/3.
 //
 
 import Foundation
@@ -31,11 +31,15 @@ class ImagePickerController: TZImagePickerController, ViewControllerProtocol {
         self.photoDefImage = UIImage.init(named: "photo_select_normal")
         self.allowTakePicture = false
         self.allowTakeVideo = false
-        self.showSelectedIndex = true
+        self.showSelectedIndex = false
         self.allowPickingOriginalPhoto = false
         self.allowPickingGif = true
         self.allowPickingMultipleVideo = true
         self.allowPickingVideo = showVideo
+        self.allowPickingImage = true
+        self.sortAscendingByModificationDate = false
+        self.onlyReturnAsset = false
+        
         self.navigationBar.tintColor = Color_Theme
         if !selectOne {
             self.minImagesCount = 1
@@ -54,8 +58,8 @@ class ImagePickerController: TZImagePickerController, ViewControllerProtocol {
                     doneBtn.backgroundColor = Color_Theme
                     doneBtn.setTitleColor(.white, for: .normal)
                     doneBtn.setTitleColor(.white, for: .disabled)
-                    doneBtn.setTitle("确定(  /" + "\(self.maxImagesCount)" + ")", for: .normal)
-                    doneBtn.setTitle("确定(0/" + "\(self.maxImagesCount)" + ")", for: .disabled)
+                    doneBtn.setTitle(L("确定")+"(  /" + "\(self.maxImagesCount)" + ")", for: .normal)
+                    doneBtn.setTitle(L("确定")+"(0/" + "\(self.maxImagesCount)" + ")", for: .disabled)
                     doneBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
                     
                     countLab.frame = CGRect(x: countLab.frame.origin.x + 5, y: countLab.frame.origin.y + 10, width: countLab.frame.width, height: countLab.frame.height)
@@ -78,7 +82,7 @@ class ImagePickerController: TZImagePickerController, ViewControllerProtocol {
                     doneBtn.backgroundColor = Color_Theme
                     doneBtn.setTitleColor(.white, for: .normal)
                     doneBtn.setTitleColor(.white, for: .disabled)
-                    doneBtn.setTitle("确定(0/" + "\(self.maxImagesCount)" + ")", for: .normal)
+                    doneBtn.setTitle(L("确定")+"(0/" + "\(self.maxImagesCount)" + ")", for: .normal)
                     doneBtn.titleLabel?.font = UIFont.boldSystemFont(ofSize: 16)
                     
                     countLab.frame = CGRect(x: countLab.frame.origin.x + 11, y: countLab.frame.origin.y + 15, width: countLab.frame.width - 15, height: countLab.frame.height)
@@ -100,7 +104,7 @@ class ImagePickerController: TZImagePickerController, ViewControllerProtocol {
                 self.cropRect = CGRect(x: 0, y: (k_ScreenHeight - k_ScreenWidth) * 0.5, width: k_ScreenWidth, height: k_ScreenWidth)
                 self.photoPreviewPageDidLayoutSubviewsBlock = { (_,_,_,d,_,_,_,_,i,_,_) in
                     if let checkBtn = d, let okBtn = i {
-                        okBtn.setTitle("确定", for: .normal)
+                        okBtn.setTitle(L("确定"), for: .normal)
                         okBtn.setTitleColor(.white, for: .normal)
                         okBtn.superview?.backgroundColor = .clear
                         okBtn.frame = CGRect(x: okBtn.frame.origin.x - 20, y: okBtn.frame.origin.y + 38, width: okBtn.frame.width + 20, height: okBtn.frame.height)

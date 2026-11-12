@@ -1,0 +1,12 @@
+/*
+ InfoPlist.strings (Bahasa Melayu)
+ 键名必须是 Info.plist 的键；权限弹窗跟随系统语言，与 App 内语言切换无关。
+*/
+"NSCameraUsageDescription" = "Tanxin ingin menggunakan kamera anda untuk mengimbas kod QR, mengambil dan menghantar foto.";
+"NSMicrophoneUsageDescription" = "Tanxin ingin menggunakan mikrofon anda untuk menghantar mesej suara dan sembang suara.";
+"NSLocalNetworkUsageDescription" = "Tanxin ingin menggunakan rangkaian setempat anda untuk sembang suara dan perkhidmatan berkaitan.";
+"NSLocationWhenInUseUsageDescription" = "Tanxin ingin menggunakan lokasi anda untuk lokasi, peta dan perkhidmatan berkaitan.";
+"NSPhotoLibraryUsageDescription" = "Tanxin ingin menggunakan foto anda untuk mengimbas kod QR, memuat naik dan menyimpan foto.";
+"NSPhotoLibraryAddUsageDescription" = "Tanxin ingin menggunakan foto anda untuk mengimbas kod QR, memuat naik dan menyimpan foto.";
+"NSFaceIDUsageDescription" = "Tanxin menggunakan Face ID untuk mengesahkan identiti anda dan bukannya kata laluan sembang peribadi (maklumat disimpan pada peranti ini sahaja).";
+"NSSpeechRecognitionUsageDescription" = "“Tanxin” memerlukan pengecaman pertuturan untuk menukar mesej suara kepada teks. Pengecaman berlaku pada peranti ini; audio tidak dimuat naik.";

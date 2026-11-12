@@ -2,7 +2,7 @@
 //  ServerListVC.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/27.
+//  Created by fzm on 2021/1/27.
 //
 
 import UIKit
@@ -157,14 +157,7 @@ class ServerListVC: UIViewController, ViewControllerProtocol {
         v.rowHeight = 95
         v.showsVerticalScrollIndicator = false
         v.tableHeaderView = self.headerView
-        v.mj_header = MJRefreshNormalHeader.init(refreshingBlock: {[weak self] in
-            guard let strongSelf = self else { return }
-            if strongSelf.listType == .chatServer {
-                strongSelf.getMyChatServerListRequest()
-            } else {
-                strongSelf.refreshBlockchainStatus()
-            }
-        })
+      
         return v
     }()
             
@@ -227,6 +220,13 @@ class ServerListVC: UIViewController, ViewControllerProtocol {
         if #available(iOS 15.0, *) {   ///  standardAppearance 这个api其实是 13以上就可以使用的 ，这里写 15 其实主要是iOS15上出现的这个死样子
             let naba = UINavigationBarAppearance.init()
             naba.configureWithOpaqueBackground()
+            // 去掉 iOS 26 自动给 bar button 加的玻璃胶囊
+            naba.buttonAppearance.normal.backgroundImage = UIImage()
+            naba.buttonAppearance.highlighted.backgroundImage = UIImage()
+            naba.doneButtonAppearance.normal.backgroundImage = UIImage()
+            naba.doneButtonAppearance.highlighted.backgroundImage = UIImage()
+            naba.backButtonAppearance.normal.backgroundImage = UIImage()
+            naba.backButtonAppearance.highlighted.backgroundImage = UIImage()
             naba.backgroundColor = Color_F6F7F8
             naba.shadowColor = UIColor.lightGray
             self.navigationController?.navigationBar.standardAppearance = naba
@@ -247,8 +247,17 @@ class ServerListVC: UIViewController, ViewControllerProtocol {
             m.left.right.bottom.equalToSuperview()
         }
         
+        self.tableView.mj_header = MJRefreshNormalHeader.init(refreshingBlock: {[weak self] in
+            guard let strongSelf = self else { return }
+            if strongSelf.listType == .chatServer {
+                strongSelf.getMyChatServerListRequest()
+            } else {
+                strongSelf.refreshBlockchainStatus()
+            }
+        })
+        
         if showManageBtnFlg {
-            let manageBtn = UIBarButtonItem.init(title: "管理", style: .plain, target: self, action: #selector(manageBtnClickAction))
+            let manageBtn = UIBarButtonItem.init(title: L("管理"), style: .plain, target: self, action: #selector(manageBtnClickAction))
             manageBtn.tintColor = Color_Theme
             self.navigationItem.rightBarButtonItem = manageBtn
         }
@@ -283,7 +292,7 @@ class ServerListVC: UIViewController, ViewControllerProtocol {
             let servers = chatServerGroups.compactMap {
                 Server.init(userchatServerGroup: $0)
             }
-            strongSelf.dataSource = [("接收聊天消息的服务器", servers)]
+            strongSelf.dataSource = [(L("接收聊天消息的服务器"), servers)]
             strongSelf.refreshChatServers?(strongSelf.dataSource)
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
@@ -536,7 +545,7 @@ extension ServerListVC: UITableViewDelegate, UITableViewDataSource {
         
         if iscreateGroup {
             // 创建群聊-选择完群聊服务器
-            if LoginUser.shared().isInTeam {
+            if FZM_EnableEnterpriseFeature, LoginUser.shared().isInTeam {
                 // 跳转到选择好友/组织架构入口页面
                 FZMUIMediator.shared().pushVC(.goChooseMemberSourceVC(type: .createGroup, server: server, completeBlock: nil))
             } else {
@@ -549,20 +558,23 @@ extension ServerListVC: UITableViewDelegate, UITableViewDataSource {
             // 设置选中按钮
             if let curIndex = curSelectedIndexPath, indexPath != curIndex {
                 if self.listType == .chainServer {
-                    let cell = self.tableView.cellForRow(at: curIndex) as! ServerListCell
-                    cell.selectedImgView.isHighlighted = false
-                    
-                    let curCell = self.tableView.cellForRow(at: indexPath) as! ServerListCell
-                    curCell.selectedImgView.isHighlighted = true
+                    // `cellForRow` 对滚出屏幕的行返回 nil：上次选中行不可见时强转会崩，改为可选
+                    if let cell = self.tableView.cellForRow(at: curIndex) as? ServerListCell {
+                        cell.selectedImgView.isHighlighted = false
+                    }
+                    if let curCell = self.tableView.cellForRow(at: indexPath) as? ServerListCell {
+                        curCell.selectedImgView.isHighlighted = true
+                    }
                     
                     curSelectedIndexPath = indexPath
                 } else {
                     if !LoginUser.shared().isLogin {
-                        let cell = self.tableView.cellForRow(at: curIndex) as! ServerListCell
-                        cell.selectedImgView.isHighlighted = false
-                        
-                        let curCell = self.tableView.cellForRow(at: indexPath) as! ServerListCell
-                        curCell.selectedImgView.isHighlighted = true
+                        if let cell = self.tableView.cellForRow(at: curIndex) as? ServerListCell {
+                            cell.selectedImgView.isHighlighted = false
+                        }
+                        if let curCell = self.tableView.cellForRow(at: indexPath) as? ServerListCell {
+                            curCell.selectedImgView.isHighlighted = true
+                        }
                         
                         curSelectedIndexPath = indexPath
                     }

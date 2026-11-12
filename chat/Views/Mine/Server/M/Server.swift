@@ -2,7 +2,7 @@
 //  Server.swift
 //  chat
 //
-//  Created by 陈健 on 2021/2/25.
+//  Created by fzm on 2021/2/25.
 //
 
 import UIKit
@@ -40,3 +40,5 @@ extension Server: Codable {
         self.id = try container.decode(String.self, forKey: .id)
     }
 }
+
+

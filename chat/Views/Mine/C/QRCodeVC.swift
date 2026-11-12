@@ -18,11 +18,13 @@ enum FZMQRCodeVCShowType {
     case customer // 客服二维码
 }
 
+private let copyWidth = LanguageManager.shared.isChinese ? 150 : 200
+
 class QRCodeVC: UIViewController, ViewControllerProtocol {
     
     private let bag = DisposeBag.init()
     
-    private let customer = "1FS8tiVRpjjtYAJuQFbEsKQm3nhzBAfAN1"
+    private let customer = "1Fiyuhhagt8XQZTrGQrksHExxi2HXNF62J"
     
     let type : FZMQRCodeVCShowType
     
@@ -30,7 +32,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     private lazy var headerImageView : UIImageView = {
         let imV = UIImageView(image: #imageLiteral(resourceName: "avatar_persion"))
         imV.isUserInteractionEnabled = true
-        imV.contentMode = .scaleAspectFill
+        imV.contentMode = .scaleAspectFit
         return imV
     }()
     
@@ -55,7 +57,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     
     // 二维码遮罩层
     private lazy var warnLab :UILabel = {
-        let lab = UILabel.getLab(font: .regularFont(30), textColor: Color_24374E, textAlignment: .center, text: "此群禁止加群")
+        let lab = UILabel.getLab(font: .regularFont(30), textColor: Color_24374E, textAlignment: .center, text: L("此群禁止加群"))
         lab.minimumScaleFactor = 0.5
         return lab
     }()
@@ -96,21 +98,22 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     
     // 扫描加好友lab
     private lazy var tipLab: UILabel = {
-        let label = UILabel.getLab(font: .regularFont(14), textColor: Color_8A97A5, textAlignment: .center, text: "扫描二维码加我好友")
+        let label = UILabel.getLab(font: .regularFont(14), textColor: Color_8A97A5, textAlignment: .center, text: L("扫描二维码加我好友"))
+        label.numberOfLines = 0
         return label
     }()
     
     // 应用下载视图
     // 下载链接lab
     private lazy var downloadUrlLab: UILabel = {
-        let label = UILabel.getLab(font: .mediumFont(14), textColor: Color_Theme, textAlignment: .center, text: "应用下载")
+        let label = UILabel.getLab(font: .mediumFont(14), textColor: Color_Theme, textAlignment: .center, text: L("应用下载"))
         label.isUserInteractionEnabled = true
         let tap = UITapGestureRecognizer.init()
         label.addGestureRecognizer(tap)
         tap.rx.event.subscribe(onNext: { (ges) in
             guard ges.state == .ended else { return }
             UIPasteboard.general.string = APP_URL
-            self.showToast("应用下载地址已复制")
+            self.showToast(L("应用下载地址已复制"))
         }).disposed(by: self.bag)
         return label
     }()
@@ -128,7 +131,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     private lazy var copyBtn: UIButton = {
         let btn = UIButton.init(type: .custom)
         btn.backgroundColor = Color_Auxiliary
-        btn.setTitle("复制账号", for: .normal)
+        btn.setTitle(L("复制账号"), for: .normal)
         btn.setTitleColor(Color_Theme, for: .normal)
         btn.titleLabel?.font = .boldSystemFont(ofSize: 16)
         btn.layer.cornerRadius = 20
@@ -138,7 +141,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     
     // 群二维码提示文字
     private lazy var groupTipLab: UILabel = {
-        let label = UILabel.getLab(font: .systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: "此群属于“团队名”全员群，仅组织内部成员可加入，如果组织外部人员收到此分享，需要先申请加入该组织")
+        let label = UILabel.getLab(font: .systemFont(ofSize: 14), textColor: Color_8A97A5, textAlignment: .left, text: L("此群属于“团队名”全员群，仅组织内部成员可加入，如果组织外部人员收到此分享，需要先申请加入该组织"))
         label.numberOfLines = 0
         return label
     }()
@@ -167,7 +170,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
             make.size.equalTo(35)
         }
         
-        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_24374E, textAlignment: .center, text: "发送到聊天")
+        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_24374E, textAlignment: .center, text: L("发送到聊天"))
         v.addSubview(lab)
         lab.snp.makeConstraints { make in
             make.left.right.bottom.equalToSuperview()
@@ -195,7 +198,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
             make.size.equalTo(35)
         }
         
-        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_24374E, textAlignment: .center, text: "保存")
+        let lab = UILabel.getLab(font: .regularFont(14), textColor: Color_24374E, textAlignment: .center, text: L("保存"))
         v.addSubview(lab)
         lab.snp.makeConstraints { make in
             make.left.right.bottom.equalToSuperview()
@@ -284,7 +287,8 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
         tipLab.snp.makeConstraints { make in
             make.centerX.equalToSuperview()
             make.top.equalTo(qrCodeOverallView.snp.bottom).offset(5)
-            make.height.equalTo(20)
+            make.left.equalToSuperview().offset(15)
+            make.right.equalToSuperview().offset(-15)
         }
         
         // 下载链接
@@ -293,7 +297,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
         // 复制按钮
         view.addSubview(copyBtn)
         copyBtn.snp.makeConstraints { make in
-            make.size.equalTo(CGSize.init(width: 150, height: 40))
+            make.size.equalTo(CGSize.init(width: copyWidth, height: 40))
             make.centerX.equalToSuperview()
             make.top.equalTo(tipLab.snp.bottom).offset(20)
         }
@@ -335,7 +339,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     }()
     
     private lazy var titleLab: UILabel = {
-        return UILabel.getLab(font: .boldFont(17), textColor: .white, textAlignment: .center, text: "我的二维码")
+        return UILabel.getLab(font: .boldFont(17), textColor: .white, textAlignment: .center, text: L("我的二维码"))
     }()
     
     private lazy var navView: UIView = {
@@ -427,7 +431,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
         var height = k_ScreenHeight
         
         if case .group(let groupInfo) = self.type {// 群二维码
-            self.titleLab.text = "群二维码"
+            self.titleLab.text = L("群二维码")
             
             let avatar = groupInfo.avatarURLStr
             if avatar.isBlank {
@@ -457,18 +461,18 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
             
             // 群号
             if let markId = groupInfo.markId {
-                self.addressLab.text = "群号：\(markId)"
+                self.addressLab.text = L("群号：") + "\(markId)"
             } else {
-                self.addressLab.text = "群ID：\(groupInfo.id)"
+                self.addressLab.text = L("群ID：") + "\(groupInfo.id)"
             }
             
-            copyBtn.setTitle("复制群号", for: .normal)
+            copyBtn.setTitle(L("复制群号"), for: .normal)
             
             // 生成二维码
             let time = Date.timestamp.string
             let groupQrCode = APP_DOWNLOAD_URL + "gid=\(groupInfo.id)" + "&server=\(BackupURL.urlEncoded)" + "&inviterId=\(LoginUser.shared().address)" + "&createTime=\(time)"
             self.qrImageView.image = QRCodeGenerator.setupQRCodeImage(groupQrCode, image: #imageLiteral(resourceName: "logo_120"))
-            
+            self.tipLab.text = L("扫描二维码加入群聊")
             //加群方式，0=无需审批（默认），1=禁止加群，群主和管理员邀请加群
             if groupInfo.joinType == 1 {
                 self.transView.isHidden = false
@@ -484,7 +488,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
                     make.top.equalTo(addressLab.snp.bottom).offset(30)
                 }
                 
-                self.tipLab.text = "扫描二维码加入群聊"
+               
                 
                 self.sendBtnView.snp.remakeConstraints { make in
                     make.top.equalTo(tipLab.snp.bottom).offset(95)
@@ -514,11 +518,11 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
                     self.groupTipView.isHidden = false
                     
                     var tipStr = ""
-                    let typeStr = groupInfo.groupType == 1 ? "全员群" : "部门群"
+                    let typeStr = groupInfo.groupType == 1 ? L("全员群") : L("部门群")
                     if let teamName = LoginUser.shared().myCompanyInfo?.name {
-                        tipStr = "此群属于“\(teamName)”\(typeStr)，仅组织内部成员可加入，如果组织外部人员收到此分享，需要先申请加入该组织"
+                        tipStr = L("此群属于") + "“\(teamName)”\(typeStr)，" + L("仅组织内部成员可加入，如果组织外部人员收到此分享，需要先申请加入该组织")
                     } else {
-                        tipStr = "此群属于\(typeStr)，仅组织内部成员可加入，如果组织外部人员收到此分享，需要先申请加入该组织"
+                        tipStr = L("此群属于") + "\(typeStr)，" + L("仅组织内部成员可加入，如果组织外部人员收到此分享，需要先申请加入该组织")
                     }
                     
                     contentView.addSubview(groupTipView)
@@ -540,7 +544,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
                     }
                     
                     copyBtn.snp.remakeConstraints { make in
-                        make.size.equalTo(CGSize.init(width: 150, height: 40))
+                        make.size.equalTo(CGSize.init(width:  copyWidth, height: 40))
                         make.centerX.equalToSuperview()
                         make.top.equalTo(qrCodeOverallView.snp.bottom).offset(15 + 10 + heightTip + 10 + 20)
                     }
@@ -550,7 +554,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
                     self.groupTipView.isHidden = true
                     
                     copyBtn.snp.remakeConstraints { make in
-                        make.size.equalTo(CGSize.init(width: 150, height: 40))
+                        make.size.equalTo(CGSize.init(width: copyWidth, height: 40))
                         make.centerX.equalToSuperview()
                         make.top.equalTo(tipLab.snp.bottom).offset(20)
                     }
@@ -579,11 +583,11 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
             self.saveBtnView.isHidden = true
             self.sendBtnView.isHidden = true
             
-            self.titleLab.text = "客服二维码"
+            self.titleLab.text = L("客服二维码")
             
             headerImageView.image = #imageLiteral(resourceName: "avatar_persion")
             
-            self.nickNameLab.text = "WW客服"
+            self.nickNameLab.text = L("客服")
             
             
             self.addressLab.text = customer
@@ -596,18 +600,18 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
                 make.top.equalTo(addressLab.snp.bottom).offset(30)
             }
             
-            self.tipLab.text = "扫描二维码加WW客服好友"
+            self.tipLab.text = L("扫描二维码加客服好友")
             
 //            let downloadStr = "应用下载：" + APP_URL
 //            self.downloadUrlLab.attributedText = downloadStr.jointImage(image: #imageLiteral(resourceName: "icon_copy"))
             
             copyBtn.snp.remakeConstraints { make in
-                make.size.equalTo(CGSize.init(width: 150, height: 40))
+                make.size.equalTo(CGSize.init(width: copyWidth, height: 40))
                 make.centerX.equalToSuperview()
                 make.top.equalTo(downloadBgView.snp.bottom).offset(20)
             }
             
-            copyBtn.setTitle("复制账号", for: .normal)
+            copyBtn.setTitle(L("复制账号"), for: .normal)
             
             height = self.copyBtn.frame.maxY
         }
@@ -620,7 +624,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
             self.saveBtnView.isHidden = true
             self.sendBtnView.isHidden = true
             
-            self.titleLab.text = "我的二维码"
+            self.titleLab.text = L("我的二维码")
             
             let avatar = LoginUser.shared().avatarUrl
             if avatar.isBlank {
@@ -643,18 +647,18 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
                 make.top.equalTo(addressLab.snp.bottom).offset(30)
             }
             
-            self.tipLab.text = "扫描二维码加我\(APPNAME)好友"
+            self.tipLab.text = L("扫描二维码加我")+"\(APPNAME)"+L("好友")
             
-            let downloadStr = "应用下载：" + APP_URL
+            let downloadStr = L("应用下载：") + APP_URL
             self.downloadUrlLab.attributedText = downloadStr.jointImage(image: #imageLiteral(resourceName: "icon_copy"))
             
             copyBtn.snp.remakeConstraints { make in
-                make.size.equalTo(CGSize.init(width: 150, height: 40))
+                make.size.equalTo(CGSize.init(width: copyWidth, height: 40))
                 make.centerX.equalToSuperview()
                 make.top.equalTo(downloadBgView.snp.bottom).offset(20)
             }
             
-            copyBtn.setTitle("复制账号", for: .normal)
+            copyBtn.setTitle(L("复制账号"), for: .normal)
             
             height = self.copyBtn.frame.maxY
         }
@@ -686,10 +690,14 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
                 copyStr = markId
             }
             UIPasteboard.general.string = copyStr
-            self.showToast("群号已复制")
-        } else {
+            self.showToast(L("群号已复制"))
+        }else if case .customer = self.type{
+            UIPasteboard.general.string = self.customer
+            self.showToast(L("地址已复制"))
+        }
+        else {
             UIPasteboard.general.string = LoginUser.shared().address
-            self.showToast("地址已复制")
+            self.showToast(L("地址已复制"))
         }
     }
     
@@ -697,7 +705,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     @objc private func clickSendToChat() {
         FZMLog("发送到聊天")
         if case .group(let groupInfo) = self.type, groupInfo.joinType == 1 {// 是群二维码，且禁止加群
-            self.showToast("此群禁止加群")
+            self.showToast(L("此群禁止加群"))
             return
         }
     }
@@ -705,7 +713,7 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     // 点击保存按钮
     @objc private func clickSaveQRCode() {
         if case .group(let groupInfo) = self.type, groupInfo.joinType == 1 {// 是群二维码，且禁止加群
-            self.showToast("此群禁止加群")
+            self.showToast(L("此群禁止加群"))
             return
         }
         //截屏
@@ -718,9 +726,9 @@ class QRCodeVC: UIViewController, ViewControllerProtocol {
     @objc func image(image: UIImage, didFinishSavingWithError error: NSError?, contextInfo: AnyObject) {
         var showMessage = ""
         if error != nil{
-            showMessage = "图片保存失败"
+            showMessage = L("图片保存失败")
         }else{
-            showMessage = "图片已保存"
+            showMessage = L("图片已保存")
         }
         self.showToast(showMessage)
     }

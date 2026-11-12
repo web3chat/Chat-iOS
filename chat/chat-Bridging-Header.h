@@ -22,4 +22,17 @@
 #import "TransferViewController.h"
 #import "CoinDetailViewController.h"
 #import "TradeDetailViewController.h"
+#import "CommonTextField.h"
+#import "ExploreSearchViewController.h"
+#import "DappAlertSheetView.h"
+#import "ExploreVC.h"
+#import "PWLanguageViewController.h"
 
+#import "PWContractRequest.h"
+#import "GoFunction.h"
+#import "Web3ProviderHandler.h"
+#import "PWAppsettings.h"
+#import "WebSheetView.h"
+#import "UIViewController+ShowInfo.h"
+#import <WKWebViewJavascriptBridge.h>
+#import "DAppWVJBLegacyHandlers.h"

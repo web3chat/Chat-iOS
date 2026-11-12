@@ -8,6 +8,23 @@
 import Foundation
 import UIKit
 
+/// 推送 payload 里字段可能是 String / Int / NSNumber（例如 channelType: 0），强制 `as! String` 会在 Swift 里触发 SIGTRAP。
+private func pushPayloadString(_ value: Any?) -> String {
+    guard let value = value else { return "" }
+    switch value {
+    case let s as String:
+        return s
+    case let n as Int:
+        return String(n)
+    case let n as NSNumber:
+        return n.stringValue
+    case let n as Bool:
+        return n ? "1" : "0"
+    default:
+        return String(describing: value)
+    }
+}
+
 extension AppDelegate: UNUserNotificationCenterDelegate {
     
     /// 开启消息推送
@@ -33,6 +50,21 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         }
     }
     
+    /// 按「设置中心 → 离线通知」的开关（本地 flg）同步一次推送注册状态。
+    ///
+    /// 为什么需要它：`LoginUser.logout()` 会注销推送，如果不在「重新登录」时补回来，
+    /// 用户「退出 → 重新登录」（不重启 App）之后就永远收不到推送，
+    /// 而设置页开关读的 flg 没变，看起来还是「已开启」。
+    /// 统一入口同时避免了「登录时注册早于 UMConfigure 初始化」的顺序问题。
+    func syncPushRegistration() {
+        let disabled = FZM_UserDefaults.bool(forKey: CHAT33PRO_UNREGISTER_REMOTENOTIFICATION_KEY)
+        if disabled {
+            self.umUnregisterForRemoteNotifi()
+        } else {
+            self.umRegisterForRemoteNotifi()
+        }
+    }
+    
     // 友盟推送配置
 //    func umPushConfig(launchOptions: [UIApplication.LaunchOptionsKey: Any]?)  {
     func umPushConfig() {
@@ -41,15 +73,16 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         
         //开发者需要显式的调用此函数，日志系统才能工作
         UMCommonLogManager.setUp()
-        UMConfigure.setLogEnabled(true)//设置打开日志
+        #if DEBUG
+        UMConfigure.setLogEnabled(true)//设置打开日志（仅 Debug）
+        #else
+        UMConfigure.setLogEnabled(false)
+        #endif
         UMConfigure.initWithAppkey(UMAPPKEY, channel: "App Store")
         
-        // 读取本地存储的友盟推送关闭flg
-        let flg = FZM_UserDefaults.bool(forKey: CHAT33PRO_UNREGISTER_REMOTENOTIFICATION_KEY)
-        if flg != true {
-            // 离线通知开启
-            self.umRegisterForRemoteNotifi()
-        }
+        // 按「设置中心 → 离线通知」的开关同步一次注册状态
+        // （UMConfigure 初始化之后才注册，登录态变化时由 syncPushRegistration 再同步）
+        self.syncPushRegistration()
         
 //        //如果要在iOS10显示交互式的通知，必须注意实现以下代码
 //        if #available(iOS 10.0, *) {
@@ -101,6 +134,11 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         
         APPDeviceToken = deviceTokenStr
         
+        // token 是异步到的：首次安装时用户要先点「允许通知」，这个时间点往往晚于
+        // 登录 + socket 鉴权（那次上送给服务器的 token 是空串）⇒ 服务器只认最近一次
+        // 鉴权里的 token，不补一次的话这台设备要等到下次重连才有推送。
+        MultipleSocketManager.shared().refreshDeviceTokenForAllSockets()
+        
 //        var deviceTokenString = String()
 //        let bytes = [UInt8](deviceToken)
 //        for item in bytes {
@@ -136,11 +174,12 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
         } else {
             //应用处于前台时的本地推送接受
         }
-        //当应用处于前台时提示设置，需要哪个可以设置哪一个
-        completionHandler([.alert, .badge, .sound])
-        
-        // 收到通知消息处理
-        self.handleNotificationCenterUserInfo(userInfo)
+        // 前台只弹横幅：
+        //  · 这里**不要**再调 handleNotificationCenterUserInfo，否则用户在别的页面用着 App，
+        //    来一条推送就被强行推进聊天页（横幅其实已经弹过了）；
+        //  · 也不要带 .badge：前台角标由本地未读数统一维护
+        //    （SessionManager.updateApplicationIconBadgeNumber），双写会互相冲掉。
+        completionHandler([.alert, .sound])
     }
     
     //iOS10新增：处理后台点击通知的代理方法
@@ -154,7 +193,10 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             //应用处于后台时的本地推送接受
         }
         
-        // 收到通知消息处理
+        // 用户点掉的那条通知从通知栏移除（否则进了会话通知栏里还留着）
+        UNUserNotificationCenter.current().removeDeliveredNotifications(withIdentifiers: [response.notification.request.identifier])
+        
+        // 收到通知消息处理（只有「点击」才跳转）
         self.handleNotificationCenterUserInfo(userInfo)
     }
     
@@ -183,18 +225,18 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
          }, AnyHashable("p"): 0]
          */
         
-        if userInfo.keys.contains("aps"), let aps = userInfo["aps"] as? [String: Any], let badge = aps["badge"] as? Int {
-            // let alert = aps["alert"] as? [String: String]
-            FZMUIMediator.shared().setApplicationIconBadgeNumber(badge)
-        }
+        // 角标不再用 payload 里的 badge 覆盖：
+        //  · App 在后台 / 未启动时，系统会直接应用 aps.badge；
+        //  · App 在前台 / 点开时，角标由本地未读数统一维护（SessionManager.updateApplicationIconBadgeNumber）。
+        // 两边都写会互相对冲（服务器算的未读和本地 DB 算的未读本来就不一定一致）。
         
         var address = ""
         var channelType = ""
         if userInfo.keys.contains("address") {
-            address = userInfo["address"] as! String
+            address = pushPayloadString(userInfo["address"])
         }
         if userInfo.keys.contains("channelType") {
-            channelType = userInfo["channelType"] as! String
+            channelType = pushPayloadString(userInfo["channelType"])
         }
         FZMLog("收到通知address : \(address)  channelType : \(channelType)")
         
@@ -213,6 +255,9 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 //                SessionManager.shared().goChatVC(with: SessionID.group(address))
                 FZMUIMediator.shared().pushVC(.goChatVC(sessionID: SessionID.group(address)))
                 
+            } else {
+                // 未知类型（系统通知 / 后续新增的业务通知）：不猜，只留日志，别乱跳页面
+                FZMLog("收到推送通知 未知 channelType: \(channelType) address: \(address)")
             }
         }
     }

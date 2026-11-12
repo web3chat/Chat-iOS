@@ -16,6 +16,8 @@ class FZMAddGroupVC: UIViewController, ViewControllerProtocol {
     
     private let groupId : Int// 群id
     private let inviterId : String//邀请人id
+    private var inviterIsManager = false// 邀请人是否是群主/管理员
+    private var hasApplied = false// 是否已提交入群申请（需要审批的群）
     private var groupDetailInfo: Group?{
         didSet{
             DispatchQueue.main.async {
@@ -48,7 +50,7 @@ class FZMAddGroupVC: UIViewController, ViewControllerProtocol {
 //    }()
     
     lazy var addGroupBtn : UIButton = {
-        let btn = UIButton.getNormalBtn(with: "进入群聊", backgroundColor: Color_Theme)
+        let btn = UIButton.getNormalBtn(with: L("进入群聊"), backgroundColor: Color_Theme)
         btn.layer.cornerRadius = 20
         return btn
     }()
@@ -66,7 +68,7 @@ class FZMAddGroupVC: UIViewController, ViewControllerProtocol {
         super.viewDidLoad()
         
         self.createUI()
-        self.title = "详细资料"
+        self.title = L("详细资料")
         self.getGroupPubInfoRequest(groupId: self.groupId)
     }
     
@@ -113,14 +115,13 @@ class FZMAddGroupVC: UIViewController, ViewControllerProtocol {
         
         addGroupBtn.rx.controlEvent(.touchUpInside).subscribe {[weak self] (_) in
             guard let strongSelf = self else { return }
-            print("进入群聊")
             if let group = GroupManager.shared().getDBGroup(by: strongSelf.groupId) {
                 if group.isInGroup {
                     //去群聊页面
                     FZMUIMediator.shared().pushVC(.goChatVC(sessionID: SessionID.group(group.address), locationMsg: nil))
                 } else {
-                    // 申请加入群聊
-                    strongSelf.joinGroupRequest()
+                    // 加群（是否需要审批由加群方式决定）
+                    strongSelf.handleJoinAction()
                 }
             } else {
                 if let groupinfo = strongSelf.groupDetailInfo {
@@ -129,7 +130,7 @@ class FZMAddGroupVC: UIViewController, ViewControllerProtocol {
                         FZMUIMediator.shared().pushVC(.goChatVC(sessionID: SessionID.group(groupinfo.address), locationMsg: nil))
                     } else {
                         // 群公共信息内没有个人信息-没有加入此群
-                        self?.joinGroupRequest()
+                        strongSelf.handleJoinAction()
                     }
                     
                 }else{
@@ -164,10 +165,13 @@ class FZMAddGroupVC: UIViewController, ViewControllerProtocol {
             }
         }
         // 群号
-        numberLab.text = "群号 " + info.markId!
+        numberLab.text = L("群号 ") + info.markId!
         
 //        // 群成员数量
 //        memberslab.text = "共\(info.memberNum)人"
+        
+        // 加群按钮状态（加入群聊 / 申请入群 / 禁止加群）
+        self.refreshAddGroupBtn()
     }
     
     private func getGroupPubInfoRequest(groupId: Int) {
@@ -188,22 +192,128 @@ class FZMAddGroupVC: UIViewController, ViewControllerProtocol {
             guard let strongSelf = self else { return }
             strongSelf.getGroupInfo()
                 
-        } failureBlock: { (error) in
-            self.showToast(error.localizedDescription)
+        } failureBlock: { [weak self] (error) in
+            guard let strongSelf = self else { return }
+            let code = (error as NSError).code
+            if code == -10029 {// 你已在本群中 → 直接进会话
+                strongSelf.getGroupInfo()
+                return
+            }
+            strongSelf.showToast(error.localizedDescription)
         }
         
     }
     
     private func getGroupInfo() {
-        GroupManager.shared().getGroupInfo(serverUrl: self.groupDetailInfo?.chatServerUrl ?? "", groupId: self.groupId) { [weak self] (group) in
+        let serverUrl = self.groupDetailInfo?.chatServerUrl ?? ""
+        let address = self.groupDetailInfo?.address ?? String(self.groupId)
+        GroupManager.shared().getGroupInfo(serverUrl: serverUrl, groupId: self.groupId) { [weak self] (_) in
             //直接进去群聊界面
             DispatchQueue.main.async {
                 guard let strongSelf = self else { return }
-                FZMUIMediator.shared().pushVC(.goChatVC(sessionID: SessionID.group(strongSelf.groupDetailInfo!.address), locationMsg: nil))
+                let sessionId = SessionID.group(strongSelf.groupDetailInfo?.address ?? address)
+                FZMUIMediator.shared().pushVC(.goChatVC(sessionID: sessionId, locationMsg: nil))
             }
         } failureBlock: { [weak self] (error) in
             guard let strongSelf = self else { return }
-            strongSelf.showToast("查询群信息失败")
+            strongSelf.showToast(L("查询群信息失败"))
+        }
+    }
+    
+    // MARK: - 加群（加群方式 joinType：0=无需审批 1=禁止加群 2=需要审批）
+    /// 刷新加群按钮状态
+    private func refreshAddGroupBtn() {
+        guard let info = self.groupDetailInfo else { return }
+        
+        // 邀请人是否是群主/管理员（决定禁止加群的群里能不能直接进）
+        self.inviterIsManager = info.isManager(with: self.inviterId)
+        
+        var title = L("加入群聊")
+        var enabled = true
+        
+        // 是否已在群：本地有群信息以本地为准（群公开信息里的 isInGroup 默认是 true，不可直接使用）
+        var isInGroup = false
+        if let dbGroup = GroupManager.shared().getDBGroup(by: self.groupId) {
+            isInGroup = dbGroup.isInGroup
+        } else {
+            isInGroup = !(info.person?.memberId ?? "").isBlank
+        }
+        if isInGroup {
+            title = L("进入群聊")
+            self.hasApplied = false
+        } else if self.hasApplied {
+            title = L("已申请，等待审核")
+            enabled = false
+        } else {
+            switch info.joinType {
+            case 1:// 仅群主/管理员可邀请
+                if !self.inviterIsManager {
+                    title = L("仅管理员邀请")
+                    enabled = false
+                }
+            case 2:// 群外用户需要申请，群主/管理员拉人直接进群
+                if !self.inviterIsManager {
+                    title = L("申请入群")
+                }
+            default:
+                break
+            }
+        }
+        
+        self.addGroupBtn.isEnabled = enabled
+        self.addGroupBtn.layer.backgroundColor = (enabled ? Color_Theme : Color_CCD1E0).cgColor
+        self.addGroupBtn.setAttributedTitle(NSAttributedString(string: title, attributes: [.foregroundColor: UIColor.white, .font: UIFont.regularFont(16)]), for: .normal)
+    }
+    
+    /// 加群按钮点击：按加群方式决定直接进群 / 提交申请 / 禁止加群
+    private func handleJoinAction() {
+        guard let info = self.groupDetailInfo else {
+            // 群信息还没拿到，重新获取
+            self.getGroupPubInfoRequest(groupId: self.groupId)
+            return
+        }
+        
+        switch info.joinType {
+        case 1:// 仅群主/管理员可邀请
+            guard self.inviterIsManager else {
+                self.showToast(L("仅管理员邀请"))
+                return
+            }
+        case 2:// 群外用户需要申请，群主/管理员拉人直接进群
+            guard self.inviterIsManager else {
+                self.createGroupApplyRequest()
+                return
+            }
+        default:
+            break
+        }
+        
+        self.joinGroupRequest()
+    }
+    
+    /// 提交入群申请（joinType == 2「入群需审核」）
+    private func createGroupApplyRequest() {
+        guard let info = self.groupDetailInfo, let serverUrl = info.chatServerUrl, !serverUrl.isBlank else {
+            return
+        }
+        self.showProgress(with: L("正在申请"))
+        GroupManager.shared().createGroupApply(serverUrl: serverUrl, groupId: self.groupId, applyNote: "") { [weak self] (json) in
+            guard let strongSelf = self else { return }
+            strongSelf.hideProgress()
+            FZMLog("提交入群申请成功 - \(json)")
+            strongSelf.hasApplied = true
+            strongSelf.showToast(L("已申请，等待审核"))
+            strongSelf.refreshAddGroupBtn()
+        } failureBlock: { [weak self] (error) in
+            guard let strongSelf = self else { return }
+            strongSelf.hideProgress()
+            let code = (error as NSError).code
+            if code == -10029 {// 你已在本群中 → 直接进会话
+                strongSelf.showToast(error.localizedDescription)
+                strongSelf.getGroupInfo()
+            } else {
+                strongSelf.showToast(GroupManager.applyFailureMessage(error))
+            }
         }
     }
 }

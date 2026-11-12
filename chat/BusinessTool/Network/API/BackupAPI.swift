@@ -2,7 +2,7 @@
 //  BackupAPI.swift
 //  chat
 //
-//  Created by 陈健 on 2021/1/29.
+//  Created by fzm on 2021/1/29.
 //
 
 import Foundation
@@ -23,7 +23,7 @@ enum BackupAPI {
 extension BackupAPI: XLSTargetType {
     
     var baseURL: URL {
-        return URL.init(string: BackupURL)  ?? URL.init(string: "https://api.unknow-error.com")!
+        return URL.init(string: BackupURL) ?? UNCONFIGURED_SERVER_URL
     }
     
     var parameters: [String : Any] {
