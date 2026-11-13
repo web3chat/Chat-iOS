@@ -77,9 +77,28 @@ extension FZMContactListView: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
     }
+
+    /// 只刷新单行的选中样式，替代异步 `reloadRows`。
+    ///
+    /// ⚠️ 崩溃背景（2026-11-06，ContactListView.swift:306）：
+    ///    原来 `didSelectRowAt` 里 `selectBlock?(model)` 之后又 `DispatchQueue.main.async { reloadRows }`，
+    ///    但 `selectBlock` 可能同步/异步地刷新会话列表（重新分组、过滤、reloadData）。
+    ///    等下一个 runloop 再 reload 时 `indexPath` 已经越界或行数已变，
+    ///    UITableView 直接抛 `NSInternalInconsistencyException`（invalid number of rows）→ SIGABRT。
+    ///    ⇒ 直接改当前 cell 的 `selectStyle`，不走任何批量更新；数据源真变了由 `cellForRowAt` 重新套样式。
+    func refreshSelectStyle(at indexPath: IndexPath, model: ContactViewModel, in tableView: UITableView) {
+        guard indexPath.section < self.dataSource.count,
+              indexPath.row < self.dataSource[indexPath.section].value.count else { return }
+        // 行位置可能已经被别的刷新改过：确认当前位置还是同一个联系人再改
+        let current = self.dataSource[indexPath.section].value[indexPath.row]
+        guard current.sessionIDStr == model.sessionIDStr else { return }
+        if let cell = tableView.cellForRow(at: indexPath) as? ContactsCell {
+            cell.selectStyle = model.isSelected ? .select : .disSelect
+        }
+    }
 }
 
-// MARK: - 
+// MARK: -
 enum FZMSelectFriendViewShowType {
     case no //不显示可选
     case all(Bool) //所有都可选 (Bool: 页面无数据视图是否显示邀请好友按钮flg)
@@ -301,18 +320,13 @@ class FZMFriendContactListView: FZMContactListView {
             // 选中状态
             model.isSelected = !model.isSelected
             selectBlock?(model)
-            
-            DispatchQueue.main.async {
-                tableView.reloadRows(at: [indexPath], with: .fade)
-            }
+            // ⚠️ 不要异步 reloadRows：selectBlock 可能触发列表刷新，等下一轮再 reload 会越界崩溃
+            self.refreshSelectStyle(at: indexPath, model: model, in: tableView)
         case .exclude(let users):
             if !users.contains(model.sessionIDStr) {
                 model.isSelected = !model.isSelected
                 selectBlock?(model)
-                
-                DispatchQueue.main.async {
-                    tableView.reloadRows(at: [indexPath], with: .fade)
-                }
+                self.refreshSelectStyle(at: indexPath, model: model, in: tableView)
             }
         default:
             selectBlock?(model)
@@ -452,10 +466,8 @@ class FZMGroupContactListView: FZMContactListView {
             // 选中状态
             model.isSelected = !model.isSelected
             selectBlock?(model)
-            
-            DispatchQueue.main.async {
-                tableView.reloadRows(at: [indexPath], with: .fade)
-            }
+            // 同上：不要异步 reloadRows，直接改当前 cell 的选中样式
+            self.refreshSelectStyle(at: indexPath, model: model, in: tableView)
         } else {
             selectGroupBlock?(model)
         }
